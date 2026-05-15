@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TrailKit Tests</title>
+<style>
+  body { font-family: ui-monospace, Menlo, monospace; background: #0f1419; color: #d4dfe9;
+         margin: 0; padding: 24px; line-height: 1.5; }
+  h1 { font-size: 18px; letter-spacing: 2px; text-transform: uppercase; color: #00c8b4;
+       margin: 0 0 16px; font-weight: 600; }
+  .row { padding: 6px 10px; border-left: 3px solid transparent; margin-bottom: 2px;
+         font-size: 13px; }
+  .row.pass { color: #7dffb4; border-left-color: #3ddc84; }
+  .row.fail { color: #ffb47d; border-left-color: #e84040; background: rgba(232,64,64,0.08); }
+  .row.fail strong { color: #ff9b8a; }
+  .row .err { display: block; padding-left: 16px; color: #ffb47d; font-size: 12px;
+              margin-top: 4px; white-space: pre-wrap; }
+  .summary { margin-top: 16px; padding: 10px 12px; font-size: 14px; font-weight: 600;
+             letter-spacing: 1px; text-transform: uppercase; border-radius: 3px; }
+  .summary.pass { background: rgba(61,220,132,0.12); color: #3ddc84; }
+  .summary.fail { background: rgba(232,64,64,0.12); color: #e84040; }
+  p.note { color: #6a8aa0; font-size: 12px; margin: 0 0 16px; }
+</style>
+</head>
+<body>
+<h1>TrailKit Tests</h1>
+<p class="note">Runs against the live source modules under <code>src/</code> — no build step required. Refresh after edits.</p>
+<div id="results"></div>
+<script type="module">
+  import { runAll } from './assert.js';
+  import './engine.test.js';
+  runAll(document.getElementById('results'));
+</script>
+</body>
+</html>
