@@ -42,19 +42,19 @@ Status legend: `[ ]` open, `[~]` in progress, `[x]` done.
 
 ## Medium impact
 
-### [ ] 5. Extract emoji picker data to its own file
-- **Where:** `EP_DATA` starts around line 3118, runs hundreds of lines.
-- **Problem:** ~600 entries with keyword strings inflate the main file and make it hard to scan past the picker.
-- **Fix:** Move to `src/data/emojis.js` (after Phase 1 build setup). Until then, leave it.
-- **Impact:** Medium — readability.
-- **Effort:** Small (after build is set up).
+### [ ] 5. Extract emoji picker data to its own file (+ dedupe)
+- **Where:** `EP_DATA` lives in `src/trailkit/app.js` (was lines 3118+ in TrailKit-1.0.html).
+- **Problem:** ~600 entries with keyword strings inflate `app.js`. Build also reports **20 duplicate-key warnings** (e.g. `🏞️`, `🧊`, `🧣`, `🧤`, `🔦`, `⛑️`, `💡`, `🏹`, `📡`, `🛰️`, `🫙`, `🍄`, `🌰`, `🚑`, `🛶`, `🔐`, `🎵`, `🧲`, `🪤`, `🏗️`). JS silently keeps the last value, so some keywords are unreachable.
+- **Fix:** Move to `src/trailkit/data/emojis.js` (or `.json`). Dedupe keys by merging keyword strings so all search terms remain hittable.
+- **Impact:** Medium — readability + restores ~20 emojis' searchability.
+- **Effort:** Small (build is in place).
 
 ### [ ] 6. Move packing-list export template to a build-inlined file
-- **Where:** `exportPackingLists` starting line 2630; contains `<' + 'script>` and `<\/script>` splits at lines ~2866 and ~2900.
+- **Where:** `exportPackingLists` in `src/trailkit/app.js` (was line 2630 in TrailKit-1.0.html); contains `<' + 'script>` and `<\/script>` splits.
 - **Problem:** The script-tag splits are a parser-evasion hack that's easy to break when editing. The template is ~250 lines of HTML embedded in a JS template string with no syntax highlighting.
-- **Fix:** After Phase 1 build is in place, put the template in `src/exports/packing-list.html` and have the build replace a `__PACKING_LIST_TEMPLATE__` token with the file contents (string-escaped). No more script-tag splits needed.
+- **Fix:** Put the template in `src/trailkit/exports/packing-list.html`. Add a build step that JSON.stringifies the file contents and exposes it as an import (or via an esbuild loader). No more script-tag splits needed.
 - **Impact:** Medium — eliminates a known footgun.
-- **Effort:** Small (after build is set up).
+- **Effort:** Small.
 
 ### [ ] 7. Stop direct-mutating store state in `importXML`
 - **Where:** lines ~3047–3058 — `if(!S.userLoadouts[sport]) S.userLoadouts[sport] = {}; S.userLoadouts[sport][key] = {...}`
