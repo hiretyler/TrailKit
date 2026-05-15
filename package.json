@@ -1,0 +1,17 @@
+{
+  "name": "trailkit",
+  "version": "1.0.0",
+  "description": "Single-file HTML gear-loadout manager for outdoor activities",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "node tests/run-node.mjs",
+    "test:browser": "open tests/test.html",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

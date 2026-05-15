@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailKit — Gear Loadout Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- {{STYLES}} -->
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">Trail<span>Kit</span></div>
+  <div class="topbar-spacer"></div>
+  <div class="sample-gear-center" id="sampleGearCenter">
+    <div class="sample-indicator" id="sampleIndicator">⬡ SAMPLE GEAR IN USE</div>
+    <button class="sample-toggle-btn" id="sampleToggleBtn">Switch to Your Gear</button>
+  </div>
+  <div class="topbar-spacer"></div>
+  <button class="help-btn" id="helpBtn" title="About &amp; Help" style="flex-shrink:0;">?</button>
+  <div class="theme-toggle" id="themeToggle" style="flex-shrink:0;">
+    <span class="theme-toggle-label" id="themeLabel">🌙 Dark</span>
+    <div class="toggle-track"><div class="toggle-thumb">☀</div></div>
+  </div>
+  <!-- Import hidden on mobile — lives in Etc tab instead -->
+  <button class="topbar-btn" id="importBtn" style="flex-shrink:0;">⬇ Import My TrailKit</button>
+</div>
+
+<div class="main">
+  <!-- YOUR GEAR -->
+  <div class="stash-panel">
+    <div class="stash-header">
+      <div>
+        <div class="panel-title" id="stashPanelTitle">Inventory</div>
+        <div class="panel-subtitle" id="stashCount">0 available · 0 in Loadout</div>
+        <div class="panel-subtitle" id="stashActivityCount" style="display:none;margin-top:2px;color:var(--text-dim);"></div>
+      </div>
+      <div class="stash-header-btns">
+        <button class="add-items-btn" id="addItemBtn">Add Item</button>
+        <button class="edit-items-btn" id="editItemBtn">Edit Item</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div class="gear-filter-wrap">
+        <select class="gear-filter-select" id="gearFilter">
+          <option value="all">All Activities</option>
+          <option value="hike">🥾 Hiking</option>
+          <option value="bike">🚵 MTB</option>
+          <option value="run">🏃 Running</option>
+          <option value="climb">🧗 Climbing</option>
+          <option value="moto">🏍️ Moto</option>
+          <option value="camp">⛺ Camping</option>
+        </select>
+        <div class="sel-arrow">▾</div>
+      </div>
+    </div>
+    <div class="stash-grid-wrap">
+      <div class="stash-grid" id="stashGrid"></div>
+    </div>
+  </div>
+
+  <!-- LOADOUT + QUICK PANEL -->
+  <div class="right-panel">
+    <div class="loadout-panel">
+      <div class="loadout-header">
+        <div class="panel-title" style="flex-shrink:0;">Loadout</div>
+        <div class="sel-wrap">
+          <select class="lo-select" id="activitySelect">
+            <option value="hike">🥾 Hiking</option>
+            <option value="bike">🚵 MTB</option>
+            <option value="run">🏃 Running</option>
+            <option value="climb">🧗 Climbing</option>
+            <option value="moto">🏍️ Moto</option>
+            <option value="camp">⛺ Camping</option>
+          </select>
+          <div class="sel-arrow">▾</div>
+        </div>
+        <div class="sel-wrap">
+          <select class="lo-select wide" id="loadoutSelect"></select>
+          <div class="sel-arrow">▾</div>
+        </div>
+        <button class="hdr-btn amber" id="saveNewBtn">Save New</button>
+        <button class="hdr-btn ghost" id="overwriteBtn">Overwrite</button>
+        <button class="hdr-btn danger" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="loadout-body">
+        <!-- BACKPACK ROW -->
+        <div class="pack-row">
+          <div class="big-slot-wrap">
+            <div class="big-slot empty-dashed" id="backpackSlot" title="Drop a Backpack here">
+              <span id="bpSlotIcon">🎒</span>
+              <div class="slot-vol-badge" id="bpSlotBadge" style="display:none"></div>
+              <div class="slot-type-bar type-Backpack" id="bpSlotBar" style="display:none"></div>
+            </div>
+            <div class="big-slot-label">Backpack</div>
+          </div>
+          <div class="pack-info" id="packInfo">
+            <div class="pack-empty-hint">Drop a backpack to begin building your loadout.</div>
+          </div>
+        </div>
+
+        <!-- WATER -->
+        <div class="pack-section" id="waterSection">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Water</div>
+            <div class="water-total-badge" id="waterTotalL"></div>
+          </div>
+          <div class="pack-section-body">
+            <div class="water-layout">
+              <div class="bladder-col">
+                <div class="big-slot empty-dashed" id="bladderSlot" style="font-size:32px;" title="Drop a Bladder here">
+                  <span id="bladderIcon">💧</span>
+                  <div class="slot-vol-badge" id="bladderBadge" style="display:none"></div>
+                  <div class="slot-type-bar type-Bladder" id="bladderBar" style="display:none"></div>
+                </div>
+                <div class="big-slot-label">Hydration<br>Bladder</div>
+              </div>
+              <div class="bottle-pockets-col">
+                <div class="bottle-pocket-group">
+                  <div class="bottle-slot-single" id="bottleLeft" title="Drop a Bottle here">
+                    <span id="bLeftIcon" style="color:var(--text-secondary)">+</span>
+                    <div class="slot-type-bar type-Bottle" id="bLeftBar" style="display:none"></div>
+                  </div>
+                  <div class="bottle-pocket-label">Left Bottle<br>Pocket</div>
+                </div>
+                <div class="bottle-pocket-group">
+                  <div class="bottle-slot-single" id="bottleRight" title="Drop a Bottle here">
+                    <span id="bRightIcon" style="color:var(--text-secondary)">+</span>
+                    <div class="slot-type-bar type-Bottle" id="bRightBar" style="display:none"></div>
+                  </div>
+                  <div class="bottle-pocket-label">Right Bottle<br>Pocket</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN COMPARTMENT -->
+        <div class="pack-section" id="mainSection">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Main Compartment</div>
+            <div class="pack-section-cap" id="mainCap">—</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="generic-grid" id="mainGrid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE WORN (shown at bottom of Loadout tab on mobile only) -->
+    <div class="m-worn-section">
+      <div style="padding:7px 12px;border-top:2px solid var(--border-bright);
+        border-bottom:1px solid var(--border);background:var(--bg-card);
+        display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div class="panel-title" style="font-size:13px;">Worn Items</div>
+      </div>
+      <div style="padding:8px 12px;overflow-y:auto;max-height:180px;">
+        <div class="worn-list" id="mobileWornList"></div>
+      </div>
+    </div>
+
+  <!-- QUICK PANEL -->
+    <div class="quick-panel">
+      <!-- WORN ITEMS -->
+      <div class="qp-header">
+        <div class="panel-title" style="font-size:13px;">Worn Items</div>
+      </div>
+      <div class="qp-body" style="flex:1;overflow-y:auto;border-bottom:1px solid var(--border);">
+        <div class="worn-list" id="wornList"></div>
+      </div>
+
+      <!-- ESSENTIAL ITEMS -->
+      <div class="qp-header" style="border-top:1px solid var(--border-bright);flex-shrink:0;">
+        <div class="panel-title" style="font-size:13px;">Essential Items</div>
+      </div>
+      <div class="qp-body" style="border-bottom:none;flex-shrink:0;">
+        <div class="item-counters">
+          <div class="item-counter warn" id="ctr-Safety" onclick="openEssentialPopup('Safety')" style="cursor:pointer;">
+            <div class="item-counter-icon">🔦</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Safety</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+          <div class="item-counter warn" id="ctr-Medical" onclick="openEssentialPopup('Medical')" style="cursor:pointer;">
+            <div class="item-counter-icon">🩺</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Medical</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+          <div class="item-counter neutral" id="ctr-Tools" onclick="openEssentialPopup('Tools')" style="cursor:pointer;">
+            <div class="item-counter-icon">🔧</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Tools</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PACK WEIGHT -->
+      <div class="weight-section">
+        <div class="weight-label">
+          <span>Pack Weight</span>
+          <span style="color:var(--accent-teal);" id="sideWeight">— kg</span>
+        </div>
+        <div class="weight-track"><div class="weight-fill" id="weightFill"></div></div>
+        <div class="weight-zones"><span>LIGHT</span><span>▲ DAYPACK</span><span>HEAVY</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR (desktop only) -->
+<div class="bottom-bar">
+  <div class="bottom-version">TrailKit · v1.0</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+    <button class="topbar-btn" id="footerImportBtn">⬇ Import My TrailKit</button>
+    <button class="export-btn" id="exportBtn">▶ Export My TrailKit</button>
+  </div>
+</div>
+
+<!-- MOBILE TAB BAR -->
+<div class="mobile-tab-bar">
+  <button class="mobile-tab m-tab-active" id="mTabGear" onclick="mSetTab('gear')">
+    <span class="m-tab-icon">🎒</span>
+    <span class="m-tab-label">Gear</span>
+  </button>
+  <button class="mobile-tab" id="mTabPack" onclick="mSetTab('pack')">
+    <span class="m-tab-icon">⬡</span>
+    <span class="m-tab-label">Loadout</span>
+  </button>
+  <button class="mobile-tab" id="mTabStats" onclick="mSetTab('stats')">
+    <span class="m-tab-icon">⚖</span>
+    <span class="m-tab-label">Etc</span>
+  </button>
+</div>
+
+<!-- MOBILE STATS PANEL (appended into .main by initMobile()) -->
+<div class="m-stats-panel" id="mStatsPanel">
+
+  <!-- Weight card -->
+  <div class="m-stat-card" style="flex-shrink:0;">
+    <div class="m-stat-card-hdr">Pack Weight</div>
+    <div class="m-stat-card-body">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+        <div id="mTotalWeight"
+          style="font-family:'Share Tech Mono',monospace;font-size:34px;
+          color:var(--accent-teal);text-shadow:0 0 14px rgba(0,200,180,0.4);">
+          0.00 kg
+        </div>
+        <div id="mTotalWeightMax"
+          style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-secondary);">
+        </div>
+      </div>
+      <div class="weight-track" style="height:6px;margin-bottom:6px;">
+        <div class="weight-fill" id="mWeightFill"></div>
+      </div>
+      <div class="weight-zones"><span>LIGHT</span><span>▲ DAYPACK</span><span>HEAVY</span></div>
+    </div>
+  </div>
+
+  <!-- Essential items card -->
+  <div class="m-stat-card" style="flex-shrink:0;">
+    <div class="m-stat-card-hdr">Essential Items</div>
+    <div class="m-stat-card-body">
+      <div class="item-counters">
+        <div class="item-counter warn" id="mCtr-Safety">
+          <div class="item-counter-icon">🔦</div>
+          <div class="item-counter-body">
+            <div class="item-counter-label">Safety</div>
+            <div class="item-counter-value">0 <span>packed</span></div>
+          </div>
+          <div class="item-counter-dot"></div>
+        </div>
+        <div class="item-counter warn" id="mCtr-Medical">
+          <div class="item-counter-icon">🩺</div>
+          <div class="item-counter-body">
+            <div class="item-counter-label">Medical</div>
+            <div class="item-counter-value">0 <span>packed</span></div>
+          </div>
+          <div class="item-counter-dot"></div>
+        </div>
+        <div class="item-counter neutral" id="mCtr-Tools">
+          <div class="item-counter-icon">🔧</div>
+          <div class="item-counter-body">
+            <div class="item-counter-label">Tools</div>
+            <div class="item-counter-value">0 <span>packed</span></div>
+          </div>
+          <div class="item-counter-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prominent action buttons -->
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+    <button onclick="openModal('exportModal')"
+      style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;
+      text-transform:uppercase;background:var(--accent-amber);color:var(--bg-deep);border:none;
+      padding:10px 14px;border-radius:3px;cursor:pointer;width:100%;">
+      ▶ Export My TrailKit
+    </button>
+    <button id="mImportBtn"
+      style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;
+      text-transform:uppercase;background:var(--accent-teal);color:var(--bg-deep);border:none;
+      padding:10px 14px;border-radius:3px;cursor:pointer;width:100%;">
+      ⬇ Import My TrailKit
+    </button>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);
+      letter-spacing:1.5px;">TrailKit · v1.0</span>
+  </div>
+</div>
+
+<!-- ESSENTIAL ITEMS DETAIL POPUP -->
+<div class="modal-overlay" id="essentialModal">
+  <div class="modal" style="min-width:300px;max-width:420px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span id="essModalIcon" style="font-size:28px;line-height:1;"></span>
+      <div>
+        <div class="modal-title" id="essModalTitle" style="margin-bottom:2px;"></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-secondary);"
+          id="essModalSub"></div>
+      </div>
+    </div>
+    <div id="essModalList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+      <!-- populated by JS -->
+    </div>
+    <div id="essModalEmpty" style="display:none;font-size:13px;color:var(--text-dim);
+      font-family:'Rajdhani',sans-serif;letter-spacing:1px;padding:10px 0 16px;">
+      No items of this type in your current loadout.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal('essentialModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL (centered) -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal" style="min-width:340px;">
+    <div class="modal-title">Export My TrailKit</div>
+    <div class="modal-sub">Choose an export format.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <button class="export-modal-btn primary" id="dlTrailkitBtn">⬇ Download My TrailKit</button>
+      <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+      <button class="export-modal-btn secondary" id="dlPackingBtn">Export as Packing Lists</button>
+      <button class="export-modal-btn secondary" id="dlCsvBtn">Export as CSV</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="exportCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT / HELP MODAL -->
+<div class="modal-overlay" id="aboutModal">
+  <div class="modal about-modal">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div class="about-logo">Trail<span>Kit</span></div>
+        <div class="about-tagline">Gear Loadout Manager</div>
+      </div>
+      <span class="about-version">v1.0</span>
+    </div>
+
+    <div class="about-desc">
+      TrailKit helps you organize your outdoor gear into named <strong>Loadouts</strong> for any activity — hiking, mountain biking, trail running, climbing, moto, and camping. Drag items from your <strong>Inventory</strong> into the pack, water slots, and worn section to build a loadout, then save it. Export your packing lists as a printable HTML checklist or your full inventory as a CSV.
+    </div>
+
+    <div class="about-section-title">Getting Started</div>
+    <div class="about-steps">
+      <div class="about-step">
+        <span class="about-step-num">01</span>
+        <div class="about-step-text"><strong>Build your Inventory.</strong> Click <strong>+ Add Item</strong> in the left panel to create gear items. Set the type (Backpack, Bottle, Bladder, Worn, etc.), activity filter, weight, and capacity. Your Inventory persists between sessions via your browser.</div>
+      </div>
+      <div class="about-step">
+        <span class="about-step-num">02</span>
+        <div class="about-step-text"><strong>Choose an activity.</strong> Use the activity tabs at the top of the center panel (🥾 🚵 🏃 🧗 🏍 ⛺) to switch context. Each activity maintains its own set of saved loadouts.</div>
+      </div>
+      <div class="about-step">
+        <span class="about-step-num">03</span>
+        <div class="about-step-text"><strong>Drag items into your loadout.</strong> Drag a <strong>Backpack</strong> from the Inventory into the Backpack slot to load it. Then drag other items into the main compartment. Drag <strong>Bottle</strong> or <strong>Bladder</strong> items into the water slots. Drag <strong>Worn</strong> items into the Worn Items strip at the right.</div>
+      </div>
+      <div class="about-step">
+        <span class="about-step-num">04</span>
+        <div class="about-step-text"><strong>Save your loadout.</strong> Click <strong>Save Loadout</strong> and give it a name. You can have multiple named loadouts per activity. Switch between them using the dropdown at the top of the pack area.</div>
+      </div>
+      <div class="about-step">
+        <span class="about-step-num">05</span>
+        <div class="about-step-text"><strong>Edit items.</strong> Click <strong>Edit Item</strong> in the Inventory panel to enter Edit Mode, then click any item to open its editor. Change its name, icon (choose from 600+ emoji), type, weight, and special properties like backpack capacity and water pocket support.</div>
+      </div>
+      <div class="about-step">
+        <span class="about-step-num">06</span>
+        <div class="about-step-text"><strong>Export.</strong> Click <strong>Export My TrailKit ▶</strong> in the bottom bar. Download your full TrailKit as an XML file for backup and re-import, export a styled <strong>HTML packing checklist</strong> (with dark/light mode and print mode), or export a <strong>CSV</strong> with your full inventory and all loadouts.</div>
+      </div>
+    </div>
+
+    <div class="about-section-title">Tips & Features</div>
+    <div class="about-tip-block">
+      <div class="about-tip"><strong>Sample Gear:</strong> Use the Sample Gear toggle in the top bar to explore a pre-built inventory and loadouts. Great for learning the interface before entering your own gear. Switching back restores your personal inventory.</div>
+      <div class="about-tip"><strong>Water slots:</strong> The water section (Bladder + two Bottle pockets) only accepts items of the correct type. If a backpack lacks a particular pocket, that slot dims and becomes inactive — toggle pocket support in the backpack's Edit screen.</div>
+      <div class="about-tip"><strong>Slot stacking:</strong> Items that take multiple stash slots show a stacked-card visual and a volume badge. The badge turns amber at ×4 and red at ×6+ to flag heavy slot usage.</div>
+      <div class="about-tip"><strong>Activity filter:</strong> The filter selector above the Inventory panel narrows visible items to a specific activity. Items tagged "All Activities" always appear regardless of the filter.</div>
+      <div class="about-tip"><strong>Import / Export:</strong> Your TrailKit XML file contains your full inventory and all saved loadouts. Share it with others or use it to move your data to another browser or device.</div>
+    </div>
+
+    <div class="modal-actions" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+      <button class="modal-btn confirm" id="aboutCloseBtn">Got It</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT POPOVER -->
+<div class="popover-overlay" id="importOverlay">
+  <div class="popover" id="importPopover">
+    <div class="pop-title">Import</div>
+    <button class="pop-btn upload" id="uploadTrailkitBtn">⬆ Upload My TrailKit</button>
+    <input type="file" id="importFileInput" accept=".xml,.trailkit">
+  </div>
+</div>
+
+<!-- EDIT / ADD ITEM MODAL (shared, mode-switched) -->
+<div class="modal-overlay" id="itemDetailModal">
+  <div class="modal edit-modal">
+    <div class="edit-modal-mode-label" id="editModalModeLabel">Edit Item</div>
+    <div class="edit-modal-header">
+      <div class="edit-icon-block">
+        <div class="edit-icon-display" id="detailIcon">📦</div>
+        <button class="edit-icon-btn" id="editIconBtn">✏ Edit</button>
+      </div>
+      <div class="edit-title-block">
+        <div class="edit-field" style="margin-bottom:8px;">
+          <label class="edit-label">Item Name</label>
+          <input class="edit-input" id="editName" type="text" maxlength="60" placeholder="Item name">
+        </div>
+        <div id="editTagsPreview"></div>
+      </div>
+    </div>
+
+    <div class="edit-field-group">
+      <div class="edit-field-row">
+        <div class="edit-field">
+          <label class="edit-label">Type</label>
+          <div class="edit-select-wrap">
+            <select class="edit-select" id="editType">
+              <option value="Item">Item</option>
+              <option value="Backpack">Backpack</option>
+              <option value="Bladder">Bladder</option>
+              <option value="Bottle">Bottle</option>
+              <option value="Safety">Safety</option>
+              <option value="Medical">Medical</option>
+              <option value="Tools">Tools</option>
+              <option value="Worn">Worn</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-field">
+          <label class="edit-label">Activity</label>
+          <div class="edit-select-wrap">
+            <select class="edit-select" id="editActivity">
+              <option value="all">All Activities</option>
+              <option value="hike">🥾 Hiking</option>
+              <option value="bike">🚵 MTB</option>
+              <option value="run">🏃 Running</option>
+              <option value="climb">🧗 Climbing</option>
+              <option value="moto">🏍️ Moto</option>
+              <option value="camp">⛺ Camping</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-field-row">
+        <div class="edit-field">
+          <label class="edit-label" id="editSlotsLabel">Slots Used</label>
+          <input class="edit-input num" id="editSlots" type="number" min="1" max="99" step="1">
+        </div>
+        <div class="edit-field">
+          <label class="edit-label">Weight (kg)</label>
+          <input class="edit-input" id="editWeight" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-label">Description</label>
+        <textarea class="edit-textarea" id="editDesc" rows="2" placeholder="Short description…"></textarea>
+      </div>
+    </div>
+
+    <!-- SPECIAL FIELDS — shown/hidden by type -->
+    <div id="editSpecialBackpack" style="display:none;">
+      <div class="edit-divider"></div>
+      <div class="edit-special-title">⬡ Backpack Details</div>
+      <div class="edit-field-group">
+        <div class="edit-field-row">
+          <div class="edit-field">
+            <label class="edit-label">Main Compartment Slots</label>
+            <input class="edit-input num" id="editBpSlots" type="number" min="1" max="99" step="1">
+          </div>
+          <div class="edit-field">
+            <label class="edit-label">Max Load (kg)</label>
+            <input class="edit-input" id="editBpMaxload" type="number" min="0" step="0.5" placeholder="0">
+          </div>
+        </div>
+        <div class="edit-toggle-row">
+          <span class="edit-toggle-label">Has Water Bladder Pocket</span>
+          <label class="toggle-sw">
+            <input type="checkbox" id="editBpBladder" checked>
+            <div class="toggle-sw-track"></div>
+            <div class="toggle-sw-thumb"></div>
+          </label>
+        </div>
+        <div class="edit-toggle-row">
+          <span class="edit-toggle-label">Has Left Water Bottle Pocket</span>
+          <label class="toggle-sw">
+            <input type="checkbox" id="editBpLeftBottle" checked>
+            <div class="toggle-sw-track"></div>
+            <div class="toggle-sw-thumb"></div>
+          </label>
+        </div>
+        <div class="edit-toggle-row">
+          <span class="edit-toggle-label">Has Right Water Bottle Pocket</span>
+          <label class="toggle-sw">
+            <input type="checkbox" id="editBpRightBottle" checked>
+            <div class="toggle-sw-track"></div>
+            <div class="toggle-sw-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="editSpecialBottle" style="display:none;">
+      <div class="edit-divider"></div>
+      <div class="edit-special-title">🥤 Bottle Details</div>
+      <div class="edit-field">
+        <label class="edit-label">Capacity (Liters)</label>
+        <input class="edit-input num" id="editBottleL" type="number" min="0" max="9" step="0.1">
+      </div>
+    </div>
+
+    <div id="editSpecialBladder" style="display:none;">
+      <div class="edit-divider"></div>
+      <div class="edit-special-title">💧 Bladder Details</div>
+      <div class="edit-field">
+        <label class="edit-label">Capacity (Liters)</label>
+        <input class="edit-input num" id="editBladderL" type="number" min="0" max="9" step="0.1">
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <button class="modal-btn cancel" id="itemDetailCloseBtn">Cancel</button>
+      <button class="modal-btn confirm" id="editSaveBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TO SAMPLE GEAR WARNING -->
+<div class="modal-overlay" id="addToSampleWarnModal">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--accent-amber);">⬡ Trying to add an item to your own gear?</div>
+    <div class="modal-sub">You're currently browsing Sample Gear. Switch to Your Gear to build your own inventory — or add this item to the sample collection.</div>
+    <div class="modal-actions" style="flex-direction:column;gap:8px;align-items:stretch;">
+      <button class="modal-btn confirm" id="addSampleWarnSwitchBtn" style="width:100%;">Switch to Your Gear</button>
+      <button class="modal-btn cancel" id="addSampleWarnSampleBtn" style="width:100%;">No, Add Item to Sample Gear</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMOJI PICKER -->
+<div class="emoji-picker-overlay" id="emojiPickerOverlay">
+  <div class="emoji-picker" id="emojiPicker">
+    <input class="emoji-picker-search" id="emojiSearch" placeholder="Search all emoji…" autocomplete="off">
+    <div class="emoji-cats" id="emojiCats"></div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+  </div>
+</div>
+
+<!-- SAVE MODAL -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <div class="modal-title">Save New Loadout</div>
+    <div class="modal-sub">Give this loadout a name.</div>
+    <input class="modal-input" id="saveInput" type="text" placeholder="e.g. Mountain Weekend" maxlength="40">
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="saveCancelBtn">Cancel</button>
+      <button class="modal-btn confirm" id="saveConfirmBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERWRITE MODAL -->
+<div class="modal-overlay" id="overwriteModal">
+  <div class="modal">
+    <div class="modal-title">Overwrite Loadout?</div>
+    <div class="modal-sub" id="overwriteMsg">Replace the current loadout with your changes?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="overwriteCancelBtn">Cancel</button>
+      <button class="modal-btn danger" id="overwriteConfirmBtn">Overwrite</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR MODAL -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <div class="modal-title">Clear Loadout?</div>
+    <div class="modal-sub">All items will be removed. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="clearCancelBtn">Cancel</button>
+      <button class="modal-btn danger" id="clearConfirmBtn">Clear Loadout</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAMPLE GEAR EXPORT WARNING MODAL -->
+<div class="modal-overlay" id="sampleExportWarnModal">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--accent-amber);">⚠ Exporting Sample Data</div>
+    <div class="modal-sub" id="sampleExportWarnMsg">You're about to export Sample Gear data, not your own inventory. Switch to Your Gear first to export your personal data.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="sampleWarnCancelBtn">Cancel</button>
+      <button class="modal-btn confirm" id="sampleWarnExportBtn">Export Anyway</button>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+
+<!-- {{SCRIPT}} -->
+</body>
+</html>
