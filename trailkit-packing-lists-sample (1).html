@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrailKit — Packing Lists</title>
+<style>
+/* ── DESIGN TOKENS ── */
+html[data-mode="dark"]{
+  --bg:#0f1419;--bg2:#141c24;--border:#1e2d3d;--border2:#2a4060;
+  --teal:#00c8b4;--amber:#f5a623;--text:#d4dfe9;--dim:#6a8aa0;--deep:#0a0e12;
+  --cb-bg:#0a0e12;--cb-border:#2a4060;--header-border:var(--teal);
+  --activity-color:var(--dim);--name-color:var(--text);--name-border:var(--border2);
+  --item-sep:rgba(30,45,61,0.7);--label-color:var(--text);--checked-color:var(--dim);
+  --sport-hike-bg:#1a3d2b;--sport-hike-fg:#7dffb4;
+  --sport-bike-bg:#0e2d44;--sport-bike-fg:#7dd4ff;
+  --sport-run-bg:#44250e;--sport-run-fg:#ffb47d;
+  --sport-climb-bg:#3d1d44;--sport-climb-fg:#d4a0ff;
+  --sport-moto-bg:#2d1d0e;--sport-moto-fg:#ffcc7d;
+  --sport-camp-bg:#0e1d2d;--sport-camp-fg:#aae8ff;
+  --tb-bg:#141c24;--tb-border:#2a4060;--tb-text:#6a8aa0;--tb-active-text:#00c8b4;
+  --ui-btn-bg:rgba(0,200,180,0.08);--ui-btn-border:rgba(0,200,180,0.22);
+  --ui-btn-text:#00c8b4;--ui-btn-hover-bg:rgba(0,200,180,0.18);
+  --print-btn-bg:rgba(245,166,35,0.1);--print-btn-border:rgba(245,166,35,0.3);
+  --print-btn-text:#f5a623;--print-btn-hover:rgba(245,166,35,0.2);
+}
+html[data-mode="light"]{
+  --bg:#f4f6f8;--bg2:#ffffff;--border:#d5dde7;--border2:#b8c8d8;
+  --teal:#008c7e;--amber:#c07800;--text:#1a2430;--dim:#6a8aa0;--deep:#ffffff;
+  --cb-bg:#ffffff;--cb-border:#b8c8d8;--header-border:#008c7e;
+  --activity-color:#6a8aa0;--name-color:#1a2430;--name-border:#d5dde7;
+  --item-sep:rgba(0,0,0,0.06);--label-color:#1a2430;--checked-color:#a0b4c8;
+  --sport-hike-bg:#d4f0e0;--sport-hike-fg:#1a6b3a;
+  --sport-bike-bg:#d4e8f8;--sport-bike-fg:#0a4a7a;
+  --sport-run-bg:#fce8d4;--sport-run-fg:#7a3a0a;
+  --sport-climb-bg:#ecddf8;--sport-climb-fg:#5a1a7a;
+  --sport-moto-bg:#f8ead4;--sport-moto-fg:#6a3a0a;
+  --sport-camp-bg:#d4eaf8;--sport-camp-fg:#0a3a6a;
+  --tb-bg:#ffffff;--tb-border:#d5dde7;--tb-text:#6a8aa0;--tb-active-text:#008c7e;
+  --ui-btn-bg:rgba(0,140,126,0.06);--ui-btn-border:rgba(0,140,126,0.25);
+  --ui-btn-text:#008c7e;--ui-btn-hover-bg:rgba(0,140,126,0.14);
+  --print-btn-bg:rgba(192,120,0,0.06);--print-btn-border:rgba(192,120,0,0.25);
+  --print-btn-text:#c07800;--print-btn-hover:rgba(192,120,0,0.14);
+}
+
+/* ── PRINT MODE overrides all token-based styles ── */
+html[data-print="1"] *{
+  background:transparent !important;border-color:#ccc !important;
+  color:#000 !important;box-shadow:none !important;text-shadow:none !important;
+}
+html[data-print="1"] body{background:#fff !important;}
+html[data-print="1"] .loadout-block{border:1px solid #ccc !important;background:#fff !important;}
+html[data-print="1"] .page-header{border-bottom:2px solid #000 !important;}
+html[data-print="1"] .page-title{color:#000 !important;}
+html[data-print="1"] .page-title span{color:#555 !important;}
+html[data-print="1"] .page-date,.loadout-activity,.loadout-name{color:#000 !important;}
+html[data-print="1"] .sport-badge{display:none !important;}
+html[data-print="1"] .item-cb{border:1.5px solid #999 !important;background:#fff !important;}
+html[data-print="1"] .toolbar{display:none !important;}
+html[data-print="1"] .item-label{color:#000 !important;}
+html[data-print="1"] .item-cb:checked{background:#ddd !important;}
+html[data-print="1"] .item-cb:checked + .item-label{color:#888 !important;}
+html[data-print="1"] .loadout-name{border-bottom:1px solid #ccc !important;color:#000 !important;}
+html[data-print="1"] .footer-bar{display:none !important;}
+
+/* ── BASE ── */
+*, *::before, *::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;transition:background 0.2s,color 0.2s;}
+.page-wrap{max-width:780px;margin:0 auto;padding:24px 20px 80px;}
+
+/* ── TOOLBAR (top controls) ── */
+.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;
+  margin-bottom:28px;}
+.toolbar-btn{font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;border-radius:4px;
+  padding:6px 14px;transition:all 0.15s;white-space:nowrap;}
+.mode-btn{background:var(--ui-btn-bg);border:1px solid var(--ui-btn-border);
+  color:var(--ui-btn-text);}
+.mode-btn:hover{background:var(--ui-btn-hover-bg);}
+.print-btn{background:var(--print-btn-bg);border:1px solid var(--print-btn-border);
+  color:var(--print-btn-text);}
+.print-btn:hover{background:var(--print-btn-hover);}
+.print-btn.active{background:var(--print-btn-text) !important;
+  color:#fff !important;border-color:var(--print-btn-text) !important;}
+html[data-print="1"] .print-btn.active{display:none !important;}
+
+/* ── PAGE HEADER ── */
+.page-header{border-bottom:2px solid var(--header-border);padding-bottom:14px;margin-bottom:28px;}
+.page-title{font-size:26px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+  color:var(--teal);font-family:'Courier New',monospace;}
+.page-title span{color:var(--dim);font-weight:400;}
+.page-date{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:5px;}
+
+/* ── LOADOUT CARDS ── */
+.loadout-block{background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:18px 22px;margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;
+  transition:background 0.2s,border-color 0.2s;}
+.loadout-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.loadout-activity{font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--activity-color);}
+.sport-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;padding:2px 8px;border-radius:2px;}
+.sb-hike{background:var(--sport-hike-bg);color:var(--sport-hike-fg);}
+.sb-bike{background:var(--sport-bike-bg);color:var(--sport-bike-fg);}
+.sb-run{background:var(--sport-run-bg);color:var(--sport-run-fg);}
+.sb-climb{background:var(--sport-climb-bg);color:var(--sport-climb-fg);}
+.sb-moto{background:var(--sport-moto-bg);color:var(--sport-moto-fg);}
+.sb-camp{background:var(--sport-camp-bg);color:var(--sport-camp-fg);}
+.loadout-name{font-size:20px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--name-color);font-family:'Courier New',monospace;margin-bottom:14px;
+  border-bottom:1px solid var(--name-border);padding-bottom:10px;
+  transition:color 0.2s,border-color 0.2s;}
+.item-list{list-style:none;display:flex;flex-direction:column;}
+.item-row{display:flex;align-items:center;gap:12px;padding:7px 0;
+  border-bottom:1px solid var(--item-sep);}
+.item-row:last-child{border-bottom:none;}
+.item-cb{
+  width:18px;height:18px;border:2px solid var(--cb-border);border-radius:3px;
+  flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;
+  background:var(--cb-bg);position:relative;transition:all 0.12s;}
+.item-cb:checked{background:var(--teal);border-color:var(--teal);}
+.item-cb:checked::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:900;color:#fff;line-height:1;}
+.item-label{font-size:14px;color:var(--label-color);cursor:pointer;user-select:none;flex:1;
+  transition:color 0.12s,text-decoration 0.12s;}
+.item-cb:checked + .item-label{text-decoration:line-through;color:var(--checked-color);}
+.item-count{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--dim);
+  text-transform:uppercase;margin-top:12px;padding-top:4px;}
+
+/* ── FOOTER ── */
+.footer-bar{position:fixed;bottom:0;left:0;right:0;height:44px;
+  background:var(--tb-bg);border-top:1px solid var(--tb-border);
+  display:flex;align-items:center;justify-content:center;gap:24px;
+  font-size:10px;font-family:'Courier New',monospace;letter-spacing:1px;
+  color:var(--tb-text);z-index:100;}
+.footer-ver{color:var(--tb-active-text);}
+
+/* ── EMPTY STATE ── */
+.no-loadouts{color:var(--dim);font-size:13px;font-style:italic;text-align:center;
+  padding:40px;border:1px dashed var(--border);border-radius:6px;}
+
+/* ── PRINT MEDIA ── */
+@media print{
+  .toolbar{display:none !important;}
+  .footer-bar{display:none !important;}
+  .loadout-block{page-break-inside:avoid;break-inside:avoid;}
+  body{background:#fff !important;color:#000 !important;}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="toolbar-btn print-btn" id="printModeBtn" onclick="togglePrintMode()">⬡ Print Mode</button>
+    <button class="toolbar-btn mode-btn" id="modeBtn" onclick="toggleMode()">☀ Light Mode</button>
+    <button class="toolbar-btn mode-btn" onclick="window.print()" style="opacity:0.7;">🖨 Print</button>
+  </div>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title">Trail<span>Kit</span> — Packing Lists</div>
+    <div class="page-date">Generated March 2, 2026 &nbsp;·&nbsp; Sample Gear</div>
+  </div>
+
+  <!-- PACKING LIST CONTENT -->
+  <div class="loadout-block">
+    <div class="loadout-meta">
+      <span class="loadout-activity">Hiking</span>
+      <span class="sport-badge sb-hike">Hiking</span>
+    </div>
+    <div class="loadout-name">Day Hike — Light</div>
+    <ul class="item-list">
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_0">
+        <label class="item-label" for="cb_0_0">Osprey Talon 22</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_1">
+        <label class="item-label" for="cb_0_1">Hydrapak 2L Bladder</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_2">
+        <label class="item-label" for="cb_0_2">Soft Flask 500ml</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_3">
+        <label class="item-label" for="cb_0_3">BD Spot 400 Headlamp</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_4">
+        <label class="item-label" for="cb_0_4">USGS Topo Map</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_5">
+        <label class="item-label" for="cb_0_5">Blister Kit</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_6">
+        <label class="item-label" for="cb_0_6">Sunscreen SPF50</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_7">
+        <label class="item-label" for="cb_0_7">Garmin inReach Mini</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_8">
+        <label class="item-label" for="cb_0_8">Salomon X Ultra 4</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_9">
+        <label class="item-label" for="cb_0_9">Darn Tough Micro Crew</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_10">
+        <label class="item-label" for="cb_0_10">Julbo Aerospace</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_0_11">
+        <label class="item-label" for="cb_0_11">Smartwool Hiking Pants</label>
+      </li>
+    </ul>
+    <div class="item-count">12 items</div>
+  </div>
+  <div class="loadout-block">
+    <div class="loadout-meta">
+      <span class="loadout-activity">Hiking</span>
+      <span class="sport-badge sb-hike">Hiking</span>
+    </div>
+    <div class="loadout-name">Overnighter Pack</div>
+    <ul class="item-list">
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_0">
+        <label class="item-label" for="cb_1_0">Gregory Baltoro 65</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_1">
+        <label class="item-label" for="cb_1_1">Osprey 3L Hydraulics</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_2">
+        <label class="item-label" for="cb_1_2">Nalgene 1L Wide Mouth</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_3">
+        <label class="item-label" for="cb_1_3">Nalgene 1L Wide Mouth</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_4">
+        <label class="item-label" for="cb_1_4">Big Agnes Copper Spur</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_5">
+        <label class="item-label" for="cb_1_5">Insulated Puffy Jacket</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_6">
+        <label class="item-label" for="cb_1_6">Adventure Medical Kit</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_7">
+        <label class="item-label" for="cb_1_7">Leatherman Wave+</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_8">
+        <label class="item-label" for="cb_1_8">BD Spot 400 Headlamp</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_9">
+        <label class="item-label" for="cb_1_9">Spot Gen4 Beacon</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_10">
+        <label class="item-label" for="cb_1_10">Salomon X Ultra 4</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_11">
+        <label class="item-label" for="cb_1_11">Darn Tough Micro Crew</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_12">
+        <label class="item-label" for="cb_1_12">Arc'teryx Beta LT</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_13">
+        <label class="item-label" for="cb_1_13">Smartwool Hiking Pants</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_1_14">
+        <label class="item-label" for="cb_1_14">Merino Base Layer Top</label>
+      </li>
+    </ul>
+    <div class="item-count">15 items</div>
+  </div>
+  <div class="loadout-block">
+    <div class="loadout-meta">
+      <span class="loadout-activity">Running</span>
+      <span class="sport-badge sb-run">Running</span>
+    </div>
+    <div class="loadout-name">Trail Run</div>
+    <ul class="item-list">
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_0">
+        <label class="item-label" for="cb_2_0">Osprey Momentum 26</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_1">
+        <label class="item-label" for="cb_2_1">Hydrapak 2L Bladder</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_2">
+        <label class="item-label" for="cb_2_2">Soft Flask 500ml</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_3">
+        <label class="item-label" for="cb_2_3">Soft Flask 500ml</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_4">
+        <label class="item-label" for="cb_2_4">Spot Gen4 Beacon</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_5">
+        <label class="item-label" for="cb_2_5">Blister Kit</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_6">
+        <label class="item-label" for="cb_2_6">Sunscreen SPF50</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_2_7">
+        <label class="item-label" for="cb_2_7">OR Sun Hat</label>
+      </li>
+    </ul>
+    <div class="item-count">8 items</div>
+  </div>
+  <div class="loadout-block">
+    <div class="loadout-meta">
+      <span class="loadout-activity">Climbing</span>
+      <span class="sport-badge sb-climb">Climbing</span>
+    </div>
+    <div class="loadout-name">Sport Climbing</div>
+    <ul class="item-list">
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_0">
+        <label class="item-label" for="cb_3_0">BD Creek 50</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_1">
+        <label class="item-label" for="cb_3_1">Hydrapak 2L Bladder</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_2">
+        <label class="item-label" for="cb_3_2">Dynamic Rope 60m</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_3">
+        <label class="item-label" for="cb_3_3">BD Momentum Harness</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_4">
+        <label class="item-label" for="cb_3_4">Adventure Medical Kit</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_5">
+        <label class="item-label" for="cb_3_5">BD Spot 400 Headlamp</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_6">
+        <label class="item-label" for="cb_3_6">Petzl Rig Belay</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_7">
+        <label class="item-label" for="cb_3_7">BD Crag Gloves</label>
+      </li>
+      <li class="item-row">
+        <input class="item-cb" type="checkbox" id="cb_3_8">
+        <label class="item-label" for="cb_3_8">Arc'teryx Beta LT</label>
+      </li>
+    </ul>
+    <div class="item-count">9 items</div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<!-- FOOTER -->
+<div class="footer-bar">
+  <span class="footer-ver">TrailKit v0.96</span>
+  <span>·</span>
+  <span>Packing Lists</span>
+  <span>·</span>
+  <span>March 2, 2026</span>
+</div>
+
+<script>
+var _mode = 'dark';
+var _print = false;
+
+function toggleMode(){
+  _mode = _mode === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-mode', _mode);
+  document.getElementById('modeBtn').textContent =
+    _mode === 'dark' ? '☀ Light Mode' : '🌙 Dark Mode';
+}
+
+function togglePrintMode(){
+  _print = !_print;
+  document.documentElement.setAttribute('data-print', _print ? '1' : '0');
+  var btn = document.getElementById('printModeBtn');
+  if(_print){
+    // Switch to light mode automatically for print
+    _mode = 'light';
+    document.documentElement.setAttribute('data-mode','light');
+    document.getElementById('modeBtn').textContent = '🌙 Dark Mode';
+    btn.classList.add('active');
+    btn.textContent = '✕ Exit Print Mode';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '⬡ Print Mode';
+  }
+}
+
+// Keyboard shortcut: P toggles print mode, D toggles dark/light
+document.addEventListener('keydown', function(e){
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='p'||e.key==='P') togglePrintMode();
+  if(e.key==='d'||e.key==='D') toggleMode();
+});
+</script>
+</body>
+</html>

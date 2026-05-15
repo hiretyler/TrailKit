@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<trailkit>
+  <yourgear>
+    <item>
+      <id>bp_talon22</id>
+      <item-name>Osprey Talon 22</item-name>
+      <item-icon>🎒</item-icon>
+      <type>Backpack</type>
+      <activity>hike</activity>
+      <slots>12</slots>
+      <weight>0.87</weight>
+      <item-description>Versatile 22L daypack. AirSpeed back panel. 3L bladder-compatible.</item-description>
+      <special>
+        <backpack-maxload>15</backpack-maxload>
+        <backpack-slots>12</backpack-slots>
+      </special>
+    </item>
+    <item>
+      <id>bp_baltoro65</id>
+      <item-name>Gregory Baltoro 65</item-name>
+      <item-icon>🎽</item-icon>
+      <type>Backpack</type>
+      <activity>hike</activity>
+      <slots>20</slots>
+      <weight>2.1</weight>
+      <item-description>Technical 65L expedition pack. Full-featured suspension.</item-description>
+      <special>
+        <backpack-maxload>27</backpack-maxload>
+        <backpack-slots>20</backpack-slots>
+      </special>
+    </item>
+    <item>
+      <id>bp_momentum26</id>
+      <item-name>Osprey Momentum 26</item-name>
+      <item-icon>🏃</item-icon>
+      <type>Backpack</type>
+      <activity>run</activity>
+      <slots>8</slots>
+      <weight>0.53</weight>
+      <item-description>Hydration-optimised 26L trail running pack.</item-description>
+      <special>
+        <backpack-maxload>10</backpack-maxload>
+        <backpack-slots>8</backpack-slots>
+      </special>
+    </item>
+    <item>
+      <id>bp_creek50</id>
+      <item-name>BD Creek 50</item-name>
+      <item-icon>🧗</item-icon>
+      <type>Backpack</type>
+      <activity>climb</activity>
+      <slots>14</slots>
+      <weight>1.6</weight>
+      <item-description>50L alpine climbing pack. Ice-axe loops, crampon patch.</item-description>
+      <special>
+        <backpack-maxload>20</backpack-maxload>
+        <backpack-slots>14</backpack-slots>
+      </special>
+    </item>
+    <item>
+      <id>bl_hydrapak2</id>
+      <item-name>Hydrapak 2L Bladder</item-name>
+      <item-icon>💧</item-icon>
+      <type>Bladder</type>
+      <activity>all</activity>
+      <slots>4</slots>
+      <weight>0.18</weight>
+      <item-description>Shape-shift 2L reservoir. Wide-pak opening, easy clean.</item-description>
+      <special>
+        <bladder-liters>2</bladder-liters>
+      </special>
+    </item>
+    <item>
+      <id>bl_osprey3</id>
+      <item-name>Osprey 3L Hydraulics</item-name>
+      <item-icon>💧</item-icon>
+      <type>Bladder</type>
+      <activity>hike</activity>
+      <slots>5</slots>
+      <weight>0.21</weight>
+      <item-description>3L high-flow reservoir. Quick-connect tube.</item-description>
+      <special>
+        <bladder-liters>3</bladder-liters>
+      </special>
+    </item>
+    <item>
+      <id>bt_softflask</id>
+      <item-name>Soft Flask 500ml</item-name>
+      <item-icon>🥤</item-icon>
+      <type>Bottle</type>
+      <activity>run</activity>
+      <slots>1</slots>
+      <weight>0.04</weight>
+      <item-description>Collapsible BPA-free soft flask. Fits most vest pockets.</item-description>
+      <special>
+        <bottle-liters>0.5</bottle-liters>
+      </special>
+    </item>
+    <item>
+      <id>bt_nalgene1</id>
+      <item-name>Nalgene 1L Wide Mouth</item-name>
+      <item-icon>🍶</item-icon>
+      <type>Bottle</type>
+      <activity>all</activity>
+      <slots>2</slots>
+      <weight>0.18</weight>
+      <item-description>Classic 1L wide-mouth water bottle. BPA-free Tritan.</item-description>
+      <special>
+        <bottle-liters>1</bottle-liters>
+      </special>
+    </item>
+    <item>
+      <id>bt_klean32</id>
+      <item-name>Klean Kanteen 32oz</item-name>
+      <item-icon>🥛</item-icon>
+      <type>Bottle</type>
+      <activity>all</activity>
+      <slots>2</slots>
+      <weight>0.22</weight>
+      <item-description>Insulated stainless steel bottle. 32oz / 946ml.</item-description>
+      <special>
+        <bottle-liters>0.95</bottle-liters>
+      </special>
+    </item>
+    <item>
+      <id>sf_headlamp</id>
+      <item-name>BD Spot 400 Headlamp</item-name>
+      <item-icon>🔦</item-icon>
+      <type>Safety</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.09</weight>
+      <item-description>400-lumen rechargeable headlamp. IPX8 waterproof.</item-description>
+    </item>
+    <item>
+      <id>sf_beacon</id>
+      <item-name>Spot Gen4 Beacon</item-name>
+      <item-icon>📡</item-icon>
+      <type>Safety</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.15</weight>
+      <item-description>Personal locator beacon. 406 MHz GPS. 24hr battery.</item-description>
+    </item>
+    <item>
+      <id>sf_inreach</id>
+      <item-name>Garmin inReach Mini</item-name>
+      <item-icon>🛰️</item-icon>
+      <type>Safety</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.1</weight>
+      <item-description>Two-way satellite communicator. SOS, weather, GPS tracking.</item-description>
+    </item>
+    <item>
+      <id>sf_bivy</id>
+      <item-name>Hyperlite Bivy</item-name>
+      <item-icon>🛖</item-icon>
+      <type>Safety</type>
+      <activity>camp</activity>
+      <slots>2</slots>
+      <weight>0.11</weight>
+      <item-description>Solo emergency bivy. Reflective mylar. Waterproof.</item-description>
+    </item>
+    <item>
+      <id>md_kit</id>
+      <item-name>Adventure Medical Kit</item-name>
+      <item-icon>🩺</item-icon>
+      <type>Medical</type>
+      <activity>all</activity>
+      <slots>3</slots>
+      <weight>0.45</weight>
+      <item-description>Comprehensive first aid kit. 4 people / 10 days.</item-description>
+    </item>
+    <item>
+      <id>md_blister</id>
+      <item-name>Blister Kit</item-name>
+      <item-icon>🩹</item-icon>
+      <type>Medical</type>
+      <activity>hike</activity>
+      <slots>1</slots>
+      <weight>0.05</weight>
+      <item-description>Moleskin, Leukotape, alcohol pads, nitrile gloves.</item-description>
+    </item>
+    <item>
+      <id>tl_leatherman</id>
+      <item-name>Leatherman Wave+</item-name>
+      <item-icon>🔧</item-icon>
+      <type>Tools</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.24</weight>
+      <item-description>Full-size multi-tool with 18 tools.</item-description>
+    </item>
+    <item>
+      <id>tl_spork</id>
+      <item-name>Snow Peak Ti Spork</item-name>
+      <item-icon>🥄</item-icon>
+      <type>Tools</type>
+      <activity>camp</activity>
+      <slots>1</slots>
+      <weight>0.03</weight>
+      <item-description>Ultralight titanium spork. 26g.</item-description>
+    </item>
+    <item>
+      <id>tl_belay</id>
+      <item-name>Petzl Rig Belay</item-name>
+      <item-icon>🔑</item-icon>
+      <type>Tools</type>
+      <activity>climb</activity>
+      <slots>1</slots>
+      <weight>0.17</weight>
+      <item-description>Assisted-braking belay/rappel device.</item-description>
+    </item>
+    <item>
+      <id>wn_shoes</id>
+      <item-name>Salomon X Ultra 4</item-name>
+      <item-icon>🥾</item-icon>
+      <type>Worn</type>
+      <activity>hike</activity>
+      <slots>2</slots>
+      <weight>0.9</weight>
+      <item-description>High-traction mid-cut trail shoe. Waterproof GTX membrane.</item-description>
+    </item>
+    <item>
+      <id>wn_shell</id>
+      <item-name>Arc'teryx Beta LT</item-name>
+      <item-icon>🧥</item-icon>
+      <type>Worn</type>
+      <activity>hike</activity>
+      <slots>3</slots>
+      <weight>0.35</weight>
+      <item-description>Lightweight 3-layer Gore-Tex shell. Packable, waterproof.</item-description>
+    </item>
+    <item>
+      <id>wn_socks</id>
+      <item-name>Darn Tough Micro Crew</item-name>
+      <item-icon>🧦</item-icon>
+      <type>Worn</type>
+      <activity>hike</activity>
+      <slots>1</slots>
+      <weight>0.08</weight>
+      <item-description>Merino wool hiking sock. Lifetime guarantee.</item-description>
+    </item>
+    <item>
+      <id>wn_gloves</id>
+      <item-name>BD Crag Gloves</item-name>
+      <item-icon>🧤</item-icon>
+      <type>Worn</type>
+      <activity>climb</activity>
+      <slots>1</slots>
+      <weight>0.06</weight>
+      <item-description>Lightweight climbing gloves with touchscreen fingertips.</item-description>
+    </item>
+    <item>
+      <id>wn_puffy</id>
+      <item-name>Insulated Puffy Jacket</item-name>
+      <item-icon>🧊</item-icon>
+      <type>Worn</type>
+      <activity>all</activity>
+      <slots>3</slots>
+      <weight>0.42</weight>
+      <item-description>850 fill down puffy. Packable. -10°C comfort.</item-description>
+    </item>
+    <item>
+      <id>wn_pants</id>
+      <item-name>Smartwool Hiking Pants</item-name>
+      <item-icon>🩳</item-icon>
+      <type>Worn</type>
+      <activity>hike</activity>
+      <slots>2</slots>
+      <weight>0.31</weight>
+      <item-description>Merino-blend trail pants. 4-way stretch. UPF 50+.</item-description>
+    </item>
+    <item>
+      <id>wn_hat</id>
+      <item-name>OR Sun Hat</item-name>
+      <item-icon>🧢</item-icon>
+      <type>Worn</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.09</weight>
+      <item-description>Wide brim sun hat. UPF 50+. Moisture-wicking band.</item-description>
+    </item>
+    <item>
+      <id>wn_glasses</id>
+      <item-name>Julbo Aerospace</item-name>
+      <item-icon>🕶️</item-icon>
+      <type>Worn</type>
+      <activity>hike</activity>
+      <slots>1</slots>
+      <weight>0.04</weight>
+      <item-description>Photochromic glacier glasses. Cat 2–4.</item-description>
+    </item>
+    <item>
+      <id>wn_basetop</id>
+      <item-name>Merino Base Layer Top</item-name>
+      <item-icon>👕</item-icon>
+      <type>Worn</type>
+      <activity>all</activity>
+      <slots>2</slots>
+      <weight>0.2</weight>
+      <item-description>Lightweight 150g merino wool base layer top.</item-description>
+    </item>
+    <item>
+      <id>wn_basebot</id>
+      <item-name>Merino Base Layer Bottom</item-name>
+      <item-icon>🩲</item-icon>
+      <type>Worn</type>
+      <activity>all</activity>
+      <slots>2</slots>
+      <weight>0.18</weight>
+      <item-description>Lightweight 150g merino wool base layer bottoms.</item-description>
+    </item>
+    <item>
+      <id>it_topomap</id>
+      <item-name>USGS Topo Map</item-name>
+      <item-icon>🗺️</item-icon>
+      <type>Item</type>
+      <activity>hike</activity>
+      <slots>1</slots>
+      <weight>0.04</weight>
+      <item-description>Waterproofed topographic map. 1:24,000 scale.</item-description>
+    </item>
+    <item>
+      <id>it_sunscreen</id>
+      <item-name>Sunscreen SPF50</item-name>
+      <item-icon>🧴</item-icon>
+      <type>Item</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.09</weight>
+      <item-description>Mineral broad-spectrum SPF50. Water-resistant 80 min.</item-description>
+    </item>
+    <item>
+      <id>it_powerbank</id>
+      <item-name>Anker PowerCore 10K</item-name>
+      <item-icon>🔋</item-icon>
+      <type>Item</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.18</weight>
+      <item-description>10,000 mAh USB-C power bank. 18W fast charge.</item-description>
+    </item>
+    <item>
+      <id>it_phone</id>
+      <item-name>iPhone 15 Pro</item-name>
+      <item-icon>📱</item-icon>
+      <type>Item</type>
+      <activity>all</activity>
+      <slots>1</slots>
+      <weight>0.19</weight>
+      <item-description>Satellite SOS. 48MP camera. Titanium frame.</item-description>
+    </item>
+    <item>
+      <id>it_tent</id>
+      <item-name>Big Agnes Copper Spur</item-name>
+      <item-icon>⛺</item-icon>
+      <type>Item</type>
+      <activity>camp</activity>
+      <slots>6</slots>
+      <weight>1.36</weight>
+      <item-description>Ultralight 3-season backpacking tent. 2-person.</item-description>
+    </item>
+    <item>
+      <id>it_rope</id>
+      <item-name>Dynamic Rope 60m</item-name>
+      <item-icon>🪢</item-icon>
+      <type>Item</type>
+      <activity>climb</activity>
+      <slots>8</slots>
+      <weight>3.8</weight>
+      <item-description>Dry-treated 9.8mm single rope. UIAA certified.</item-description>
+    </item>
+    <item>
+      <id>it_harness</id>
+      <item-name>BD Momentum Harness</item-name>
+      <item-icon>🧗</item-icon>
+      <type>Item</type>
+      <activity>climb</activity>
+      <slots>2</slots>
+      <weight>0.34</weight>
+      <item-description>Momentum adjustable harness. UIAA certified.</item-description>
+    </item>
+    <item>
+      <id>it_towel</id>
+      <item-name>PackTowl UltraLite</item-name>
+      <item-icon>🧽</item-icon>
+      <type>Item</type>
+      <activity>all</activity>
+      <slots>2</slots>
+      <weight>0.08</weight>
+      <item-description>Absorbent microfiber towel. XL.</item-description>
+    </item>
+    <item>
+      <id>it_helmet</id>
+      <item-name>MIPS Trail Helmet</item-name>
+      <item-icon>🪖</item-icon>
+      <type>Item</type>
+      <activity>hike</activity>
+      <slots>4</slots>
+      <weight>0.29</weight>
+      <item-description>Lightweight XC trail helmet. 18 vents, MIPS liner.</item-description>
+    </item>
+  </yourgear>
+  <loadouts>
+  </loadouts>
+</trailkit>

@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building TrailKit — A Human + AI Development Narrative</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ── DEFAULT: LIGHT ── */
+    --teal: #008a7c;
+    --teal-dim: rgba(0,138,124,0.10);
+    --teal-dim2: rgba(0,138,124,0.05);
+    --amber: #c47d00;
+    --amber-dim: rgba(196,125,0,0.09);
+    --dark: #f5f7fa;
+    --dark2: #edf0f4;
+    --dark3: #e4e8ef;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,138,124,0.25);
+    --text: #0d1a28;
+    --text-muted: #3a5068;
+    --text-dim: #7a9ab8;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  blockquote { background: rgba(0,138,124,0.06); }
+  .callout { background: rgba(196,125,0,0.07); border-color: rgba(196,125,0,0.2); }
+  .callout p { color: #7a5000; }
+  .version-block { background: rgba(0,138,124,0.08); }
+
+  /* ── DARK MODE ───────────────────────────────────────────────── */
+  body.dark {
+    --teal: #00c8b4;
+    --teal-dim: rgba(0,200,180,0.12);
+    --teal-dim2: rgba(0,200,180,0.06);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --dark: #0d1a28;
+    --dark2: #111f30;
+    --dark3: #162436;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(0,200,180,0.2);
+    --text: #e2eaf4;
+    --text-muted: #7a9ab8;
+    --text-dim: #4a6a88;
+  }
+
+  body.dark .ambient {
+    background: radial-gradient(circle, rgba(0,200,180,0.04) 0%, transparent 70%);
+  }
+
+  body.dark blockquote { background: var(--teal-dim2); }
+  body.dark .callout { background: var(--amber-dim); border-color: rgba(245,166,35,0.18); }
+  body.dark .callout p { color: #c8a86a; }
+  body.dark .version-block { background: var(--teal-dim); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--dark);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── LAYOUT ──────────────────────────────────────────────────── */
+  .shell {
+    display: grid;
+    grid-template-rows: 64px 1fr 56px;
+    height: 100vh;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────────── */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+  }
+
+  .logo-mark {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--teal);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chapter-tabs {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .chapter-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    transition: color 0.2s, background 0.2s;
+    white-space: nowrap;
+  }
+  .chapter-tab:hover { color: var(--text-muted); background: rgba(255,255,255,0.04); }
+  .chapter-tab.active { color: var(--teal); background: var(--teal-dim); }
+
+  .header-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN CONTENT ────────────────────────────────────────────── */
+  .content-viewport {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pages-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .page {
+    min-width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 48px 0 32px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .page::-webkit-scrollbar { width: 4px; }
+  .page::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── COVER PAGE ──────────────────────────────────────────────── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100% - 80px);
+    padding: 48px 0;
+  }
+
+  .cover-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--teal);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .cover-title {
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 72px);
+    line-height: 1.0;
+    color: var(--text);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  .cover-title em {
+    font-style: italic;
+    color: var(--teal);
+  }
+
+  .cover-subtitle {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 40px;
+    max-width: 540px;
+  }
+
+  .cover-stats {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .cover-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cover-stat-num {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--teal);
+    line-height: 1;
+  }
+
+  .cover-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .cover-divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--teal), transparent);
+    margin-bottom: 32px;
+  }
+
+  .cover-body {
+    max-width: 600px;
+  }
+
+  .cover-body p {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .cover-toc {
+    margin-top: 48px;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+
+  .cover-toc-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+    text-align: left;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    width: 100%;
+  }
+
+  .toc-item:hover { background: var(--teal-dim2); border-color: var(--border2); }
+
+  .toc-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--teal);
+    font-weight: 500;
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  .toc-text {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  /* ── INNER PAGE ──────────────────────────────────────────────── */
+  .page-inner {
+    max-width: 720px;
+  }
+
+  .part-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--teal);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .part-title {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .part-subtitle {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── TYPOGRAPHY ──────────────────────────────────────────────── */
+  h2 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text);
+    margin-top: 36px;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+
+  p {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.78;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  /* ── BLOCKQUOTE ──────────────────────────────────────────────── */
+  blockquote {
+    margin: 24px 0;
+    padding: 18px 20px 18px 24px;
+    border-left: 3px solid var(--teal);
+    background: var(--teal-dim2);
+    border-radius: 0 6px 6px 0;
+  }
+
+  blockquote p {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── CALLOUT ─────────────────────────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 20px 0;
+    padding: 14px 16px;
+    background: var(--amber-dim);
+    border-radius: 6px;
+    border: 1px solid rgba(245,166,35,0.18);
+  }
+
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--amber);
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    padding-top: 2px;
+    white-space: nowrap;
+  }
+
+  .callout p {
+    font-size: 13px;
+    font-style: italic;
+    color: #c8a86a;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── VERSION BADGE ───────────────────────────────────────────── */
+  .version-badge {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .version-badge:last-child { border-bottom: none; }
+
+  .v-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--teal);
+    flex-shrink: 0;
+    min-width: 80px;
+  }
+
+  .v-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  /* ── VERSION BLOCK ───────────────────────────────────────────── */
+  .version-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 0 10px;
+    padding: 7px 14px;
+    background: var(--teal-dim);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+  }
+
+  .vb-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--teal);
+  }
+
+  .vb-sep { color: var(--text-dim); font-size: 12px; }
+
+  .vb-desc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── SECTION LABEL ───────────────────────────────────────────── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 32px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── BULLET LIST ─────────────────────────────────────────────── */
+  ul.tk-list {
+    list-style: none;
+    margin: 10px 0 18px 0;
+    padding: 0;
+  }
+
+  ul.tk-list li {
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.65;
+    padding: 4px 0;
+  }
+
+  ul.tk-list li::before {
+    content: "—";
+    color: var(--teal);
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding-top: 2px;
+  }
+
+  ul.tk-list li strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ── NUMBERED LIST ───────────────────────────────────────────── */
+  ol.tk-num {
+    list-style: none;
+    counter-reset: tk;
+    margin: 16px 0;
+  }
+
+  ol.tk-num li {
+    counter-increment: tk;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  ol.tk-num li::before {
+    content: counter(tk);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 500;
+    padding-top: 2px;
+  }
+
+  ol.tk-num li .num-content h3 {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0;
+    text-transform: none;
+    margin: 0 0 6px 0;
+  }
+
+  ol.tk-num li .num-content p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /* ── VERSION TABLE ───────────────────────────────────────────── */
+  .version-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .version-table tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .version-table tr:last-child { border-bottom: none; }
+
+  .version-table td {
+    padding: 8px 0;
+    vertical-align: top;
+  }
+
+  .version-table td:first-child {
+    color: var(--teal);
+    width: 160px;
+    padding-right: 20px;
+    white-space: nowrap;
+  }
+
+  .version-table td:last-child {
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 300;
+  }
+
+  /* ── FOOTER BAR ──────────────────────────────────────────────── */
+  .site-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    gap: 20px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    min-width: 100px;
+  }
+  .nav-btn:hover:not(:disabled) {
+    color: var(--teal);
+    border-color: var(--border2);
+    background: var(--teal-dim);
+  }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .nav-btn.next { justify-content: flex-end; }
+  .nav-btn.prev { justify-content: flex-start; }
+
+  .progress-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid var(--text-dim);
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  }
+
+  .dot.active {
+    background: var(--teal);
+    border-color: var(--teal);
+    transform: scale(1.3);
+  }
+
+  /* ── THEME TOGGLE ────────────────────────────────────────────── */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px 4px 6px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .theme-toggle:hover { border-color: var(--border2); background: var(--teal-dim); }
+
+  .toggle-track {
+    width: 28px;
+    height: 16px;
+    background: var(--dark3);
+    border-radius: 8px;
+    position: relative;
+    transition: background 0.25s;
+    border: 1px solid var(--border2);
+    flex-shrink: 0;
+  }
+
+  .toggle-thumb {
+    width: 10px;
+    height: 10px;
+    background: var(--teal);
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transform: translateX(12px);
+    transition: transform 0.25s, background 0.25s;
+  }
+
+  body.dark .toggle-track { background: var(--dark3); }
+  body.dark .toggle-thumb { background: var(--text-dim); transform: translateX(0); }
+  body.dark .toggle-label { color: var(--text-dim); }
+
+  .toggle-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--teal);
+    letter-spacing: 0.06em;
+    user-select: none;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+
+  /* ── ITERATION LINK ──────────────────────────────────────────── */
+  .iter-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--teal);
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 2px 7px;
+    margin-left: 4px;
+    vertical-align: middle;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .iter-link::before { content: "↗"; font-size: 9px; opacity: 0.7; }
+  .iter-link:hover {
+    background: var(--teal-dim);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* ── SCANLINE TEXTURE ────────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── SUBTLE AMBIENT GLOW ─────────────────────────────────────── */
+  .ambient {
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,200,180,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .shell { position: relative; z-index: 1; }
+
+  /* ── ANIMATION ───────────────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .page.animating .page-inner,
+  .page.animating .cover {
+    animation: fadeUp 0.35s ease both;
+    animation-delay: 0.1s;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="logo-mark">TRAILKIT / BUILD LOG</div>
+    <nav class="chapter-tabs" id="chapterTabs"></nav>
+    <div class="header-meta" id="headerMeta">v0.01 → v0.96</div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="content-viewport">
+    <div class="pages-track" id="pagesTrack">
+
+      <!-- ══ PAGE 0: COVER / INTRO ════════════════════════════════ -->
+      <div class="page" id="page-0">
+        <div class="cover">
+          <div class="cover-eyebrow">A Human + AI Development Narrative</div>
+          <h1 class="cover-title">Building<br><em>TrailKit</em></h1>
+          <p class="cover-subtitle">How a single conversation between a non-developer and an AI assistant produced a fully-featured, self-contained web application — in 23 iterations.</p>
+
+          <div class="cover-stats">
+            <div class="cover-stat">
+              <div class="cover-stat-num">23</div>
+              <div class="cover-stat-label">Iterations</div>
+            </div>
+            <div class="cover-stat">
+              <div class="cover-stat-num">1</div>
+              <div class="cover-stat-label">Conversation</div>
+            </div>
+            <div class="cover-stat">
+              <div class="cover-stat-num">0</div>
+              <div class="cover-stat-label">Frameworks</div>
+            </div>
+            <div class="cover-stat">
+              <div class="cover-stat-num">v0.96</div>
+              <div class="cover-stat-label">Final Version</div>
+            </div>
+          </div>
+
+          <div class="cover-divider"></div>
+
+          <div class="cover-body">
+            <p>TrailKit is a browser-based gear management application for outdoor recreation — built without a backend, without a framework, and without a development team.</p>
+            <p>This document tells that story. It is part process narrative, part design retrospective, and part artifact log. It traces every meaningful decision — from the first aesthetic prompt to the final version bump to v0.96 — and explains how the product evolved, what principles guided it, and what the experience of building software this way actually looks and feels like.</p>
+            <p>The app was built entirely in HTML, CSS, and vanilla JavaScript. No React. No build step. No npm install on the user's end. The entire application ships as a single .html file you can open in any browser.</p>
+          </div>
+
+          <div class="cover-toc">
+            <div class="cover-toc-label">Contents</div>
+            <div class="toc-grid" id="tocGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 1: ORIGIN ════════════════════════════════════════ -->
+      <div class="page" id="page-1">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 1</div>
+          <h1 class="part-title">The Origin</h1>
+          <p class="part-subtitle">A Screenshot and a Concept</p>
+
+          <h2>The Founding Prompt</h2>
+          <p>Every project has a first move. For TrailKit, it was a screenshot from a video game inventory system and a deliberately open-ended prompt:</p>
+
+          <blockquote><p>help me create a css mockup of an 'inventory and loadout management tool' for outdoor recreation, based on the format in the attached screenshot from a video game. this will become a full webapp, but for a first step, I want to establish a clear look and feel. Then we will work on interactivity.</p></blockquote>
+
+          <p>The context was specific: a Stash or Inventory panel on the left would hold a complete catalog of all outdoor recreation gear. A Loadout section would represent a specific packed configuration — the gear selected for a particular trip or activity. The prompt referenced backpacks, tents, sleeping bags, climbing gear, cycling equipment, and water sport accessories.</p>
+
+          <p>The instinct to separate visual design from functional development was deliberate and proved to be foundational. Before writing a single line of logic, the goal was to know what the thing should look like.</p>
+
+          <h2>Version 0.01: The First Build</h2>
+          <div class="version-block">
+            <span class="vb-num">v0.01</span>
+            <span class="vb-sep">—</span>
+            <span class="vb-desc">CSS mockup — aesthetic only, no interactivity</span>
+            <a class="iter-link" href="iterations/v1-TrailKit.html" target="_blank">view</a>
+          </div>
+
+          <p>The first version established a design language that would persist through every subsequent iteration:</p>
+
+          <ul class="tk-list">
+            <li>Dark tactical UI with Rajdhani as the display typeface and Share Tech Mono for numeric stats</li>
+            <li>Electric teal (#00c8b4) and amber (#f5a623) as the primary accent palette</li>
+            <li>A scanline overlay texture for a subtle screen aesthetic drawn from the game UI reference</li>
+            <li>A 3-column item grid in the Stash panel with 31 pre-populated sample items</li>
+            <li>A Pack Weight meter — a visual progress bar indicating total carried weight</li>
+          </ul>
+
+          <p>Critically, the AI named the product. The name TrailKit emerged from the first response — not as a suggestion, but as the working title applied to the logo treatment in the UI header. It stuck immediately.</p>
+
+          <div class="callout">
+            <span class="callout-label">Design decision</span>
+            <p>Establish the name and visual identity in version 1. Both became fixed reference points for every subsequent decision.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 2: VISUAL REFINEMENT ════════════════════════════ -->
+      <div class="page" id="page-2">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 2</div>
+          <h1 class="part-title">Visual Refinement</h1>
+          <p class="part-subtitle">Versions 0.02 through 0.10</p>
+
+          <h2>Iterating Toward a Visual Template</h2>
+          <p>Versions 0.02 through 0.10 were almost entirely aesthetic. Each prompt was a precise list of changes: rename this, move that, change this color, remove this element. The process revealed something important — good UI iteration is granular. Each round of changes was small and surgical, never wholesale.</p>
+
+          <div class="section-label">v0.02 — Controls and Layout <a class="iter-link" href="iterations/v2-TrailKit.html" target="_blank">view</a></div>
+          <ul class="tk-list">
+            <li>Added a prominent Add Item(s) button to the Stash header</li>
+            <li>Introduced Small / Medium / Large size indicators on item cards</li>
+            <li>Added a Configure Backpack button in the loadout area</li>
+            <li>Added Safety Items Packed and Medical Items Packed status indicators</li>
+            <li>Made the Activity Selector the dominant element in the top bar, with sport-specific accent colors</li>
+          </ul>
+
+          <div class="section-label">v0.03 — Identity and Navigation Cleanup <a class="iter-link" href="iterations/v3-TrailKit.html" target="_blank">view</a></div>
+          <p>The MorganPCO / SYNCED profile chip in the upper right felt like scaffolding left over from a game UI. It was replaced with a MY TRAILKIT button styled in the signature teal (#00c8b4). The ACTIVE CONFIGURATION subtitle under LOADOUT was removed — the label alone was sufficient.</p>
+
+          <div class="section-label">v0.04 — Naming and Controls <a class="iter-link" href="iterations/v4-TrailKit.html" target="_blank">view</a></div>
+          <p>A cascade of naming and control decisions in a single prompt:</p>
+          <ul class="tk-list">
+            <li>CURRENT LOADOUT → NEW LOADOUT</li>
+            <li>Added a Save New Loadout button in amber (#f5a623) next to the loadout dropdown</li>
+            <li>Added a + Activity button at the end of the activity strip</li>
+            <li>WATER activity replaced with CAMPING; SAVE LOADOUT → EXPORT TRAILKIT; STASH → YOUR GEAR</li>
+            <li>Removed numerical x6 quantity indicators from item cards</li>
+          </ul>
+
+          <div class="section-label">v0.05 — Dark / Light Mode <a class="iter-link" href="iterations/v5-TrailKit.html" target="_blank">view</a></div>
+          <p>A single-line request with significant technical weight:</p>
+          <blockquote><p>could we add a working Light Mode / Dark Mode toggle in the bottom bar?</p></blockquote>
+          <p>This was the first functioning feature — a body.light CSS class toggle that overrides all custom properties at once, paired with a pill-style switch in the bottom bar. Two modes, one toggle, zero JavaScript frameworks.</p>
+
+          <div class="section-label">v0.06–0.09 — Contrast, Slots, and Layout
+            <a class="iter-link" href="iterations/v6-TrailKit.html" target="_blank">v6</a>
+            <a class="iter-link" href="iterations/v7-TrailKit.html" target="_blank">v7</a>
+            <a class="iter-link" href="iterations/v8-TrailKit.html" target="_blank">v8</a>
+            <a class="iter-link" href="iterations/v9-TrailKit.html" target="_blank">v9</a>
+          </div>
+          <ul class="tk-list">
+            <li>Brightened text labels like HYDRATION BLADDER and FILTER SLOT for readability</li>
+            <li>Made empty slot outlines visible and consistent across the loadout</li>
+            <li>Standardized hover highlight behavior across all empty slots</li>
+            <li>Adjusted the Pack Weight meter labels: ULTRALIGHT → LIGHT, TRAIL → DAYPACK, EXPEDITION → HEAVY</li>
+            <li>Added a Max Weight stat to the backpack metadata</li>
+          </ul>
+
+          <div class="section-label">v0.10 — The Design Freeze <a class="iter-link" href="iterations/v10-TrailKit.html" target="_blank">view</a></div>
+          <p>After ten iterations, a deliberate decision was made to lock the visual template:</p>
+          <blockquote><p>this is a fantastic mock up — Version 10. I don't want to deviate from this — as features are added, I want them to be included in a way that leverages this UI, strictly adhering to the layout that has been developed since the initial prompt. Only add/remove/change visual elements from this Version 10 visual template when a feature or addition is requested that explicitly authorizes changes.</p></blockquote>
+          <p>This was a pivotal moment in the project. Rather than letting feature development gradually erode the design, the visual system was declared complete. Future changes required explicit authorization. The phrase <em>I am explicitly authorizing</em> became a recurring pattern in subsequent prompts.</p>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 3: FUNCTIONALITY ═════════════════════════════════ -->
+      <div class="page" id="page-3">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 3</div>
+          <h1 class="part-title">Building Real Functionality</h1>
+          <p class="part-subtitle">Versions 0.11 through 0.40</p>
+
+          <h2>From Mockup to Application</h2>
+          <p>Version 0.10 was a high-fidelity static mockup. Versions 0.11 onward turned it into an application. The transition required a complete rethinking of the codebase — not a patch on top of the mockup, but a ground-up rewrite of the JavaScript engine that powered the UI without disturbing the visual template.</p>
+          <p>The first functional build introduced:</p>
+          <ul class="tk-list">
+            <li>Drag-and-drop between the inventory and loadout</li>
+            <li>Pack profiles with different slot layouts per backpack</li>
+            <li>Save and load named loadouts</li>
+            <li>Functional activity filtering</li>
+            <li>Pack weight calculation based on real item weight values</li>
+          </ul>
+
+          <h2>Slot System Logic</h2>
+          <p>One of the most technically interesting design decisions was how items of different sizes are handled in the loadout compartments:</p>
+          <ul class="tk-list">
+            <li>When an item occupying more than one slot is added to a compartment, the last N empty slots are hidden (not subsequent ones)</li>
+            <li>When the item is removed, those slots are restored</li>
+            <li>Compartment slots re-sort automatically — occupied slots condense toward the top, empty slots toward the bottom</li>
+            <li>The hydration bladder slot works differently — items larger than 1L hide proportional slots, items smaller add proportional slots back</li>
+          </ul>
+          <p>This logic required careful sequencing. Add an item → hide tail slots → re-sort. Remove an item → restore tail slots → re-sort. The exception case (the bladder slot's volume-proportional behavior) was explicitly carved out.</p>
+
+          <h2>The UI Restructure — Version 0.14</h2>
+          <div class="version-block">
+            <span class="vb-num">v0.14</span>
+            <span class="vb-sep">—</span>
+            <span class="vb-desc">Major layout authorization — activity selector, side column, info tooltips</span>
+            <a class="iter-link" href="iterations/v14-TrailKit.html" target="_blank">view</a>
+          </div>
+          <p>Version 0.14 was the largest single-prompt change in the project's history. It required explicit authorization and touched nearly every panel:</p>
+          <ul class="tk-list">
+            <li>Removed the activity strip from the top bar entirely</li>
+            <li>Added an Activity dropdown between LOADOUT and the loadout selector</li>
+            <li>Further visually separated the YOUR GEAR column from the LOADOUT</li>
+            <li>Connected the right column (ESSENTIAL ITEMS, WORN / BODY, POCKET ITEMS) visually to the LOADOUT</li>
+            <li>Added an item info tooltip system for hover-over item details</li>
+          </ul>
+          <p>The principle driving these changes: the three-column structure of the app should be visually self-evident. YOUR GEAR is a library. The LOADOUT panel and its right-column extensions are a workspace. Those two zones should feel distinct.</p>
+
+          <h2>Feature Pruning — Removing What Doesn't Belong</h2>
+          <blockquote><p>it's time to strip away some functionality that isn't essential!</p></blockquote>
+          <ul class="tk-list">
+            <li>Removed Volume and Bladder stats from the backpack metadata</li>
+            <li>Changed FOOD + WATER back to just WATER</li>
+            <li>Removed Calories Packed, Electrolytes indicator, and Add Food button</li>
+            <li>Simplified bottle pockets to a single larger slot per pocket</li>
+            <li>Removed the CHEST / HIP BELT POCKETS section entirely</li>
+          </ul>
+          <p>Pruning is as much a part of product development as adding. Each removed element was something that had seemed valuable at one point but ultimately added complexity without proportionate value.</p>
+
+          <h2>The Data Model — Versions 0.23 and 0.24</h2>
+          <p>Versions 0.23 and 0.24 defined the schema and rules that would underpin everything:</p>
+          <ul class="tk-list">
+            <li>YOUR GEAR represents a user's total inventory across all activities</li>
+            <li>Items moved into a loadout become temporarily unavailable in YOUR GEAR — shown dimmed, not hidden</li>
+            <li>Items have exactly one Type: Item, Worn, Bottle, Bladder, Safety, Medical, Tools, or Backpack</li>
+            <li>Items can be Activity-Specific or universal (All Activities)</li>
+          </ul>
+          <p>The file format was defined in XML — human-readable, self-documenting, and survives round-tripping through a text editor without surprises. A <code>&lt;trailkit&gt;</code> root containing <code>&lt;yourgear&gt;</code> and <code>&lt;loadouts&gt;</code>, with special item properties nested under a <code>&lt;special&gt;</code> tag.</p>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 4: EDIT / ADD ITEM ════════════════════════════════ -->
+      <div class="page" id="page-4">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 4</div>
+          <h1 class="part-title">Edit Item and Add Item</h1>
+          <p class="part-subtitle">Versions 0.50 through 0.70</p>
+
+          <h2>The Edit Item Interface</h2>
+          <p>The Edit Item feature was one of the most carefully specified interactions in the project. The design was precise: clicking Edit Item activates a hover mode where the cursor highlights any item with a bold yellow border and glow. Clicking an item opens a centered modal with full editing capabilities.</p>
+
+          <p>The modal displays and allows editing of:</p>
+          <ul class="tk-list">
+            <li><strong>Item name</strong> — editable text field</li>
+            <li><strong>Item icon</strong> — large emoji display with an Edit button that opens a pure JavaScript emoji picker</li>
+            <li><strong>Type</strong> — dropdown defaulting to Item, followed by Backpack, Bladder, Bottle, Safety, Medical, Tools, Worn</li>
+            <li><strong>Activity</strong> — dropdown for All Activities or any defined activity</li>
+            <li><strong>Slots, Weight, Description</strong> — numeric and text fields</li>
+            <li><strong>Conditional special properties</strong> — shown only when item Type requires them</li>
+          </ul>
+
+          <p>Type-conditional fields were a specific requirement — the modal should not show backpack configuration fields for a sleeping bag, or bottle capacity fields for a rain jacket. The UI adapts to the selected type in real time.</p>
+
+          <h2>The Emoji Picker</h2>
+          <p>Rather than relying on a third-party emoji library, the picker was built from scratch in vanilla JavaScript. The implementation uses named keyword-searchable emoji data covering 600+ emoji across all major Unicode categories. The search is live and filters results as you type.</p>
+
+          <p>This decision reflects a broader principle in TrailKit's construction: prefer self-contained solutions over external dependencies. The application has no npm dependencies, no CDN scripts, no external fonts beyond Google Fonts. Everything works offline.</p>
+
+          <h2>Add Item — Mirroring Edit</h2>
+          <p>Once the Edit Item modal was complete, the Add Item flow was specified to mirror it exactly — same fields, same layout, same behavior. The only differences:</p>
+          <ul class="tk-list">
+            <li>Item Name and Description start empty</li>
+            <li>Type defaults to Item; Activity defaults to All Activities</li>
+            <li>Slots defaults to 1; Weight defaults to 0.1 kg</li>
+            <li>Bladder defaults to 2L; Bottle defaults to 1L</li>
+          </ul>
+          <p>Using the Edit modal as a design reference for Add Item meant zero new design decisions — the interface was already proven. The Add and Edit flows are visually and behaviorally identical, differentiated only by their default state and save action.</p>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 5: SAMPLE GEAR / PERSISTENCE ═════════════════════ -->
+      <div class="page" id="page-5">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 5</div>
+          <h1 class="part-title">Sample Gear and State Persistence</h1>
+          <p class="part-subtitle">Versions 0.63 through 0.75</p>
+
+          <h2>The Sample Gear Toggle</h2>
+          <p>Throughout development, TrailKit shipped with a set of pre-populated sample items — tents, sleeping bags, headlamps, trekking poles, and more — that made the app feel populated and demonstrated its capabilities. Rather than removing this sample data when the real user data model was introduced, it was preserved as a permanent, switchable dataset called SAMPLE GEAR.</p>
+
+          <ul class="tk-list">
+            <li>A SAMPLE GEAR IN USE indicator and toggle button sit in the center of the top bar</li>
+            <li>When active, the left column switches from YOUR GEAR to SAMPLE GEAR</li>
+            <li>The toggle reads Switch to Your Gear when sample data is active, and Switch to Sample Gear otherwise</li>
+            <li>The sample dataset is baked into the application — always available regardless of a user's own inventory</li>
+          </ul>
+
+          <p>This feature solves a real onboarding problem: a new user opening TrailKit for the first time sees an empty inventory and may not immediately understand the app's potential. Sample Gear provides immediate context.</p>
+
+          <h2>Import and Export — The .trailkit File</h2>
+          <p>State persistence was implemented through a custom XML file format with the .trailkit extension. The Import My TrailKit and Export My TrailKit buttons handle the full round-trip:</p>
+
+          <ul class="tk-list">
+            <li>Export serializes the current YOUR GEAR inventory and all saved loadouts into the XML schema</li>
+            <li>Import parses a .trailkit file and restores the full state</li>
+            <li>The schema is human-readable and can be edited in a text editor</li>
+          </ul>
+
+          <p>The Export My TrailKit button opens a centered modal with three options:</p>
+          <ul class="tk-list">
+            <li><strong>Download My TrailKit</strong> — saves the .trailkit XML file</li>
+            <li><strong>Export as Packing Lists</strong> — generates a standalone HTML file with checkbox-based packing lists for each loadout</li>
+            <li><strong>Export as CSV</strong> — exports the inventory as a spreadsheet-compatible file</li>
+          </ul>
+
+          <h2>The Packing List Export</h2>
+          <p>The packing list export deserves special mention. It generates a complete, standalone HTML file — not a template, but a fully functional document with:</p>
+          <ul class="tk-list">
+            <li>A separate section per saved loadout</li>
+            <li>Checkboxes for each item</li>
+            <li>A light/dark mode toggle</li>
+            <li>A Print Mode that switches to light mode and strips all colors and borders for clean printing</li>
+          </ul>
+          <p>The packing list file is itself a polished product — not a raw data dump. It could be saved to a phone, printed before a trip, or shared with a hiking partner.</p>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 6: FINISHING TOUCHES ════════════════════════════ -->
+      <div class="page" id="page-6">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 6</div>
+          <h1 class="part-title">Finishing Touches</h1>
+          <p class="part-subtitle">Versions 0.95 and 0.96</p>
+
+          <h2>Version 0.95 — Named and Versioned</h2>
+          <div class="version-block">
+            <span class="vb-num">v0.95</span>
+            <span class="vb-sep">—</span>
+            <span class="vb-desc">Version indicator, Inventory terminology, Export features, About modal</span>
+            <a class="iter-link" href="iterations/TrailKit-0.95.html" target="_blank">view</a>
+          </div>
+          <p>The decision to formally name a version 0.95 marked a shift in the project's tone. The application was functionally complete in its core scope. What remained were refinements:</p>
+          <ul class="tk-list">
+            <li>A version indicator added to the bottom bar</li>
+            <li>The term INVENTORY adopted to refer to the left column in both YOUR GEAR and SAMPLE GEAR contexts — simplifying language in future change requests</li>
+            <li>The Export as Packing Lists feature wired to actually generate and download an HTML file</li>
+            <li>A ? button added to the footer bar</li>
+          </ul>
+
+          <h2>Version 0.96 — The Last Refinement</h2>
+          <div class="version-block">
+            <span class="vb-num">v0.96</span>
+            <span class="vb-sep">—</span>
+            <span class="vb-desc">Packing list light/dark mode, print mode, About modal, final version bump</span>
+            <a class="iter-link" href="iterations/TrailKit-0.96.html" target="_blank">view</a>
+          </div>
+          <p>Version 0.96 completed two features and added one:</p>
+          <ul class="tk-list">
+            <li>The packing list export gained its own light/dark mode toggle</li>
+            <li>A Print Mode was added to the packing list — activates light mode and removes all styling for a minimalist printed output</li>
+            <li>The ? button in the footer opens an About modal with a brief description and condensed usage guide</li>
+          </ul>
+          <p>These were genuinely finishing touches — the kind of polish that distinguishes a complete product from a functional prototype.</p>
+
+          <h2>The Version History at a Glance</h2>
+          <table class="version-table">
+            <tr><td>v0.01 <a class="iter-link" href="iterations/v1-TrailKit.html" target="_blank">view</a></td><td>First CSS mockup — visual language established, TrailKit named</td></tr>
+            <tr><td>v0.02 <a class="iter-link" href="iterations/v2-TrailKit.html" target="_blank">view</a></td><td>Controls, size indicators, activity selector</td></tr>
+            <tr><td>v0.03 <a class="iter-link" href="iterations/v3-TrailKit.html" target="_blank">view</a></td><td>Top bar cleanup, MY TRAILKIT button</td></tr>
+            <tr><td>v0.04 <a class="iter-link" href="iterations/v4-TrailKit.html" target="_blank">view</a></td><td>Naming pass, Save New Loadout, + Activity, EXPORT TRAILKIT</td></tr>
+            <tr><td>v0.05 <a class="iter-link" href="iterations/v5-TrailKit.html" target="_blank">view</a></td><td>Working light/dark mode toggle</td></tr>
+            <tr><td>v0.06 <a class="iter-link" href="iterations/v6-TrailKit.html" target="_blank">view</a></td><td rowspan="4" style="vertical-align:middle">Legibility, hover states, food/water section, weight meter</td></tr>
+            <tr><td>v0.07 <a class="iter-link" href="iterations/v7-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.08 <a class="iter-link" href="iterations/v8-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.09 <a class="iter-link" href="iterations/v9-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.10 <a class="iter-link" href="iterations/v10-TrailKit.html" target="_blank">view</a></td><td>Design freeze — visual template locked</td></tr>
+            <tr><td>v0.11 <a class="iter-link" href="iterations/v11-TrailKit.html" target="_blank">view</a></td><td rowspan="3" style="vertical-align:middle">Drag-and-drop, pack profiles, save/load loadouts</td></tr>
+            <tr><td>v0.12 <a class="iter-link" href="iterations/v12-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.13 <a class="iter-link" href="iterations/v13-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.14 <a class="iter-link" href="iterations/v14-TrailKit.html" target="_blank">view</a></td><td>Major layout authorization — activity dropdown, visual zones</td></tr>
+            <tr><td>v0.15 <a class="iter-link" href="iterations/v15-TrailKit.html" target="_blank">view</a></td><td rowspan="6" style="vertical-align:middle">Slot system logic, size-proportional slot hiding</td></tr>
+            <tr><td>v0.16 <a class="iter-link" href="iterations/v16-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.17 <a class="iter-link" href="iterations/v17-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.18 <a class="iter-link" href="iterations/v18-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.19 <a class="iter-link" href="iterations/v19-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.20 <a class="iter-link" href="iterations/v20-TrailKit.html" target="_blank">view</a></td></tr>
+            <tr><td>v0.21</td><td>Feature pruning pass <em style="color:var(--text-dim);font-size:12px">(file not preserved)</em></td></tr>
+            <tr><td>v0.22 <a class="iter-link" href="iterations/v22-TrailKit.html" target="_blank">view</a></td><td>Filter by Activity dropdown, import/export button rename</td></tr>
+            <tr><td>v0.23 <a class="iter-link" href="iterations/v23-TrailKit.html" target="_blank">view</a></td><td rowspan="2" style="vertical-align:middle">Data model rules defined, XML schema established</td></tr>
+            <tr><td>v0.24</td></tr>
+            <tr><td>v0.90 <a class="iter-link" href="iterations/TrailKit-0.9.html" target="_blank">view</a></td><td>Edit Item modal, emoji picker, item detail hover, Add Item flow</td></tr>
+            <tr><td>v0.95 <a class="iter-link" href="iterations/TrailKit-0.95.html" target="_blank">view</a></td><td>Version indicator, Inventory terminology, Packing List export</td></tr>
+            <tr><td>v0.96 <a class="iter-link" href="iterations/TrailKit-0.96.html" target="_blank">view</a></td><td>Packing list light/dark + print mode, About modal</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 7: REFLECTIONS ════════════════════════════════════ -->
+      <div class="page" id="page-7">
+        <div class="page-inner">
+          <div class="part-eyebrow">Part 7</div>
+          <h1 class="part-title">Reflections on the Process</h1>
+          <p class="part-subtitle">What Made This Work</p>
+
+          <p>Several practices made this collaboration unusually productive:</p>
+
+          <ol class="tk-num">
+            <li>
+              <div class="num-content">
+                <h3>Design before logic</h3>
+                <p>Ten versions of pure aesthetic iteration before a single line of business logic. This seems slow but is actually fast — changing a color is trivial; changing a data model is not. Getting the design right first meant the subsequent logic could be built to serve a known, stable UI rather than the UI being retrofitted around logic.</p>
+              </div>
+            </li>
+            <li>
+              <div class="num-content">
+                <h3>Explicit authorization for UI changes</h3>
+                <p>The phrase <em>I am explicitly authorizing</em> became a shared protocol. After Version 0.10 locked the visual template, any prompt that changed the UI had to say so clearly. This prevented feature creep from eroding the design and forced deliberate decisions about what a new feature should look like before it was built.</p>
+              </div>
+            </li>
+            <li>
+              <div class="num-content">
+                <h3>Pruning as a first-class activity</h3>
+                <p>The willingness to remove features — Calories Packed, Electrolytes, Food section, Chest/Hip Belt Pockets — kept the application focused. Adding features is easy and feels good. Removing them requires discipline. The pruning pass at Version 0.21 made the final product better.</p>
+              </div>
+            </li>
+            <li>
+              <div class="num-content">
+                <h3>Small, precise prompts</h3>
+                <p>The most effective prompts in this project were lists of specific changes, not open-ended requests. Remove this. Rename that. Change this color to #f5a623. This precision minimized misinterpretation and kept iterations tight.</p>
+              </div>
+            </li>
+            <li>
+              <div class="num-content">
+                <h3>The single-file constraint</h3>
+                <p>Choosing to build the entire application as a single HTML file was a constraint that simplified everything. No build step. No deployment. No dependencies. The constraint made the project tractable for a non-developer and produced a genuinely portable artifact.</p>
+              </div>
+            </li>
+          </ol>
+
+          <h2>Closing</h2>
+          <p>TrailKit went from a screenshot reference and a single sentence to a fully functional, visually polished, self-contained web application in 23 iterations. It has a custom file format, an emoji picker, drag-and-drop inventory management, multi-loadout support, light and dark modes, a standalone packing list exporter with its own print mode, and a versioned release history.</p>
+
+          <p>None of that required a development team, a framework, a deployment pipeline, or anything beyond a browser and a conversation.</p>
+
+          <blockquote><p>The tool that built TrailKit is the same kind of tool TrailKit is designed to support: something that removes the friction between having an idea and making it real.</p></blockquote>
+        </div>
+      </div>
+
+    </div><!-- /pages-track -->
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <button class="nav-btn prev" id="btnPrev" onclick="navigate(-1)" disabled>
+      ← Prev
+    </button>
+    <div class="progress-dots" id="progressDots"></div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label" id="themeLabel">LIGHT</span>
+    </button>
+    <button class="nav-btn next" id="btnNext" onclick="navigate(1)">
+      Next →
+    </button>
+  </footer>
+
+</div><!-- /shell -->
+
+<script>
+  const TOTAL = 8;
+  let current = 0;
+
+  const chapters = [
+    { tab: "Intro", label: "Introduction" },
+    { tab: "01", label: "The Origin" },
+    { tab: "02", label: "Visual Refinement" },
+    { tab: "03", label: "Real Functionality" },
+    { tab: "04", label: "Edit & Add Item" },
+    { tab: "05", label: "Sample Gear" },
+    { tab: "06", label: "Finishing Touches" },
+    { tab: "07", label: "Reflections" },
+  ];
+
+  // Build tabs
+  const tabsEl = document.getElementById('chapterTabs');
+  chapters.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'chapter-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = ch.tab;
+    btn.onclick = () => goTo(i);
+    tabsEl.appendChild(btn);
+  });
+
+  // Build dots
+  const dotsEl = document.getElementById('progressDots');
+  for (let i = 0; i < TOTAL; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsEl.appendChild(dot);
+  }
+
+  // Build TOC
+  const tocEl = document.getElementById('tocGrid');
+  chapters.slice(1).forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'toc-item';
+    btn.innerHTML = `<span class="toc-num">${String(i+1).padStart(2,'0')}</span><span class="toc-text">${ch.label}</span>`;
+    btn.onclick = () => goTo(i + 1);
+    tocEl.appendChild(btn);
+  });
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= TOTAL) return;
+
+    const prevPage = document.getElementById('page-' + current);
+    if (prevPage) prevPage.classList.remove('animating');
+
+    current = idx;
+    const track = document.getElementById('pagesTrack');
+    track.style.transform = `translateX(-${current * 100}%)`;
+
+    // Animate new page
+    const newPage = document.getElementById('page-' + current);
+    if (newPage) {
+      newPage.scrollTop = 0;
+      void newPage.offsetWidth; // reflow
+      newPage.classList.add('animating');
+    }
+
+    // Update tabs
+    document.querySelectorAll('.chapter-tab').forEach((t, i) => {
+      t.classList.toggle('active', i === current);
+    });
+
+    // Update dots
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    // Update buttons
+    document.getElementById('btnPrev').disabled = current === 0;
+    document.getElementById('btnNext').disabled = current === TOTAL - 1;
+
+    // Update header meta
+    const metas = [
+      'v0.01 → v0.96',
+      'v0.01 — First Build',
+      'v0.02 → v0.10 — Design Phase',
+      'v0.11 → v0.40 — Logic Phase',
+      'v0.50 → v0.70 — Modals',
+      'v0.63 → v0.75 — Persistence',
+      'v0.95 → v0.96 — Final Polish',
+      'Process Retrospective',
+    ];
+    document.getElementById('headerMeta').textContent = metas[current] || '';
+  }
+
+  function navigate(dir) {
+    goTo(current + dir);
+  }
+
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    document.getElementById('themeLabel').textContent = isDark ? 'DARK' : 'LIGHT';
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+</script>
+</body>
+</html>

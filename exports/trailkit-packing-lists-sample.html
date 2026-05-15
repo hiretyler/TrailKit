@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrailKit — Packing Lists</title>
+<style>
+  :root{--bg:#0f1419;--card:#141c24;--border:#1e2d3d;--border-bright:#2a4060;
+    --teal:#00c8b4;--amber:#f5a623;--text:#d4dfe9;--dim:#6a8aa0;--deep:#0a0e12;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);
+    padding:32px 24px;max-width:800px;margin:0 auto;}
+  .page-header{border-bottom:2px solid var(--teal);padding-bottom:16px;margin-bottom:32px;}
+  .page-title{font-size:28px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    color:var(--teal);font-family:'Courier New',monospace;}
+  .page-title span{color:var(--dim);font-weight:400;}
+  .page-date{font-size:11px;color:var(--dim);letter-spacing:1px;margin-top:4px;}
+  .loadout-block{background:var(--card);border:1px solid var(--border);border-radius:6px;
+    padding:20px 24px;margin-bottom:20px;page-break-inside:avoid;}
+  .loadout-activity{font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    color:var(--dim);margin-bottom:6px;}
+  .loadout-name{font-size:22px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+    color:var(--text);font-family:'Courier New',monospace;margin-bottom:16px;
+    border-bottom:1px solid var(--border-bright);padding-bottom:10px;}
+  .item-list{list-style:none;display:flex;flex-direction:column;gap:2px;}
+  .item-row{display:flex;align-items:center;gap:12px;padding:7px 0;
+    border-bottom:1px solid rgba(30,45,61,0.6);}
+  .item-row:last-child{border-bottom:none;}
+  .item-cb{width:18px;height:18px;border:2px solid var(--border-bright);border-radius:3px;
+    flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;background:var(--deep);
+    transition:all 0.15s;}
+  .item-cb:checked{background:var(--teal);border-color:var(--teal);}
+  .item-cb:checked::after{content:'✓';display:block;color:#0a0e12;font-weight:900;
+    font-size:12px;line-height:16px;text-align:center;}
+  .item-label{font-size:14px;color:var(--text);cursor:pointer;user-select:none;flex:1;}
+  input:checked + .item-label{text-decoration:line-through;color:var(--dim);}
+  .no-loadouts{color:var(--dim);font-size:13px;font-style:italic;text-align:center;
+    padding:40px;border:1px dashed var(--border);border-radius:6px;}
+  .sport-tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1.5px;
+    text-transform:uppercase;padding:2px 8px;border-radius:2px;margin-bottom:8px;}
+  .sport-hike{background:#2a7a4b;color:#7dffb4;}
+  .sport-bike{background:#1a5c8a;color:#7dd4ff;}
+  .sport-run{background:#8a4a1a;color:#ffb47d;}
+  .sport-climb{background:#7a3a8a;color:#d4a0ff;}
+  .sport-moto{background:#5a3a1a;color:#ffcc7d;}
+  .sport-camp{background:#1a3a5c;color:#aae8ff;}
+  @media print{
+    body{background:#fff;color:#000;padding:16px;}
+    .loadout-block{border:1px solid #ccc;background:#fff;}
+    .loadout-activity,.loadout-name{color:#000;}
+    .item-label{color:#000;}
+    .page-title{color:#000;}
+    .page-date{color:#555;}
+  }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="page-title">Trail<span>Kit</span> — Packing Lists</div>
+  <div class="page-date">Generated February 23, 2026 · Sample Gear</div>
+</div>
+<div class="loadout-block">
+  <div class="loadout-activity">Hiking</div>
+  <div class="loadout-name">Day Hike — Light</div>
+  <ul class="item-list">
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_0">
+      <label class="item-label" for="cb_0_0">Osprey Talon 22</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_1">
+      <label class="item-label" for="cb_0_1">Hydrapak 2L Bladder</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_2">
+      <label class="item-label" for="cb_0_2">Soft Flask 500ml</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_3">
+      <label class="item-label" for="cb_0_3">BD Spot 400 Headlamp</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_4">
+      <label class="item-label" for="cb_0_4">USGS Topo Map</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_5">
+      <label class="item-label" for="cb_0_5">Blister Kit</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_6">
+      <label class="item-label" for="cb_0_6">Sunscreen SPF50</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_7">
+      <label class="item-label" for="cb_0_7">Garmin inReach Mini</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_8">
+      <label class="item-label" for="cb_0_8">Salomon X Ultra 4</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_9">
+      <label class="item-label" for="cb_0_9">Darn Tough Micro Crew</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_10">
+      <label class="item-label" for="cb_0_10">Julbo Aerospace</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_0_11">
+      <label class="item-label" for="cb_0_11">Smartwool Hiking Pants</label>
+    </li>
+  </ul>
+</div>
+<div class="loadout-block">
+  <div class="loadout-activity">Hiking</div>
+  <div class="loadout-name">Overnighter Pack</div>
+  <ul class="item-list">
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_0">
+      <label class="item-label" for="cb_1_0">Gregory Baltoro 65</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_1">
+      <label class="item-label" for="cb_1_1">Osprey 3L Hydraulics</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_2">
+      <label class="item-label" for="cb_1_2">Nalgene 1L Wide Mouth</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_3">
+      <label class="item-label" for="cb_1_3">Nalgene 1L Wide Mouth</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_4">
+      <label class="item-label" for="cb_1_4">Big Agnes Copper Spur</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_5">
+      <label class="item-label" for="cb_1_5">Insulated Puffy Jacket</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_6">
+      <label class="item-label" for="cb_1_6">Adventure Medical Kit</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_7">
+      <label class="item-label" for="cb_1_7">Leatherman Wave+</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_8">
+      <label class="item-label" for="cb_1_8">BD Spot 400 Headlamp</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_9">
+      <label class="item-label" for="cb_1_9">Spot Gen4 Beacon</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_10">
+      <label class="item-label" for="cb_1_10">Salomon X Ultra 4</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_11">
+      <label class="item-label" for="cb_1_11">Darn Tough Micro Crew</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_12">
+      <label class="item-label" for="cb_1_12">Arc'teryx Beta LT</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_13">
+      <label class="item-label" for="cb_1_13">Smartwool Hiking Pants</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_1_14">
+      <label class="item-label" for="cb_1_14">Merino Base Layer Top</label>
+    </li>
+  </ul>
+</div>
+<div class="loadout-block">
+  <div class="loadout-activity">Running</div>
+  <div class="loadout-name">Trail Run</div>
+  <ul class="item-list">
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_0">
+      <label class="item-label" for="cb_2_0">Osprey Momentum 26</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_1">
+      <label class="item-label" for="cb_2_1">Hydrapak 2L Bladder</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_2">
+      <label class="item-label" for="cb_2_2">Soft Flask 500ml</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_3">
+      <label class="item-label" for="cb_2_3">Soft Flask 500ml</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_4">
+      <label class="item-label" for="cb_2_4">Spot Gen4 Beacon</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_5">
+      <label class="item-label" for="cb_2_5">Blister Kit</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_6">
+      <label class="item-label" for="cb_2_6">Sunscreen SPF50</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_2_7">
+      <label class="item-label" for="cb_2_7">OR Sun Hat</label>
+    </li>
+  </ul>
+</div>
+<div class="loadout-block">
+  <div class="loadout-activity">Climbing</div>
+  <div class="loadout-name">Sport Climbing</div>
+  <ul class="item-list">
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_0">
+      <label class="item-label" for="cb_3_0">BD Creek 50</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_1">
+      <label class="item-label" for="cb_3_1">Hydrapak 2L Bladder</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_2">
+      <label class="item-label" for="cb_3_2">Dynamic Rope 60m</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_3">
+      <label class="item-label" for="cb_3_3">BD Momentum Harness</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_4">
+      <label class="item-label" for="cb_3_4">Adventure Medical Kit</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_5">
+      <label class="item-label" for="cb_3_5">BD Spot 400 Headlamp</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_6">
+      <label class="item-label" for="cb_3_6">Petzl Rig Belay</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_7">
+      <label class="item-label" for="cb_3_7">BD Crag Gloves</label>
+    </li>
+    <li class="item-row">
+      <input class="item-cb" type="checkbox" id="cb_3_8">
+      <label class="item-label" for="cb_3_8">Arc'teryx Beta LT</label>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailKit — Gear Loadout Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e12;
+    --bg-panel: #0f1419;
+    --bg-card: #141c24;
+    --bg-slot: #0d1117;
+    --bg-slot-hover: #1a2535;
+    --border: #1e2d3d;
+    --border-bright: #2a4060;
+    --accent-green: #3ddc84;
+    --accent-green-dim: #1e6b40;
+    --accent-teal: #00c8b4;
+    --accent-amber: #f5a623;
+    --accent-amber-dim: #7a4f0f;
+    --accent-red: #e84040;
+    --text-primary: #d4dfe9;
+    --text-secondary: #6a8aa0;
+    --text-dim: #3d5468;
+    --tag-hike: #2a7a4b;
+    --tag-bike: #1a5c8a;
+    --tag-climb: #7a3a8a;
+    --tag-run: #8a4a1a;
+    --tag-moto: #5a3a1a;
+    --tag-medical: #8a1a1a;
+    --tag-general: #2a3a4a;
+    --rarity-common: #6a8aa0;
+    --rarity-uncommon: #3ddc84;
+    --rarity-rare: #4a9eff;
+    --rarity-essential: #f5a623;
+    --slot-size: 72px;
+    --slot-gap: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 44px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: var(--accent-teal);
+    text-transform: uppercase;
+  }
+  .topbar-logo span { color: var(--text-secondary); font-weight: 400; }
+  .topbar-center {
+    display: flex;
+    gap: 24px;
+  }
+  .topbar-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .topbar-stat .val { color: var(--accent-teal); }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .profile-chip {
+    padding: 4px 12px;
+    border: 1px solid var(--border-bright);
+    border-radius: 2px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── STASH PANEL ── */
+  .stash-panel {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .panel-subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* filter bar */
+  .filter-bar {
+    padding: 8px 10px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .filter-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    background: var(--bg-slot);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent-teal);
+    border-color: var(--accent-teal);
+    color: var(--bg-deep);
+  }
+
+  /* stash grid */
+  .stash-grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-bright) transparent;
+  }
+  .stash-grid {
+    display: grid;
+    grid-template-columns: repeat(3, var(--slot-size));
+    gap: var(--slot-gap);
+  }
+
+  /* ── SLOTS ── */
+  .slot {
+    width: var(--slot-size);
+    height: var(--slot-size);
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    overflow: hidden;
+  }
+  .slot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .slot:hover {
+    background: var(--bg-slot-hover);
+    border-color: var(--accent-teal);
+  }
+  .slot.empty { opacity: 0.35; cursor: default; }
+  .slot.empty:hover { background: var(--bg-slot); border-color: var(--border); }
+
+  .slot-icon {
+    font-size: 26px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  }
+  .slot-count {
+    position: absolute;
+    bottom: 3px;
+    right: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-amber);
+    line-height: 1;
+  }
+  .slot-count::before { content: '×'; margin-right: 1px; }
+  .slot-rarity {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+  .slot-rarity.common { background: var(--rarity-common); }
+  .slot-rarity.uncommon { background: var(--rarity-uncommon); }
+  .slot-rarity.rare { background: var(--rarity-rare); }
+  .slot-rarity.essential { background: var(--rarity-essential); }
+  .slot-sport-dot {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position: fixed;
+    z-index: 999;
+    width: 260px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+    padding: 14px;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .tooltip.visible { display: block; }
+  .tooltip-tags {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .tooltip-tag {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .tooltip-tag.type { background: var(--tag-general); color: var(--text-secondary); }
+  .tooltip-tag.sport-hike { background: var(--tag-hike); color: #7dffb4; }
+  .tooltip-tag.sport-bike { background: var(--tag-bike); color: #7dd4ff; }
+  .tooltip-tag.sport-climb { background: var(--tag-climb); color: #d4a0ff; }
+  .tooltip-tag.sport-run { background: var(--tag-run); color: #ffb47d; }
+  .tooltip-tag.sport-moto { background: var(--tag-moto); color: #ffcc7d; }
+  .tooltip-tag.rarity-common { background: rgba(106,138,160,0.2); color: var(--rarity-common); }
+  .tooltip-tag.rarity-uncommon { background: rgba(61,220,132,0.15); color: var(--rarity-uncommon); }
+  .tooltip-tag.rarity-rare { background: rgba(74,158,255,0.15); color: var(--rarity-rare); }
+  .tooltip-tag.rarity-essential { background: rgba(245,166,35,0.15); color: var(--rarity-essential); }
+  .tooltip-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    color: #fff;
+  }
+  .tooltip-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .tooltip-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tooltip-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+  .tooltip-stat-key { color: var(--text-secondary); }
+  .tooltip-stat-val { color: var(--text-primary); }
+  .tooltip-stat-val.highlight { color: var(--accent-amber); }
+  .tooltip-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .tooltip-weight {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    overflow: hidden;
+  }
+
+  /* loadout */
+  .loadout-panel {
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .loadout-header {
+    padding: 12px 20px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .loadout-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-bright) transparent;
+  }
+
+  /* pack selector */
+  .pack-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .pack-tab {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-slot);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .pack-tab.active {
+    background: transparent;
+    border-color: var(--accent-teal);
+    color: var(--accent-teal);
+  }
+
+  /* pack visual */
+  .pack-section {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .pack-section-header {
+    padding: 8px 14px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pack-section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .pack-section-cap {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-teal);
+  }
+  .pack-section-body {
+    padding: 10px 12px;
+  }
+
+  /* dedicated slots */
+  .dedicated-slots {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .dedicated-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .dedicated-slot-box {
+    width: 58px;
+    height: 58px;
+    border: 1px dashed var(--border-bright);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-slot);
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .dedicated-slot-box:hover {
+    border-color: var(--accent-teal);
+    background: var(--bg-slot-hover);
+  }
+  .dedicated-slot-box.filled {
+    border-style: solid;
+    border-color: var(--border-bright);
+  }
+  .dedicated-slot-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* generic slots grid */
+  .generic-grid {
+    display: grid;
+    grid-template-columns: repeat(5, var(--slot-size));
+    gap: var(--slot-gap);
+  }
+
+  /* quick access */
+  .quick-panel {
+    background: var(--bg-panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .quick-section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+  }
+  .quick-section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    gap: 5px;
+  }
+  .quick-slot {
+    width: 58px;
+    height: 58px;
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .quick-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+
+  /* worn slots */
+  .worn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .worn-slot {
+    height: 52px;
+    background: var(--bg-slot);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .worn-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .worn-slot-icon { font-size: 20px; }
+  .worn-slot-info { flex: 1; overflow: hidden; }
+  .worn-slot-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .worn-slot-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* bottom action */
+  .bottom-bar {
+    height: 52px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .bottom-hints {
+    display: flex;
+    gap: 16px;
+  }
+  .bottom-hint {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hint-key {
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: 2px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .ready-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: var(--accent-amber);
+    color: var(--bg-deep);
+    border: none;
+    padding: 8px 28px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .ready-btn:hover { background: #ffbb44; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,166,35,0.4); }
+
+  /* sport weight bar */
+  .weight-bar-section {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .weight-bar-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .weight-track {
+    height: 4px;
+    background: var(--bg-slot);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .weight-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-amber));
+    width: 62%;
+    transition: width 0.3s ease;
+  }
+  .weight-zones {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* ── active profile strip ── */
+  .activity-strip {
+    display: flex;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .activity-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .activity-chip {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .activity-chip.active-hike { background: var(--tag-hike); color: #7dffb4; border-color: #2a7a4b; }
+  .activity-chip.hike { background: transparent; color: var(--text-dim); border-color: var(--border); }
+  .activity-chip.active-hike:hover, .activity-chip.hike:hover { border-color: #2a7a4b; color: #7dffb4; }
+
+  /* scan line overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* corner decorations */
+  .corner-dec {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--accent-teal);
+    border-style: solid;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">Trail<span>Kit</span></div>
+  <div class="topbar-center">
+    <div class="topbar-stat">⚖️ Total Weight: <span class="val">6.2 kg</span></div>
+    <div class="topbar-stat">🎒 Stash: <span class="val">31 / 64</span></div>
+    <div class="topbar-stat">📍 Profile: <span class="val">Day Hike</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="profile-chip">MorganPCO</div>
+    <span style="color: var(--accent-green); font-size:11px;">● SYNCED</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ══ STASH PANEL ══ -->
+  <div class="stash-panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Stash</div>
+        <div class="panel-subtitle" style="margin-top:2px;">Complete Gear Inventory</div>
+      </div>
+      <div class="panel-subtitle">31 / 64</div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active">ALL</button>
+      <button class="filter-btn">🥾 HIKE</button>
+      <button class="filter-btn">🚵 BIKE</button>
+      <button class="filter-btn">🧗 CLIMB</button>
+      <button class="filter-btn">🏃 RUN</button>
+      <button class="filter-btn">🏍️ MOTO</button>
+      <button class="filter-btn">🚣 WATER</button>
+      <button class="filter-btn">🩺 MED</button>
+    </div>
+
+    <div class="stash-grid-wrap">
+      <div class="stash-grid" id="stashGrid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT PANEL ══ -->
+  <div class="right-panel">
+
+    <!-- LOADOUT -->
+    <div class="loadout-panel">
+      <div class="loadout-header">
+        <div>
+          <div class="panel-title">Loadout</div>
+          <div class="panel-subtitle" style="margin-top:2px;">Active Configuration</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="panel-subtitle">⚖️ 6.2 kg</div>
+          <div class="panel-subtitle" style="color:var(--accent-amber);">▲ LIGHT</div>
+        </div>
+      </div>
+
+      <div class="loadout-body">
+        <!-- Pack selector -->
+        <div class="pack-selector">
+          <button class="pack-tab active">Osprey Talon 22</button>
+          <button class="pack-tab">Black Diamond 35L</button>
+          <button class="pack-tab">+ Pack</button>
+        </div>
+
+        <!-- Water section -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Hydration</div>
+            <div class="pack-section-cap">3 / 3 slots</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="dedicated-slots">
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled" data-item="bladder"
+                     onmouseenter="showTooltip(event, 'Hydrapak 2L Bladder')"
+                     onmouseleave="hideTooltip()">💧</div>
+                <div class="dedicated-slot-label">Bladder</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled" data-item="bottle1"
+                     onmouseenter="showTooltip(event, 'Soft Flask 500ml')"
+                     onmouseleave="hideTooltip()">🧴</div>
+                <div class="dedicated-slot-label">Bottle L</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled" data-item="bottle2"
+                     onmouseenter="showTooltip(event, 'Soft Flask 500ml')"
+                     onmouseleave="hideTooltip()">🧴</div>
+                <div class="dedicated-slot-label">Bottle R</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box" style="border-color:var(--border);font-size:14px;color:var(--text-dim);">+</div>
+                <div class="dedicated-slot-label">Filter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency / Safety -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Safety & Medical</div>
+            <div class="pack-section-cap">2 / 2 slots</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="dedicated-slots" style="grid-template-columns: repeat(4, 1fr);">
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled"
+                     onmouseenter="showTooltip(event, 'Adventure Medical Kit')"
+                     onmouseleave="hideTooltip()">🩺</div>
+                <div class="dedicated-slot-label">Med Kit</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled"
+                     onmouseenter="showTooltip(event, 'Multi-Tool Leatherman')"
+                     onmouseleave="hideTooltip()">🔧</div>
+                <div class="dedicated-slot-label">Toolkit</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box filled"
+                     onmouseenter="showTooltip(event, 'Black Diamond Headlamp')"
+                     onmouseleave="hideTooltip()">🔦</div>
+                <div class="dedicated-slot-label">Light</div>
+              </div>
+              <div class="dedicated-slot">
+                <div class="dedicated-slot-box"
+                     style="border-color:var(--border);font-size:14px;color:var(--text-dim);">+</div>
+                <div class="dedicated-slot-label">Emergency</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main compartment -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Main Compartment</div>
+            <div class="pack-section-cap">5 / 12 slots used</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="generic-grid" id="mainCompartment">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Top lid -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Top Lid / Hip Belt</div>
+            <div class="pack-section-cap">1 / 4 slots used</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="generic-grid" id="lidCompartment">
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /loadout-body -->
+    </div><!-- /loadout-panel -->
+
+    <!-- QUICK ACCESS + WORN -->
+    <div class="quick-panel">
+      <div class="loadout-header" style="border-bottom:1px solid var(--border);">
+        <div class="panel-title" style="font-size:13px;">Quick Access</div>
+        <div class="panel-subtitle">3 / 4</div>
+      </div>
+
+      <div class="quick-section">
+        <div class="quick-grid">
+          <div class="quick-slot"
+               onmouseenter="showTooltip(event, 'Energy Gel')"
+               onmouseleave="hideTooltip()">🍬
+            <span style="position:absolute;bottom:3px;right:4px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent-amber);">×4</span>
+          </div>
+          <div class="quick-slot"
+               onmouseenter="showTooltip(event, 'Sunscreen SPF50')"
+               onmouseleave="hideTooltip()">🧴
+            <span style="position:absolute;bottom:3px;right:4px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent-amber);">×1</span>
+          </div>
+          <div class="quick-slot"
+               onmouseenter="showTooltip(event, 'Trekking Pole')"
+               onmouseleave="hideTooltip()">🪄</div>
+          <div class="quick-slot" style="border-style:dashed;color:var(--text-dim);font-size:16px;">+</div>
+        </div>
+      </div>
+
+      <!-- Worn / Body -->
+      <div class="loadout-header" style="border-top:0;border-bottom:1px solid var(--border);">
+        <div class="panel-title" style="font-size:13px;">Worn / Body</div>
+        <div class="panel-subtitle">6 / 8</div>
+      </div>
+
+      <div class="quick-section" style="flex:1;">
+        <div class="worn-grid">
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Patagonia Capilene Base')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">👕</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">Capilene Base</div>
+              <div class="worn-slot-label">BASE LAYER</div>
+            </div>
+          </div>
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Arc\'teryx Shell Jacket')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">🧥</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">Shell Jacket</div>
+              <div class="worn-slot-label">SHELL</div>
+            </div>
+          </div>
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Salomon X Ultra 4')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">🥾</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">X Ultra 4</div>
+              <div class="worn-slot-label">FOOTWEAR</div>
+            </div>
+          </div>
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Darn Tough Hiker Micro Crew')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">🧦</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">Darn Tough</div>
+              <div class="worn-slot-label">SOCKS ×3</div>
+            </div>
+          </div>
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Sun Hat')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">🧢</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">Sun Hat</div>
+              <div class="worn-slot-label">HEADWEAR</div>
+            </div>
+          </div>
+          <div class="worn-slot"
+               onmouseenter="showTooltip(event, 'Smartwool Hiking Pants')"
+               onmouseleave="hideTooltip()">
+            <div class="worn-slot-icon">🩳</div>
+            <div class="worn-slot-info">
+              <div class="worn-slot-name">Hike Pants</div>
+              <div class="worn-slot-label">LOWER BODY</div>
+            </div>
+          </div>
+          <div class="worn-slot" style="border-style:dashed;color:var(--text-dim);">
+            <div style="font-size:18px;margin-right:8px;">+</div>
+            <div class="worn-slot-info">
+              <div style="font-size:11px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;">GLOVES</div>
+            </div>
+          </div>
+          <div class="worn-slot" style="border-style:dashed;color:var(--text-dim);">
+            <div style="font-size:18px;margin-right:8px;">+</div>
+            <div class="worn-slot-info">
+              <div style="font-size:11px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;">EYEWEAR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weight -->
+      <div class="weight-bar-section">
+        <div class="weight-bar-label">
+          <span>PACK WEIGHT</span>
+          <span style="color:var(--accent-teal);">6.2 / 15 kg</span>
+        </div>
+        <div class="weight-track"><div class="weight-fill"></div></div>
+        <div class="weight-zones">
+          <span>ULTRALIGHT</span><span>▲TRAIL</span><span>EXPEDITION</span>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div class="activity-strip">
+        <div class="activity-label">Activity:</div>
+        <div class="activity-chip active-hike">🥾 HIKE</div>
+        <div class="activity-chip hike">🚵 BIKE</div>
+        <div class="activity-chip hike">🏃 RUN</div>
+        <div class="activity-chip hike">🧗 CLIMB</div>
+      </div>
+
+    </div><!-- /quick-panel -->
+  </div><!-- /right-panel -->
+</div><!-- /main -->
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bottom-hints">
+    <div class="bottom-hint"><span class="hint-key">DRAG</span> Move Item</div>
+    <div class="bottom-hint"><span class="hint-key">DBL</span> Equip</div>
+    <div class="bottom-hint"><span class="hint-key">SHIFT</span> Quick Move</div>
+    <div class="bottom-hint"><span class="hint-key">ALT</span> Split Stack</div>
+  </div>
+  <button class="ready-btn">Save Loadout ▶</button>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ── ITEM DATA ──
+const ITEMS = [
+  { icon:'🥾', name:'Salomon X Ultra 4', desc:'High-traction mid-cut trail shoe for mixed terrain. Waterproof GTX membrane.', type:'Footwear', rarity:'uncommon', sport:'hike', weight:'0.9 kg', count:null, condition:'New', material:'Gore-Tex / Contragrip' },
+  { icon:'🧥', name:"Arc'teryx Beta LT", desc:'Lightweight 3-layer Gore-Tex shell. Packable, waterproof, and breathable.', type:'Shell Layer', rarity:'rare', sport:'hike', weight:'0.35 kg', count:null, condition:'Good', material:'Gore-Tex 3L' },
+  { icon:'🧦', name:'Darn Tough Micro Crew', desc:'Merino wool hiking sock. Lifetime guarantee. Cushioned heel and toe.', type:'Socks', rarity:'common', sport:'hike', weight:'0.08 kg', count:6, condition:'Mixed', material:'Merino Wool' },
+  { icon:'🧤', name:'Black Diamond Crag Gloves', desc:'Lightweight climbing gloves with touchscreen-compatible fingertips.', type:'Gloves', rarity:'common', sport:'climb', weight:'0.06 kg', count:2, condition:'Good', material:'Synthetic / Clarino' },
+  { icon:'🩺', name:'Adventure Medical Kit', desc:'Comprehensive first aid kit for backcountry travel up to 4 people/10 days.', type:'Medical', rarity:'essential', sport:'general', weight:'0.45 kg', count:1, condition:'Stocked', material:'Nylon Case' },
+  { icon:'🔦', name:'Black Diamond Spot 400', desc:'400-lumen rechargeable headlamp. Waterproof IPX8. Red night vision mode.', type:'Navigation', rarity:'uncommon', sport:'general', weight:'0.09 kg', count:1, condition:'New', material:'Plastic / LED' },
+  { icon:'🔧', name:'Leatherman Wave+', desc:'Full-size multi-tool with 18 tools. Stainless steel, locking blades.', type:'Toolkit', rarity:'uncommon', sport:'general', weight:'0.24 kg', count:1, condition:'Used', material:'Stainless Steel' },
+  { icon:'🍫', name:'Clif Bar', desc:'Organic energy bar. 250 cal each. Chocolate chip variety pack.', type:'Nutrition', rarity:'common', sport:'general', weight:'0.07 kg', count:8, condition:'—', material:'Wrapped' },
+  { icon:'🍬', name:'Energy Gel', desc:'Fast-release carbohydrate gel. 100 cal, caffeine-free.', type:'Nutrition', rarity:'common', sport:'run', weight:'0.03 kg', count:12, condition:'—', material:'Foil Pack' },
+  { icon:'🧴', name:'Sunscreen SPF50', desc:'Mineral broad-spectrum SPF50. Water-resistant 80 min. 3 oz / 88ml.', type:'Skin Care', rarity:'common', sport:'general', weight:'0.09 kg', count:2, condition:'Partial', material:'Cream' },
+  { icon:'🗺️', name:'USGS Topo Map', desc:'Waterproofed topographic map. 1:24,000 scale. Pacific Crest Trail section.', type:'Navigation', rarity:'common', sport:'hike', weight:'0.04 kg', count:3, condition:'Good', material:'Waterproof Paper' },
+  { icon:'🧲', name:'Garmin inReach Mini', desc:'Two-way satellite communicator. SOS button, weather forecast, GPS tracking.', type:'Electronics', rarity:'rare', sport:'general', weight:'0.10 kg', count:1, condition:'New', material:'Polycarbonate' },
+  { icon:'⛺', name:'Big Agnes Copper Spur', desc:'Ultralight 3-season backpacking tent. 2-person, 1.36 kg total.', type:'Shelter', rarity:'rare', sport:'hike', weight:'1.36 kg', count:1, condition:'Good', material:'Nylon / Dyneema' },
+  { icon:'🪢', name:'Dynamic Rope 60m', desc:'Dry-treated 9.8mm single rope. UIAA certified. 60m.', type:'Climbing', rarity:'rare', sport:'climb', weight:'3.8 kg', count:1, condition:'Good', material:'Nylon' },
+  { icon:'🧗', name:'Black Diamond Harness', desc:'Momentum full-body adjustable harness. UIAA certified.', type:'Climbing', rarity:'uncommon', sport:'climb', weight:'0.34 kg', count:1, condition:'Good', material:'Nylon / EVA Foam' },
+  { icon:'⛏️', name:'Ice Axe T-Rating', desc:'General mountaineering axe. 60cm shaft. B-rated pick.', type:'Climbing', rarity:'uncommon', sport:'climb', weight:'0.38 kg', count:1, condition:'Good', material:'Aluminum / Steel' },
+  { icon:'🚵', name:'Fox Racing Helmet', desc:'Full-face MTB helmet. MIPS liner. POC certified. Size L.', type:'Protection', rarity:'uncommon', sport:'bike', weight:'0.78 kg', count:1, condition:'Good', material:'EPS / Polycarbonate' },
+  { icon:'🔋', name:'Anker PowerCore 10K', desc:'10,000 mAh USB-C power bank. 18W fast charge. 2 outputs.', type:'Electronics', rarity:'common', sport:'general', weight:'0.18 kg', count:1, condition:'Good', material:'ABS Plastic' },
+  { icon:'🛖', name:'Hyperlite Bivy', desc:'Solo emergency bivy. Reflective mylar interior. Waterproof. 113g.', type:'Shelter', rarity:'uncommon', sport:'general', weight:'0.11 kg', count:1, condition:'New', material:'Mylar / Nylon' },
+  { icon:'💊', name:'Electrolyte Tabs', desc:'Nuun Sport tabs. Low sugar, sodium and potassium blend. Lemon flavor.', type:'Nutrition', rarity:'common', sport:'general', weight:'0.05 kg', count:40, condition:'—', material:'Tablet' },
+  { icon:'🧊', name:'Insulated Puffy Jacket', desc:'850 fill down puffy. Packable to stuff sack. -10°C comfort rating.', type:'Insulation', rarity:'uncommon', sport:'general', weight:'0.42 kg', count:1, condition:'Good', material:'900 Fill Down' },
+  { icon:'🩹', name:'Blister Kit', desc:'Moleskin, Leukotape, alcohol pads, nitrile gloves. Dedicated blister management.', type:'Medical', rarity:'common', sport:'hike', weight:'0.05 kg', count:3, condition:'Stocked', material:'Assorted' },
+  { icon:'📡', name:'Spot Gen4 Beacon', desc:'Personal locator beacon. 406 MHz GPS. 24hr battery. No subscription required.', type:'Safety', rarity:'essential', sport:'general', weight:'0.15 kg', count:1, condition:'New', material:'Polycarbonate' },
+  { icon:'🥄', name:'Snow Peak Titanium Spork', desc:'Ultralight titanium spork. 26g. Dishwasher safe.', type:'Cookware', rarity:'common', sport:'general', weight:'0.03 kg', count:2, condition:'Good', material:'Grade 1 Titanium' },
+  { icon:'🪖', name:'MIPS Trail Helmet', desc:'Lightweight XC trail helmet. 18 vents, MIPS liner. 285g.', type:'Protection', rarity:'uncommon', sport:'hike', weight:'0.29 kg', count:1, condition:'Good', material:'EPS / MIPS' },
+  { icon:'🔑', name:'Petzl Rig Belay', desc:'Assisted-braking belay/rappel device. Compatible 9.5–11mm ropes.', type:'Climbing', rarity:'uncommon', sport:'climb', weight:'0.17 kg', count:1, condition:'Good', material:'Aluminum' },
+  { icon:'🧽', name:'PackTowl UltraLite', desc:'Absorbent microfiber towel. XL size. Hang loop. Stuff sack included.', type:'Hygiene', rarity:'common', sport:'general', weight:'0.08 kg', count:2, condition:'Good', material:'Microfiber' },
+  { icon:'🕶️', name:'Julbo Aerospace', desc:'Photochromic glacier glasses. Cat 2–4. Anti-scratch, anti-fog lens.', type:'Eyewear', rarity:'uncommon', sport:'hike', weight:'0.04 kg', count:1, condition:'Good', material:'Polycarbonate' },
+  { icon:'📱', name:'iPhone 15 Pro', desc:'Satellite SOS capability. 48MP camera. Ceramic Shield.', type:'Electronics', rarity:'rare', sport:'general', weight:'0.19 kg', count:1, condition:'Good', material:'Titanium' },
+  { icon:'🧴', name:'Soft Flask 500ml', desc:'Collapsible BPA-free soft flask. Top-lockTwist cap. 500ml.', type:'Hydration', rarity:'common', sport:'run', weight:'0.04 kg', count:4, condition:'Good', material:'TPU' },
+  { icon:'💧', name:'Hydrapak 2L Bladder', desc:'Shape-shift 2L reservoir. Widepak opening, quick-connect hose. BPA-free.', type:'Hydration', rarity:'uncommon', sport:'hike', weight:'0.18 kg', count:1, condition:'Good', material:'TPU' },
+];
+
+// loadout items
+const MAIN_LOADOUT = [
+  { icon:'⛺', name:'Copper Spur Tent', rarity:'rare' },
+  { icon:'🧊', name:'Puffy Jacket', rarity:'uncommon' },
+  { icon:'🍫', name:'Clif Bar', rarity:'common', count:4 },
+  { icon:'🗺️', name:'Topo Map', rarity:'common' },
+  { icon:'💊', name:'Electrolyte Tabs', rarity:'common', count:10 },
+];
+const LID_LOADOUT = [
+  { icon:'📡', name:'Spot Beacon', rarity:'essential' },
+];
+
+// ── RENDER STASH ──
+function renderStash() {
+  const grid = document.getElementById('stashGrid');
+  grid.innerHTML = '';
+  ITEMS.forEach(item => {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.innerHTML = `
+      <div class="slot-sport-dot" style="background: var(--tag-${item.sport === 'general' ? 'general' : item.sport === 'hike' ? 'hike' : item.sport === 'climb' ? 'climb' : item.sport === 'bike' ? 'bike' : item.sport === 'run' ? 'run' : 'general'})"></div>
+      <div class="slot-icon">${item.icon}</div>
+      ${item.count ? `<div class="slot-count">${item.count}</div>` : ''}
+      <div class="slot-rarity ${item.rarity}"></div>
+    `;
+    slot.addEventListener('mouseenter', (e) => showTooltipFull(e, item));
+    slot.addEventListener('mouseleave', hideTooltip);
+    grid.appendChild(slot);
+  });
+  // add some empty slots
+  for (let i = 0; i < 12; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot empty';
+    grid.appendChild(slot);
+  }
+}
+
+function renderCompartment(id, items, totalSlots) {
+  const grid = document.getElementById(id);
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.innerHTML = `
+      <div class="slot-icon">${item.icon}</div>
+      ${item.count ? `<div class="slot-count">${item.count}</div>` : ''}
+      <div class="slot-rarity ${item.rarity}"></div>
+    `;
+    const fullItem = ITEMS.find(i => i.icon === item.icon) || {name: item.name, desc:'Loaded in pack.', type:'Gear', rarity: item.rarity, weight:'—', count: item.count, sport:'general', condition:'Good', material:'—'};
+    slot.addEventListener('mouseenter', (e) => showTooltipFull(e, fullItem));
+    slot.addEventListener('mouseleave', hideTooltip);
+    grid.appendChild(slot);
+  });
+  for (let i = items.length; i < totalSlots; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot empty';
+    slot.style.opacity = '0.2';
+    slot.innerHTML = '<div style="font-size:12px;color:var(--text-dim);">+</div>';
+    grid.appendChild(slot);
+  }
+}
+
+// ── TOOLTIP ──
+const tooltip = document.getElementById('tooltip');
+
+function showTooltipFull(e, item) {
+  const rarityLabel = { common:'COMMON', uncommon:'UNCOMMON', rare:'RARE', essential:'ESSENTIAL' };
+  const sportLabel = { hike:'HIKING', bike:'MTB', climb:'CLIMBING', run:'RUNNING', moto:'MOTO', general:'GENERAL' };
+  tooltip.innerHTML = `
+    <div class="tooltip-tags">
+      <span class="tooltip-tag type">${item.type.toUpperCase()}</span>
+      <span class="tooltip-tag rarity-${item.rarity}">${rarityLabel[item.rarity] || item.rarity.toUpperCase()}</span>
+      <span class="tooltip-tag sport-${item.sport}">${sportLabel[item.sport] || item.sport.toUpperCase()}</span>
+    </div>
+    <div class="tooltip-name">${item.name}</div>
+    <div class="tooltip-desc">${item.desc}</div>
+    <div class="tooltip-stats">
+      <div class="tooltip-stat-row"><span class="tooltip-stat-key">Weight</span><span class="tooltip-stat-val">${item.weight}</span></div>
+      <div class="tooltip-stat-row"><span class="tooltip-stat-key">Condition</span><span class="tooltip-stat-val">${item.condition}</span></div>
+      <div class="tooltip-stat-row"><span class="tooltip-stat-key">Material</span><span class="tooltip-stat-val">${item.material}</span></div>
+      ${item.count ? `<div class="tooltip-stat-row"><span class="tooltip-stat-key">Quantity</span><span class="tooltip-stat-val highlight">${item.count} owned</span></div>` : ''}
+    </div>
+  `;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function showTooltip(e, name) {
+  const item = ITEMS.find(i => i.name === name);
+  if (item) showTooltipFull(e, item);
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+}
+
+function moveTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  if (x + 270 > window.innerWidth) x = e.clientX - 270 - pad;
+  if (y + 280 > window.innerHeight) y = e.clientY - 280 - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (tooltip.classList.contains('visible')) moveTooltip(e);
+});
+
+// filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// pack tabs
+document.querySelectorAll('.pack-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.pack-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// activity chips
+document.querySelectorAll('.activity-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.activity-chip').forEach(c => {
+      c.className = 'activity-chip hike';
+    });
+    this.className = 'activity-chip active-hike';
+  });
+});
+
+// INIT
+renderStash();
+renderCompartment('mainCompartment', MAIN_LOADOUT, 12);
+renderCompartment('lidCompartment', LID_LOADOUT, 4);
+</script>
+
+</body>
+</html>

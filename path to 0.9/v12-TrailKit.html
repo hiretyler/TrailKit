@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailKit — Gear Loadout Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e12;
+    --bg-panel: #0f1419;
+    --bg-card: #141c24;
+    --bg-slot: #0d1117;
+    --bg-slot-hover: #1a2535;
+    --border: #1e2d3d;
+    --border-bright: #2a4060;
+    --accent-green: #3ddc84;
+    --accent-teal: #00c8b4;
+    --accent-amber: #f5a623;
+    --accent-red: #e84040;
+    --text-primary: #d4dfe9;
+    --text-secondary: #6a8aa0;
+    --text-dim: #3d5468;
+    --tag-hike: #2a7a4b;
+    --tag-bike: #1a5c8a;
+    --tag-climb: #7a3a8a;
+    --tag-run: #8a4a1a;
+    --tag-moto: #5a3a1a;
+    --tag-camp: #1a3a5c;
+    --tag-general: #2a3a4a;
+    --rarity-common: #6a8aa0;
+    --rarity-uncommon: #3ddc84;
+    --rarity-rare: #4a9eff;
+    --rarity-essential: #f5a623;
+    --slot-size: 72px;
+    --slot-gap: 6px;
+    /* Section separator — the big visual divide between Gear and Loadout */
+    --gear-loadout-border: 3px solid #1a3050;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+  .topbar-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 20px;
+    letter-spacing: 3px; color: var(--accent-teal);
+    text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+  }
+  .topbar-logo span { color: var(--text-secondary); font-weight: 400; }
+  .topbar-divider { width: 1px; height: 24px; background: var(--border-bright); flex-shrink: 0; }
+  .topbar-spacer { flex: 1; }
+
+  .my-trailkit-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px; font-weight: 700; letter-spacing: 2.5px;
+    text-transform: uppercase; background: var(--accent-teal);
+    color: var(--bg-deep); border: none; padding: 7px 18px;
+    cursor: pointer; border-radius: 2px; transition: all 0.15s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .my-trailkit-btn:hover { background: #00e8d0; box-shadow: 0 0 14px rgba(0,200,180,0.4); transform: translateY(-1px); }
+
+  /* ── MAIN LAYOUT ── */
+  /* The key change: strong visual separator between Gear (left) and Loadout (right) */
+  .main { display: grid; grid-template-columns: 278px 1fr; flex: 1; overflow: hidden; }
+
+  /* ── YOUR GEAR PANEL ── */
+  .stash-panel {
+    background: var(--bg-panel);
+    border-right: var(--gear-loadout-border);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; overflow: hidden;
+    position: relative; z-index: 2;
+  }
+  .stash-header {
+    padding: 9px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    background: var(--bg-card);
+  }
+  .panel-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-primary);
+  }
+  .panel-subtitle { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-secondary); }
+
+  .add-items-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; background: var(--accent-teal);
+    color: var(--bg-deep); border: none; padding: 6px 13px; border-radius: 2px;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center;
+    gap: 4px; white-space: nowrap; flex-shrink: 0; margin-left: auto;
+  }
+  .add-items-btn:hover { background: #00e8d0; box-shadow: 0 0 14px rgba(0,200,180,0.4); transform: translateY(-1px); }
+  .add-items-btn::before { content: '+'; font-size: 16px; line-height: 1; font-weight: 400; }
+
+  .filter-bar {
+    padding: 7px 10px; display: flex; gap: 4px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .filter-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 1px; padding: 3px 8px; border: 1px solid var(--border);
+    background: var(--bg-slot); color: var(--text-secondary);
+    cursor: pointer; text-transform: uppercase; border-radius: 2px; transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent-teal); border-color: var(--accent-teal); color: var(--bg-deep); }
+
+  .stash-grid-wrap { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
+  .stash-grid { display: grid; grid-template-columns: repeat(3, var(--slot-size)); gap: var(--slot-gap); }
+
+  /* ── SLOT (base) ── */
+  .slot {
+    width: var(--slot-size); height: var(--slot-size);
+    background: var(--bg-slot); border: 1px solid var(--border);
+    border-radius: 3px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s; overflow: hidden;
+  }
+  .slot::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .slot:hover { background: var(--bg-slot-hover); border-color: var(--accent-teal); }
+  .slot.empty { opacity: 0.15; cursor: default; pointer-events: none; }
+  .slot.empty.interactive {
+    opacity: 1 !important; cursor: pointer; pointer-events: all;
+    border-style: dashed !important; border-color: var(--border-bright) !important;
+  }
+  .slot.empty.interactive:hover {
+    border-color: var(--accent-teal) !important; background: var(--bg-slot-hover);
+  }
+  /* hidden slot — occupying volume but invisible */
+  .slot.vol-hidden { visibility: hidden; pointer-events: none; }
+
+  .slot-icon { font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+
+  /* Volume badge (replaces S/M/L) */
+  .slot-vol-badge {
+    position: absolute; top: 3px; right: 4px;
+    font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+    padding: 1px 5px; border-radius: 1px; line-height: 1.2;
+  }
+  .slot-vol-badge.v1 { background: rgba(106,138,160,0.22); color: #c8daea; border: 1px solid rgba(200,218,234,0.2); }
+  .slot-vol-badge.v2 { background: rgba(0,200,180,0.18);   color: var(--accent-teal); }
+  .slot-vol-badge.v3 { background: rgba(74,158,255,0.18);  color: var(--rarity-rare); }
+  .slot-vol-badge.v4 { background: rgba(180,125,255,0.18); color: #d4a0ff; }
+  .slot-vol-badge.v5, .slot-vol-badge.v6, .slot-vol-badge.v7, .slot-vol-badge.v8 {
+    background: rgba(245,166,35,0.18); color: var(--accent-amber);
+  }
+
+  .slot-rarity { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .slot-rarity.common    { background: var(--rarity-common); }
+  .slot-rarity.uncommon  { background: var(--rarity-uncommon); }
+  .slot-rarity.rare      { background: var(--rarity-rare); }
+  .slot-rarity.essential { background: var(--rarity-essential); }
+  .slot-sport-dot { position: absolute; top: 4px; left: 4px; width: 5px; height: 5px; border-radius: 50%; }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position: fixed; z-index: 9999; width: 264px;
+    background: var(--bg-card); border: 1px solid var(--border-bright);
+    border-radius: 4px; padding: 14px; pointer-events: none; display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .tooltip.visible { display: block; }
+  .tooltip-tags { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tooltip-tag { font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 7px; border-radius: 2px; text-transform: uppercase; }
+  .tt-type    { background: var(--tag-general); color: var(--text-secondary); }
+  .tt-hike    { background: var(--tag-hike);    color: #7dffb4; }
+  .tt-bike    { background: var(--tag-bike);    color: #7dd4ff; }
+  .tt-climb   { background: var(--tag-climb);   color: #d4a0ff; }
+  .tt-run     { background: var(--tag-run);     color: #ffb47d; }
+  .tt-moto    { background: var(--tag-moto);    color: #ffcc7d; }
+  .tt-camp    { background: var(--tag-camp);    color: #aae8ff; }
+  .tt-general { background: var(--tag-general); color: var(--text-secondary); }
+  .tt-common    { background: rgba(106,138,160,0.2);  color: var(--rarity-common); }
+  .tt-uncommon  { background: rgba(61,220,132,0.15);  color: var(--rarity-uncommon); }
+  .tt-rare      { background: rgba(74,158,255,0.15);  color: var(--rarity-rare); }
+  .tt-essential { background: rgba(245,166,35,0.15);  color: var(--rarity-essential); }
+  .tt-compat    { background: rgba(61,220,132,0.18);  color: var(--accent-green); }
+  .tt-restrict  { background: rgba(232,64,64,0.15);   color: var(--accent-red); }
+  .tooltip-name { font-family: 'Rajdhani', sans-serif; font-size: 19px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; color: #fff; }
+  .tooltip-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .tooltip-stats { display: flex; flex-direction: column; gap: 5px; }
+  .tooltip-stat-row { display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 11px; }
+  .tt-key { color: var(--text-secondary); }
+  .tt-val { color: var(--text-primary); }
+  .tt-highlight { color: var(--accent-amber); }
+
+  /* ── RIGHT PANEL — loadout + quick-panel share a teal top border to show they're one unit ── */
+  .right-panel {
+    display: grid; grid-template-columns: 1fr 254px; overflow: hidden;
+    border-top: 2px solid rgba(0,200,180,0.18); /* subtle teal binding */
+  }
+
+  /* ── LOADOUT PANEL ── */
+  .loadout-panel {
+    background: var(--bg-deep); border-right: 1px solid var(--border-bright);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .loadout-header {
+    padding: 0 14px; height: 44px;
+    border-bottom: 1px solid var(--border-bright);
+    background: var(--bg-card);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .loadout-title-block { flex-shrink: 0; }
+
+  /* Activity dropdown in header */
+  .activity-select-wrap { position: relative; flex-shrink: 0; }
+  .activity-select {
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    background: var(--bg-slot); color: var(--text-secondary);
+    border: 1px solid var(--border-bright);
+    padding: 5px 26px 5px 10px; border-radius: 2px;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    outline: none; transition: all 0.15s; min-width: 130px;
+  }
+  .activity-select:hover, .activity-select:focus { border-color: var(--accent-teal); color: var(--text-primary); }
+  .activity-select option { background: var(--bg-card); color: var(--text-primary); }
+  .activity-select-arrow { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 10px; pointer-events: none; }
+
+  /* Loadout dropdown */
+  .loadout-select-wrap { position: relative; flex-shrink: 0; }
+  .loadout-select {
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    background: var(--bg-card); color: var(--text-primary);
+    border: 1px solid var(--border-bright);
+    padding: 5px 28px 5px 11px; border-radius: 2px;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    outline: none; transition: border-color 0.15s; min-width: 160px;
+  }
+  .loadout-select:hover { border-color: var(--accent-teal); }
+  .loadout-select:focus { border-color: var(--accent-teal); box-shadow: 0 0 0 2px rgba(0,200,180,0.15); }
+  .loadout-select option { background: var(--bg-card); color: var(--text-primary); }
+  .select-arrow { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 10px; pointer-events: none; }
+
+  /* Header buttons */
+  .save-new-loadout-btn, .overwrite-loadout-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    border: none; padding: 5px 11px; border-radius: 2px;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .save-new-loadout-btn { background: var(--accent-amber); color: var(--bg-deep); }
+  .save-new-loadout-btn:hover { background: #ffbb44; box-shadow: 0 0 10px rgba(245,166,35,0.35); }
+  .overwrite-loadout-btn { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-bright); }
+  .overwrite-loadout-btn:hover { border-color: var(--accent-amber); color: var(--accent-amber); }
+
+  .loadout-body { flex: 1; overflow-y: auto; padding: 12px 16px; scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
+
+  /* pack row */
+  .pack-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  .backpack-slot-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+  .backpack-slot {
+    width: 96px; height: 96px; border: 1px solid var(--border-bright); border-radius: 4px;
+    background: var(--bg-slot); display: flex; align-items: center; justify-content: center;
+    font-size: 38px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .backpack-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .backpack-slot.drop-target { border-color: var(--accent-teal) !important; background: rgba(0,200,180,0.12) !important; box-shadow: 0 0 12px rgba(0,200,180,0.3); }
+  .backpack-slot .slot-vol-badge { top: 4px; right: 5px; font-size: 10px; }
+  .backpack-slot-label { font-family: 'Rajdhani', sans-serif; font-size: 10px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; text-align: center; }
+  .pack-info { flex: 1; display: flex; flex-direction: column; gap: 7px; padding-top: 4px; }
+  .pack-name { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 1px; color: var(--text-primary); }
+  .pack-meta { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-secondary); display: flex; gap: 12px; }
+  .pack-meta span { color: var(--accent-teal); }
+  .configure-pack-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; background: transparent; color: var(--accent-amber);
+    border: 1px solid rgba(245,166,35,0.5); padding: 5px 14px; border-radius: 2px;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; align-self: flex-start;
+  }
+  .configure-pack-btn:hover { background: rgba(245,166,35,0.1); border-color: var(--accent-amber); }
+  .configure-pack-btn::before { content: '⚙'; font-size: 12px; }
+
+  /* pack sections */
+  .pack-section { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 9px; }
+  .pack-section-header { padding: 6px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .pack-section-title { font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); }
+  .pack-section-cap { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent-teal); }
+  .pack-section-body { padding: 10px 11px; }
+
+  /* hydration / food+water */
+  .food-water-layout { display: flex; gap: 12px; align-items: flex-start; }
+  .hydration-slots-tight { display: flex; gap: 12px; align-items: flex-start; flex-shrink: 0; }
+  .bladder-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+  .bladder-slot {
+    width: 96px; height: 96px; border: 1px solid var(--border-bright); border-radius: 4px;
+    background: var(--bg-slot); display: flex; align-items: center; justify-content: center;
+    font-size: 36px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .bladder-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .bladder-slot.drop-target { border-color: var(--accent-teal) !important; background: rgba(0,200,180,0.12) !important; box-shadow: 0 0 12px rgba(0,200,180,0.25); border-style: solid !important; }
+  .bladder-slot.empty-water {
+    border-style: dashed; border-color: var(--border-bright);
+    font-size: 20px; color: var(--text-secondary);
+  }
+  .bladder-label { font-family: 'Rajdhani', sans-serif; font-size: 10px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; text-align: center; }
+  .side-pockets { display: flex; flex-direction: column; gap: 7px; }
+  .pocket-row { display: flex; align-items: center; gap: 8px; }
+  .pocket-row-label { font-family: 'Rajdhani', sans-serif; font-size: 10px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; width: 44px; flex-shrink: 0; line-height: 1.3; }
+  .side-pocket {
+    width: 58px; height: 58px; border: 1px dashed var(--border-bright); border-radius: 3px;
+    background: var(--bg-slot); display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .side-pocket.filled { border-style: solid; }
+  .side-pocket:hover, .side-pocket.drop-target { border-color: var(--accent-teal) !important; background: var(--bg-slot-hover); border-style: solid !important; }
+
+  .food-nutrition-col { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .add-food-btn-large {
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; background: transparent;
+    color: var(--accent-green); border: 1px dashed rgba(61,220,132,0.45);
+    padding: 10px 0; border-radius: 3px; cursor: pointer; transition: all 0.18s;
+    width: 100%; text-align: center;
+  }
+  .add-food-btn-large:hover { background: rgba(61,220,132,0.09); border-style: solid; border-color: var(--accent-green); box-shadow: 0 0 12px rgba(61,220,132,0.18); color: #7dffb4; }
+
+  .nutrition-counter {
+    display: flex; align-items: center; gap: 9px; padding: 7px 11px;
+    border-radius: 3px; border: 1px solid; background: transparent;
+  }
+  .nutrition-counter.calories   { border-color: rgba(245,166,35,0.28); background: rgba(245,166,35,0.04); }
+  .nutrition-counter.electrolytes.ok { border-color: rgba(61,220,132,0.28); background: rgba(61,220,132,0.06); }
+  .nutrition-counter-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+  .nutrition-counter-body { flex: 1; min-width: 0; }
+  .nutrition-counter-label { font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); line-height: 1; margin-bottom: 2px; }
+  .nutrition-counter-value { font-family: 'Share Tech Mono', monospace; font-size: 15px; line-height: 1; }
+  .nutrition-counter.calories .nutrition-counter-value { color: var(--accent-amber); }
+  .nutrition-counter.electrolytes.ok .nutrition-counter-value { color: var(--accent-green); }
+  .nutrition-counter-value span { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+  .nutrition-counter-target { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); flex-shrink: 0; white-space: nowrap; }
+
+  /* generic grid (main compartment, lid) */
+  .generic-grid { display: grid; grid-template-columns: repeat(5, var(--slot-size)); gap: var(--slot-gap); }
+
+  /* ── QUICK PANEL (right column — visually part of loadout) ── */
+  /* Connected to loadout: same bg, no gap, shares the teal top border applied to right-panel */
+  .quick-panel {
+    background: var(--bg-panel); display: flex; flex-direction: column; overflow: hidden;
+    border-left: none; /* loadout-panel's border-right handles this */
+  }
+  .qp-header {
+    padding: 9px 13px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    background: var(--bg-card);
+  }
+  /* Match the loadout-panel header style to signal same section */
+  .loadout-panel .loadout-header,
+  .quick-panel .qp-header:first-child {
+    border-bottom-color: var(--border-bright);
+  }
+
+  .qp-body { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+
+  /* Essential items counters */
+  .item-counters { display: flex; flex-direction: column; gap: 6px; }
+  .item-counter {
+    display: flex; align-items: center; gap: 9px; padding: 7px 11px;
+    border-radius: 3px; border: 1px solid; background: transparent;
+  }
+  .item-counter.ok      { border-color: rgba(61,220,132,0.28);  background: rgba(61,220,132,0.06); }
+  .item-counter.warn    { border-color: rgba(232,64,64,0.28);   background: rgba(232,64,64,0.06); }
+  .item-counter.neutral { border-color: rgba(106,138,160,0.28); background: rgba(106,138,160,0.05); }
+  .item-counter-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+  .item-counter-body { flex: 1; }
+  .item-counter-label { font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); line-height: 1; margin-bottom: 2px; }
+  .item-counter-value { font-family: 'Share Tech Mono', monospace; font-size: 15px; line-height: 1; }
+  .item-counter.ok   .item-counter-value { color: var(--accent-green); }
+  .item-counter.warn .item-counter-value { color: var(--accent-red); }
+  .item-counter.neutral .item-counter-value { color: var(--text-secondary); }
+  .item-counter-value span { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+  .item-counter-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .item-counter.ok   .item-counter-dot { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+  .item-counter.warn .item-counter-dot { background: var(--accent-red);   box-shadow: 0 0 5px var(--accent-red); }
+  .item-counter.neutral .item-counter-dot { background: var(--text-dim); }
+
+  /* Worn Items grid */
+  .worn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .worn-slot {
+    height: 50px; background: var(--bg-slot); border: 1px solid var(--border); border-radius: 3px;
+    display: flex; align-items: center; gap: 7px; padding: 0 8px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .worn-slot:not(.empty-slot):hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .worn-slot.empty-slot { border-style: dashed; border-color: var(--border-bright); }
+  .worn-slot.empty-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .worn-slot.drop-target { border-color: var(--accent-teal) !important; background: rgba(0,200,180,0.1) !important; border-style: solid !important; }
+  .worn-slot.reject-target { border-color: var(--accent-red) !important; background: rgba(232,64,64,0.06) !important; border-style: dashed !important; }
+  .worn-icon { font-size: 18px; }
+  .worn-info { flex: 1; overflow: hidden; }
+  .worn-name { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .worn-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); }
+  .worn-empty-label { font-size: 10px; color: var(--text-secondary); font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; }
+
+  /* Pocket items grid */
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 56px); gap: 5px; }
+  .quick-slot {
+    width: 56px; height: 56px;
+    background: var(--bg-slot); border: 1px solid var(--border); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .quick-slot:not(.empty-slot):hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); }
+  .quick-slot.empty-slot { border-style: dashed; border-color: var(--border-bright); color: var(--text-secondary); font-size: 16px; }
+  .quick-slot.empty-slot:hover { border-color: var(--accent-teal); background: var(--bg-slot-hover); color: var(--accent-teal); }
+  .quick-slot.drop-target { border-color: var(--accent-teal) !important; background: rgba(0,200,180,0.1) !important; border-style: solid !important; }
+
+  /* weight bar */
+  .weight-section { padding: 10px 13px; margin-top: auto; border-top: 1px solid var(--border); }
+  .weight-label { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .weight-track { height: 4px; background: var(--bg-slot); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .weight-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent-teal), var(--accent-amber)); width: 41%; transition: width 0.3s ease; }
+  .weight-zones { display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    height: 46px; background: var(--bg-panel); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; flex-shrink: 0;
+  }
+  .bottom-weight { display: flex; align-items: center; gap: 10px; }
+  .bottom-weight-label { font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); }
+  .bottom-weight-value { font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent-teal); letter-spacing: 1px; text-shadow: 0 0 12px rgba(0,200,180,0.45); }
+  .bottom-weight-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-secondary); }
+  .export-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 2.5px; text-transform: uppercase; background: var(--accent-amber);
+    color: var(--bg-deep); border: none; padding: 7px 24px; cursor: pointer;
+    border-radius: 2px; transition: all 0.15s;
+  }
+  .export-btn:hover { background: #ffbb44; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,166,35,0.4); }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .theme-toggle-label { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); transition: color 0.25s; white-space: nowrap; }
+  .toggle-track { position: relative; width: 44px; height: 22px; background: var(--bg-slot); border: 1px solid var(--border-bright); border-radius: 11px; cursor: pointer; transition: background 0.25s, border-color 0.25s; flex-shrink: 0; }
+  .toggle-track:hover { border-color: var(--accent-teal); }
+  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-secondary); transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s; display: flex; align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
+  body.light .toggle-track { background: rgba(0,200,180,0.15); border-color: var(--accent-teal); }
+  body.light .toggle-thumb { transform: translateX(22px); background: var(--accent-teal); }
+
+  /* scanlines */
+  body::after {
+    content: ''; position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
+    pointer-events: none; z-index: 1000; transition: opacity 0.3s;
+  }
+  body.light::after { opacity: 0; }
+
+  /* ── DRAG & DROP ── */
+  .slot.dragging { opacity: 0.3; transform: scale(0.93); }
+  .slot.drop-target { border-color: var(--accent-teal) !important; border-style: solid !important; background: rgba(0,200,180,0.12) !important; box-shadow: 0 0 12px rgba(0,200,180,0.25); }
+  .stash-drop-active { outline: 2px dashed var(--accent-teal); outline-offset: -3px; border-radius: 3px; }
+
+  /* ── SPORT COMPATIBILITY ── */
+  .slot-compatible   { box-shadow: 0 0 0 1px rgba(61,220,132,0.5); }
+  .slot-incompatible { opacity: 0.4; }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.18s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border-bright);
+    border-radius: 5px; padding: 24px 26px; min-width: 320px; max-width: 400px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
+    transform: translateY(8px); transition: transform 0.18s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-primary); margin-bottom: 6px; }
+  .modal-subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.5; }
+  .modal-input {
+    width: 100%; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+    letter-spacing: 1px; background: var(--bg-slot); color: var(--text-primary);
+    border: 1px solid var(--border-bright); border-radius: 3px; padding: 8px 12px;
+    outline: none; transition: border-color 0.15s; margin-bottom: 18px;
+    user-select: text;
+  }
+  .modal-input:focus { border-color: var(--accent-teal); box-shadow: 0 0 0 2px rgba(0,200,180,0.15); }
+  .modal-input::placeholder { color: var(--text-dim); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn {
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; border: none;
+    padding: 7px 18px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+  }
+  .modal-btn.cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-bright); }
+  .modal-btn.cancel:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+  .modal-btn.confirm { background: var(--accent-amber); color: var(--bg-deep); }
+  .modal-btn.confirm:hover { background: #ffbb44; }
+  .modal-btn.danger  { background: var(--accent-red);   color: #fff; }
+  .modal-btn.danger:hover { background: #ff5555; }
+
+  /* ── LIGHT MODE ── */
+  body.light {
+    --bg-deep: #eef1f5; --bg-panel: #f8f9fb; --bg-card: #ffffff;
+    --bg-slot: #e8ecf2; --bg-slot-hover: #dce3ee;
+    --border: #c8d4e0; --border-bright: #a8becc;
+    --text-primary: #1a2535; --text-secondary: #4a6478; --text-dim: #8aa4b8;
+    --tag-hike: #b8eed0; --tag-bike: #b8d8f8; --tag-climb: #e0c8f8;
+    --tag-run: #ffd8b0; --tag-moto: #ffe8b0; --tag-camp: #b8e0f8; --tag-general: #d0dce8;
+    --rarity-common: #8aacbe; --rarity-uncommon: #1ea860; --rarity-rare: #1a7aee; --rarity-essential: #d08010;
+  }
+  body.light .loadout-select { color: var(--text-primary); }
+  body.light .activity-select { color: var(--text-primary); }
+  body.light .bottom-weight-value { text-shadow: 0 0 10px rgba(0,160,144,0.25); }
+  body.light .tt-hike   { color: #0a5030; } body.light .tt-bike  { color: #0a3880; }
+  body.light .tt-climb  { color: #4a1888; } body.light .tt-run   { color: #703010; }
+  body.light .tt-moto   { color: #603800; } body.light .tt-camp  { color: #0a3860; }
+  body.light .slot-vol-badge.v1 { background: rgba(60,90,120,0.12); color: #3a6080; }
+  body.light .slot-vol-badge.v2 { background: rgba(0,160,144,0.12); color: #007868; }
+  body.light .slot-rarity.uncommon { background: #1ea860; }
+  body.light .slot-rarity.rare     { background: #1a7aee; }
+  body.light .slot-rarity.essential { background: #d08010; }
+  body.light .item-counter.ok   { border-color: rgba(30,168,96,0.35); background: rgba(30,168,96,0.08); }
+  body.light .item-counter.warn { border-color: rgba(200,40,40,0.3);  background: rgba(200,40,40,0.07); }
+  body.light .item-counter.ok   .item-counter-value { color: #0e6a3a; }
+  body.light .item-counter.warn .item-counter-value { color: #a01818; }
+  body.light .item-counter.ok   .item-counter-dot { background: #1ea860; box-shadow: 0 0 5px #1ea860; }
+  body.light .item-counter.warn .item-counter-dot { background: #c02828; box-shadow: 0 0 5px #c02828; }
+  body.light .nutrition-counter.calories { border-color: rgba(200,128,0,0.3); background: rgba(200,128,0,0.05); }
+  body.light .nutrition-counter.calories .nutrition-counter-value { color: #905800; }
+  body.light .nutrition-counter.electrolytes.ok { border-color: rgba(30,168,96,0.35); background: rgba(30,168,96,0.07); }
+  body.light .nutrition-counter.electrolytes.ok .nutrition-counter-value { color: #0e6a3a; }
+  body.light .add-food-btn-large { color: #0e6a3a; border-color: rgba(30,168,96,0.45); }
+  body.light .add-food-btn-large:hover { background: rgba(30,168,96,0.1); border-color: #1ea860; color: #0e6a3a; }
+  body.light .tt-compat { background: rgba(30,168,96,0.15); color: #0e6a3a; }
+  body.light .modal { box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+
+  /* global transition */
+  *, *::before, *::after { transition: background-color 0.25s, border-color 0.25s, color 0.2s, box-shadow 0.25s; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">Trail<span>Kit</span></div>
+  <div class="topbar-divider"></div>
+  <div class="topbar-spacer"></div>
+  <button class="my-trailkit-btn">My TrailKit</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- YOUR GEAR (left) -->
+  <div class="stash-panel">
+    <div class="stash-header">
+      <div>
+        <div class="panel-title">Your Gear</div>
+        <div class="panel-subtitle" id="stashCount">0 items</div>
+      </div>
+      <button class="add-items-btn">Add Item(s)</button>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="ALL">ALL</button>
+      <button class="filter-btn" data-filter="HIKE">🥾 HIKE</button>
+      <button class="filter-btn" data-filter="BIKE">🚵 BIKE</button>
+      <button class="filter-btn" data-filter="CLIMB">🧗 CLIMB</button>
+      <button class="filter-btn" data-filter="RUN">🏃 RUN</button>
+      <button class="filter-btn" data-filter="MOTO">🏍️ MOTO</button>
+      <button class="filter-btn" data-filter="CAMP">⛺ CAMP</button>
+      <button class="filter-btn" data-filter="MED">🩺 MED</button>
+    </div>
+    <div class="stash-grid-wrap">
+      <div class="stash-grid" id="stashGrid"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT (loadout + quick-panel — visually unified) -->
+  <div class="right-panel">
+
+    <!-- LOADOUT (centre) -->
+    <div class="loadout-panel">
+      <div class="loadout-header">
+        <div class="loadout-title-block">
+          <div class="panel-title">Loadout</div>
+        </div>
+
+        <!-- Activity dropdown — between LOADOUT title and loadout selector -->
+        <div class="activity-select-wrap">
+          <select class="activity-select" id="activitySelect">
+            <option value="hike">🥾 Hiking</option>
+            <option value="bike">🚵 MTB</option>
+            <option value="run">🏃 Running</option>
+            <option value="climb">🧗 Climbing</option>
+            <option value="moto">🏍️ Moto</option>
+            <option value="camp">⛺ Camping</option>
+          </select>
+          <div class="activity-select-arrow">▾</div>
+        </div>
+
+        <div class="loadout-select-wrap">
+          <select class="loadout-select" id="loadoutSelect"></select>
+          <div class="select-arrow">▾</div>
+        </div>
+
+        <button class="save-new-loadout-btn" id="saveNewBtn">Save New Loadout</button>
+        <button class="overwrite-loadout-btn" id="overwriteBtn">Overwrite Selected</button>
+      </div>
+
+      <div class="loadout-body">
+
+        <!-- BACKPACK SLOT -->
+        <div class="pack-row">
+          <div class="backpack-slot-wrap">
+            <div class="backpack-slot" id="backpackSlotEl">
+              <span id="backpackIcon">🎒</span>
+              <div class="slot-vol-badge v2" id="backpackVolBadge">2</div>
+              <div class="slot-rarity uncommon" id="backpackRarity"></div>
+            </div>
+            <div class="backpack-slot-label">Backpack</div>
+          </div>
+          <div class="pack-info">
+            <div class="pack-name" id="packName">Osprey Talon 22</div>
+            <div class="pack-meta" id="packMeta1">Volume: <span>22L</span> &nbsp;|&nbsp; Capacity: <span>12 slots</span></div>
+            <div class="pack-meta" id="packMeta2">Weight: <span>0.87 kg</span> &nbsp;|&nbsp; Bladder: <span>3L max</span></div>
+            <div class="pack-meta" id="packMeta3">Max Load: <span>15 kg</span></div>
+            <button class="configure-pack-btn">Configure Backpack</button>
+          </div>
+        </div>
+
+        <!-- FOOD + WATER -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Food + Water</div>
+            <div class="pack-section-cap" id="foodWaterCap">3 / 4 slots</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="food-water-layout">
+              <div class="hydration-slots-tight">
+                <div class="bladder-wrap">
+                  <div class="bladder-slot" id="bladderSlotEl">💧
+                    <div class="slot-vol-badge v4" id="bladderVolBadge">4</div>
+                    <div class="slot-rarity uncommon" id="bladderRarity"></div>
+                  </div>
+                  <div class="bladder-label">Hydration<br>Bladder</div>
+                </div>
+                <div class="side-pockets">
+                  <div class="pocket-row">
+                    <div class="pocket-row-label">Left<br>Pocket</div>
+                    <div class="side-pocket" id="leftPocketEl">
+                      <span id="leftPocketIcon">+</span>
+                      <div class="slot-vol-badge v1" id="leftPocketVol" style="display:none">1</div>
+                      <div class="slot-rarity common" id="leftPocketRarity" style="display:none"></div>
+                    </div>
+                  </div>
+                  <div class="pocket-row">
+                    <div class="pocket-row-label">Right<br>Pocket</div>
+                    <div class="side-pocket" id="rightPocketEl">
+                      <span id="rightPocketIcon">+</span>
+                      <div class="slot-vol-badge v1" id="rightPocketVol" style="display:none">1</div>
+                      <div class="slot-rarity common" id="rightPocketRarity" style="display:none"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="food-nutrition-col">
+                <button class="add-food-btn-large">＋ Add Food</button>
+                <div class="nutrition-counter calories">
+                  <div class="nutrition-counter-icon">🔥</div>
+                  <div class="nutrition-counter-body">
+                    <div class="nutrition-counter-label">Calories Packed</div>
+                    <div class="nutrition-counter-value" id="calCounter">0 <span>kcal</span></div>
+                  </div>
+                  <div class="nutrition-counter-target">/ 3k</div>
+                </div>
+                <div class="nutrition-counter electrolytes ok" id="electrolyteCounter">
+                  <div class="nutrition-counter-icon">⚡</div>
+                  <div class="nutrition-counter-body">
+                    <div class="nutrition-counter-label">Electrolytes</div>
+                    <div class="nutrition-counter-value" id="electrolyteVal">✗ <span>Missing</span></div>
+                  </div>
+                  <div class="item-counter-dot" style="margin-left:auto;flex-shrink:0;" id="electrolyteDot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN COMPARTMENT -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Main Compartment</div>
+            <div class="pack-section-cap" id="mainCap">0 / 12 slots used</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="generic-grid" id="mainCompartment"></div>
+          </div>
+        </div>
+
+        <!-- CHEST / HIP BELT POCKETS -->
+        <div class="pack-section">
+          <div class="pack-section-header">
+            <div class="pack-section-title">Chest / Hip Belt Pockets</div>
+            <div class="pack-section-cap" id="lidCap">0 / 4 slots used</div>
+          </div>
+          <div class="pack-section-body">
+            <div class="generic-grid" id="lidCompartment"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN (part of the loadout) -->
+    <div class="quick-panel">
+
+      <!-- ESSENTIAL ITEMS -->
+      <div class="qp-header">
+        <div class="panel-title" style="font-size:13px;">Essential Items</div>
+      </div>
+      <div class="qp-body">
+        <div class="item-counters">
+          <div class="item-counter ok" id="safety-counter">
+            <div class="item-counter-icon">🔦</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Safety Items</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+          <div class="item-counter warn" id="medical-counter">
+            <div class="item-counter-icon">🩺</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Medical Items</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+          <div class="item-counter neutral" id="tools-counter">
+            <div class="item-counter-icon">🔧</div>
+            <div class="item-counter-body">
+              <div class="item-counter-label">Tools</div>
+              <div class="item-counter-value">0 <span>packed</span></div>
+            </div>
+            <div class="item-counter-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORN ITEMS -->
+      <div class="qp-header">
+        <div class="panel-title" style="font-size:13px;">Worn Items</div>
+        <div class="panel-subtitle" id="wornCap">0 / 8</div>
+      </div>
+      <div class="qp-body" style="flex:1;">
+        <div class="worn-grid" id="wornGrid"></div>
+      </div>
+
+      <!-- POCKET ITEMS -->
+      <div class="qp-header">
+        <div class="panel-title" style="font-size:13px;">Pocket Items</div>
+        <div class="panel-subtitle" id="pocketCap">0 / 4</div>
+      </div>
+      <div class="qp-body" style="border-bottom:0;">
+        <div class="quick-grid" id="pocketGrid"></div>
+      </div>
+
+      <div class="weight-section">
+        <div class="weight-label">
+          <span>Pack Weight</span>
+          <span style="color:var(--accent-teal);" id="sideWeightLabel">0 / 15 kg</span>
+        </div>
+        <div class="weight-track"><div class="weight-fill" id="weightFill"></div></div>
+        <div class="weight-zones"><span>LIGHT</span><span>▲ DAYPACK</span><span>HEAVY</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bottom-weight">
+    <div class="bottom-weight-label">Total Weight</div>
+    <div class="bottom-weight-value" id="bottomWeight">0.00 kg</div>
+    <div class="bottom-weight-sub" id="bottomWeightMax">/ 15 kg max</div>
+  </div>
+  <div class="theme-toggle" id="themeToggle" title="Toggle light / dark mode">
+    <span class="theme-toggle-label" id="themeLabel">🌙 Dark</span>
+    <div class="toggle-track" id="toggleTrack">
+      <div class="toggle-thumb" id="toggleThumb">☀</div>
+    </div>
+  </div>
+  <button class="export-btn">Export TrailKit ▶</button>
+</div>
+
+<!-- SAVE NEW LOADOUT MODAL -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <div class="modal-title">Save New Loadout</div>
+    <div class="modal-subtitle">Give this loadout a name to save it to your collection.</div>
+    <input class="modal-input" id="saveModalInput" type="text" placeholder="e.g. Mountain Weekend" maxlength="40">
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="saveCancelBtn">Cancel</button>
+      <button class="modal-btn confirm" id="saveConfirmBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERWRITE LOADOUT MODAL -->
+<div class="modal-overlay" id="overwriteModal">
+  <div class="modal">
+    <div class="modal-title">Overwrite Loadout?</div>
+    <div class="modal-subtitle" id="overwriteModalMsg">This will replace the current contents of the selected loadout with your current loadout. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="overwriteCancelBtn">Cancel</button>
+      <button class="modal-btn danger" id="overwriteConfirmBtn">Confirm Overwrite</button>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  TRAILKIT ENGINE — Volume-slot system, full drag-drop, modal dialogs
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── ITEM DATABASE ────────────────────────────────────────────────────
+// volSlots: how many half-litre slots the item occupies in the pack
+// wornType: category label for Worn Items acceptance filter
+const ITEMS = [
+  { icon:'🥾', name:'Salomon X Ultra 4',     desc:'High-traction mid-cut trail shoe. Waterproof GTX membrane.',        type:'Worn Item',   wornType:'FOOTWEAR',   rarity:'uncommon', sport:'hike',    weightKg:0.90, volSlots:2, condition:'New',     material:'Gore-Tex / Contragrip', calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧥', name:"Arc'teryx Beta LT",      desc:'Lightweight 3-layer Gore-Tex shell. Packable, waterproof.',         type:'Worn Item',   wornType:'SHELL',      rarity:'rare',     sport:'hike',    weightKg:0.35, volSlots:3, condition:'Good',    material:'Gore-Tex 3L',           calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧦', name:'Darn Tough Micro Crew',  desc:'Merino wool hiking sock. Lifetime guarantee.',                      type:'Worn Item',   wornType:'SOCKS',      rarity:'common',   sport:'hike',    weightKg:0.08, volSlots:1, condition:'Mixed',   material:'Merino Wool',           calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧤', name:'BD Crag Gloves',         desc:'Lightweight climbing gloves with touchscreen fingertips.',          type:'Worn Item',   wornType:'GLOVES',     rarity:'common',   sport:'climb',   weightKg:0.06, volSlots:1, condition:'Good',    material:'Synthetic / Clarino',   calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🩺', name:'Adventure Medical Kit',  desc:'Comprehensive first aid kit. 4 people / 10 days.',                 type:'Medical',     wornType:null,         rarity:'essential',sport:'general', weightKg:0.45, volSlots:3, condition:'Stocked', material:'Nylon Case',            calories:0,   safetyItem:false, medItem:true,  tool:false },
+  { icon:'🔦', name:'BD Spot 400 Headlamp',   desc:'400-lumen rechargeable headlamp. IPX8 waterproof.',                type:'Safety',      wornType:null,         rarity:'uncommon', sport:'general', weightKg:0.09, volSlots:1, condition:'New',     material:'Plastic / LED',         calories:0,   safetyItem:true,  medItem:false, tool:false },
+  { icon:'🔧', name:'Leatherman Wave+',       desc:'Full-size multi-tool with 18 tools. Stainless steel.',             type:'Toolkit',     wornType:null,         rarity:'uncommon', sport:'general', weightKg:0.24, volSlots:1, condition:'Used',    material:'Stainless Steel',       calories:0,   safetyItem:false, medItem:false, tool:true  },
+  { icon:'🍫', name:'Clif Bar',               desc:'Organic energy bar. 250 cal.',                                     type:'Nutrition',   wornType:null,         rarity:'common',   sport:'general', weightKg:0.07, volSlots:1, condition:'—',       material:'Wrapped',               calories:250, safetyItem:false, medItem:false, tool:false },
+  { icon:'🍬', name:'Energy Gel',             desc:'Fast-release carbohydrate gel. 100 cal, caffeine-free.',            type:'Nutrition',   wornType:null,         rarity:'common',   sport:'run',     weightKg:0.03, volSlots:1, condition:'—',       material:'Foil Pack',             calories:100, safetyItem:false, medItem:false, tool:false },
+  { icon:'🧴', name:'Sunscreen SPF50',        desc:'Mineral broad-spectrum SPF50. Water-resistant 80 min.',             type:'Skin Care',   wornType:null,         rarity:'common',   sport:'general', weightKg:0.09, volSlots:1, condition:'Partial', material:'Cream',                 calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🗺️', name:'USGS Topo Map',         desc:'Waterproofed topographic map. 1:24,000 scale.',                    type:'Navigation',  wornType:null,         rarity:'common',   sport:'hike',    weightKg:0.04, volSlots:1, condition:'Good',    material:'Waterproof Paper',      calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧲', name:'Garmin inReach Mini',    desc:'Two-way satellite communicator. SOS, weather, GPS tracking.',      type:'Electronics', wornType:null,         rarity:'rare',     sport:'general', weightKg:0.10, volSlots:1, condition:'New',     material:'Polycarbonate',         calories:0,   safetyItem:true,  medItem:false, tool:false },
+  { icon:'⛺', name:'Big Agnes Copper Spur',  desc:'Ultralight 3-season backpacking tent. 2-person, 1.36 kg.',         type:'Shelter',     wornType:null,         rarity:'rare',     sport:'camp',    weightKg:1.36, volSlots:6, condition:'Good',    material:'Nylon / Dyneema',       calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🪢', name:'Dynamic Rope 60m',       desc:'Dry-treated 9.8mm single rope. UIAA certified.',                   type:'Climbing',    wornType:null,         rarity:'rare',     sport:'climb',   weightKg:3.80, volSlots:8, condition:'Good',    material:'Nylon',                 calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧗', name:'BD Momentum Harness',    desc:'Momentum adjustable harness. UIAA certified.',                     type:'Climbing',    wornType:null,         rarity:'uncommon', sport:'climb',   weightKg:0.34, volSlots:2, condition:'Good',    material:'Nylon / EVA Foam',      calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'⛏️', name:'Ice Axe T-Rating',      desc:'General mountaineering axe. 60cm shaft. B-rated pick.',            type:'Climbing',    wornType:null,         rarity:'uncommon', sport:'climb',   weightKg:0.38, volSlots:3, condition:'Good',    material:'Aluminum / Steel',      calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🚵', name:'Fox Racing Helmet',      desc:'Full-face MTB helmet. MIPS liner. POC certified.',                 type:'Protection',  wornType:null,         rarity:'uncommon', sport:'bike',    weightKg:0.78, volSlots:4, condition:'Good',    material:'EPS / Polycarbonate',   calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🔋', name:'Anker PowerCore 10K',    desc:'10,000 mAh USB-C power bank. 18W fast charge.',                   type:'Electronics', wornType:null,         rarity:'common',   sport:'general', weightKg:0.18, volSlots:1, condition:'Good',    material:'ABS Plastic',           calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🛖', name:'Hyperlite Bivy',         desc:'Solo emergency bivy. Reflective mylar. Waterproof.',               type:'Safety',      wornType:null,         rarity:'uncommon', sport:'camp',    weightKg:0.11, volSlots:2, condition:'New',     material:'Mylar / Nylon',         calories:0,   safetyItem:true,  medItem:false, tool:false },
+  { icon:'💊', name:'Electrolyte Tabs',       desc:'Nuun Sport tabs. Low sugar, sodium and potassium blend.',          type:'Nutrition',   wornType:null,         rarity:'common',   sport:'general', weightKg:0.05, volSlots:1, condition:'—',       material:'Tablet',                calories:5,   safetyItem:false, medItem:false, tool:false, electrolyte:true },
+  { icon:'🧊', name:'Insulated Puffy Jacket', desc:'850 fill down puffy. Packable to stuff sack. -10°C comfort.',     type:'Worn Item',   wornType:'INSULATION', rarity:'uncommon', sport:'general', weightKg:0.42, volSlots:3, condition:'Good',    material:'900 Fill Down',         calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🩹', name:'Blister Kit',            desc:'Moleskin, Leukotape, alcohol pads, nitrile gloves.',              type:'Medical',     wornType:null,         rarity:'common',   sport:'hike',    weightKg:0.05, volSlots:1, condition:'Stocked', material:'Assorted',              calories:0,   safetyItem:false, medItem:true,  tool:false },
+  { icon:'📡', name:'Spot Gen4 Beacon',       desc:'Personal locator beacon. 406 MHz GPS. 24hr battery.',             type:'Safety',      wornType:null,         rarity:'essential',sport:'general', weightKg:0.15, volSlots:1, condition:'New',     material:'Polycarbonate',         calories:0,   safetyItem:true,  medItem:false, tool:false },
+  { icon:'🥄', name:'Snow Peak Ti Spork',     desc:'Ultralight titanium spork. 26g. Dishwasher safe.',                type:'Cookware',    wornType:null,         rarity:'common',   sport:'camp',    weightKg:0.03, volSlots:1, condition:'Good',    material:'Grade 1 Titanium',      calories:0,   safetyItem:false, medItem:false, tool:true  },
+  { icon:'🪖', name:'MIPS Trail Helmet',      desc:'Lightweight XC trail helmet. 18 vents, MIPS liner.',              type:'Protection',  wornType:null,         rarity:'uncommon', sport:'hike',    weightKg:0.29, volSlots:4, condition:'Good',    material:'EPS / MIPS',            calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🔑', name:'Petzl Rig Belay',        desc:'Assisted-braking belay/rappel device. 9.5–11mm ropes.',           type:'Climbing',    wornType:null,         rarity:'uncommon', sport:'climb',   weightKg:0.17, volSlots:1, condition:'Good',    material:'Aluminum',              calories:0,   safetyItem:false, medItem:false, tool:true  },
+  { icon:'🧽', name:'PackTowl UltraLite',     desc:'Absorbent microfiber towel. XL. Hang loop.',                      type:'Hygiene',     wornType:null,         rarity:'common',   sport:'general', weightKg:0.08, volSlots:2, condition:'Good',    material:'Microfiber',            calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🕶️', name:'Julbo Aerospace',       desc:'Photochromic glacier glasses. Cat 2–4. Anti-scratch lens.',       type:'Worn Item',   wornType:'EYEWEAR',    rarity:'uncommon', sport:'hike',    weightKg:0.04, volSlots:1, condition:'Good',    material:'Polycarbonate',         calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'📱', name:'iPhone 15 Pro',          desc:'Satellite SOS. 48MP camera. Ceramic Shield. Titanium frame.',     type:'Electronics', wornType:null,         rarity:'rare',     sport:'general', weightKg:0.19, volSlots:1, condition:'Good',    material:'Titanium',              calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧴', name:'Soft Flask 500ml',       desc:'Collapsible BPA-free soft flask. Top-lock twist cap.',            type:'Hydration',   wornType:null,         rarity:'common',   sport:'run',     weightKg:0.04, volSlots:1, condition:'Good',    material:'TPU',                   calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'💧', name:'Hydrapak 2L Bladder',    desc:'Shape-shift 2L reservoir. Widepak opening, quick-connect hose.', type:'Hydration',   wornType:null,         rarity:'uncommon', sport:'hike',    weightKg:0.18, volSlots:4, condition:'Good',    material:'TPU',                   calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🩳', name:'Smartwool Hiking Pants', desc:'Merino-blend trail pants. 4-way stretch. UPF 50+.',              type:'Worn Item',   wornType:'LOWER BODY', rarity:'common',   sport:'hike',    weightKg:0.31, volSlots:2, condition:'Good',    material:'Merino / Nylon',        calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🧢', name:'OR Sun Hat',             desc:'Wide brim sun hat. UPF 50+. Moisture-wicking sweatband.',         type:'Worn Item',   wornType:'HEADWEAR',   rarity:'common',   sport:'general', weightKg:0.09, volSlots:1, condition:'Good',    material:'Nylon',                 calories:0,   safetyItem:false, medItem:false, tool:false },
+  { icon:'🎒', name:'Osprey Talon 22',        desc:'Versatile 22L daypack. AirSpeed back panel. Rain cover included.',type:'Backpack',    wornType:null,         rarity:'uncommon', sport:'hike',    weightKg:0.87, volSlots:2, condition:'Good',    material:'210D Nylon',            calories:0,   safetyItem:false, medItem:false, tool:false },
+];
+
+// ── PACK PROFILES ────────────────────────────────────────────────────
+const PACK_PROFILES = {
+  osprey22:    { name:'Osprey Talon 22',       icon:'🎒', rarity:'uncommon', volSlots:2, volume:'22L', capacity:12, lidCapacity:4,  maxWeightKg:15, packWeightKg:0.87, bladderMax:'3L',   sports:['hike','run','camp'],   material:'210D Nylon'  },
+  baltoro65:   { name:'Gregory Baltoro 65',    icon:'🎽', rarity:'rare',     volSlots:4, volume:'65L', capacity:20, lidCapacity:6,  maxWeightKg:27, packWeightKg:2.10, bladderMax:'3L',   sports:['hike','camp'],         material:'210D HDPE'   },
+  momentum26:  { name:'Osprey Momentum 26',    icon:'🏃', rarity:'common',   volSlots:2, volume:'26L', capacity:8,  lidCapacity:2,  maxWeightKg:10, packWeightKg:0.53, bladderMax:'2L',   sports:['run','bike'],          material:'100D Nylon'  },
+  bdcreek50:   { name:'BD Creek 50',           icon:'🧗', rarity:'uncommon', volSlots:3, volume:'50L', capacity:14, lidCapacity:4,  maxWeightKg:20, packWeightKg:1.60, bladderMax:'3L',   sports:['climb','hike'],        material:'420D Nylon'  },
+};
+
+// ── PRESET LOADOUTS ──────────────────────────────────────────────────
+const PRESET_LOADOUTS = {
+  'new':        { label:'New Loadout',        packProfile:'osprey22',   main:[], lid:[], worn:[], pocket:[], backpackItem:null, bladderItem:null, leftPocket:null, rightPocket:null },
+  'day-hike':   { label:'Day Hike — Light',   packProfile:'osprey22',   main:['BD Spot 400 Headlamp','USGS Topo Map','Clif Bar','Sunscreen SPF50','Blister Kit'], lid:['Spot Gen4 Beacon','Garmin inReach Mini'], worn:['Salomon X Ultra 4','Darn Tough Micro Crew',"Arc'teryx Beta LT",'Julbo Aerospace','Smartwool Hiking Pants'], pocket:['Energy Gel','Sunscreen SPF50'], backpackItem:'Osprey Talon 22', bladderItem:'Hydrapak 2L Bladder', leftPocket:'Soft Flask 500ml', rightPocket:null },
+  'overnighter':{ label:'Overnighter Pack',   packProfile:'baltoro65',  main:['Big Agnes Copper Spur','Insulated Puffy Jacket','Clif Bar','Electrolyte Tabs','Adventure Medical Kit','Leatherman Wave+','BD Spot 400 Headlamp','Snow Peak Ti Spork'], lid:['Spot Gen4 Beacon','Garmin inReach Mini','Blister Kit','PackTowl UltraLite'], worn:['Salomon X Ultra 4','Darn Tough Micro Crew',"Arc'teryx Beta LT",'Smartwool Hiking Pants'], pocket:['iPhone 15 Pro','Energy Gel'], backpackItem:'Gregory Baltoro 65', bladderItem:'Hydrapak 2L Bladder', leftPocket:'Soft Flask 500ml', rightPocket:'Soft Flask 500ml' },
+  'mtb-enduro': { label:'MTB Enduro Day',     packProfile:'momentum26', main:['Fox Racing Helmet','Anker PowerCore 10K','Energy Gel','Leatherman Wave+'], lid:['iPhone 15 Pro'], worn:[], pocket:['Energy Gel'], backpackItem:null, bladderItem:null, leftPocket:null, rightPocket:null },
+  'climb-sport':{ label:'Sport Climbing',     packProfile:'bdcreek50',  main:['Dynamic Rope 60m','BD Momentum Harness','Ice Axe T-Rating','Petzl Rig Belay','BD Spot 400 Headlamp','BD Crag Gloves'], lid:['Adventure Medical Kit','Blister Kit'], worn:[], pocket:[], backpackItem:null, bladderItem:null, leftPocket:null, rightPocket:null },
+};
+
+// Worn slots template (fixed slots with labels)
+const WORN_SLOTS_TEMPLATE = [
+  { label:'FOOTWEAR' }, { label:'SOCKS' }, { label:'SHELL' }, { label:'INSULATION' },
+  { label:'EYEWEAR' }, { label:'LOWER BODY' }, { label:'GLOVES' }, { label:'HEADWEAR' },
+];
+
+// ── APP STATE ────────────────────────────────────────────────────────
+let state = {
+  activeSport: 'hike',
+  stashFilter: 'ALL',
+  currentLoadoutKey: 'day-hike',
+  packProfileKey: 'osprey22',
+  // slot arrays (item names, null = empty)
+  mainSlots:   [],
+  lidSlots:    [],
+  wornSlots:   new Array(8).fill(null),  // fixed 8 worn slots
+  pocketSlots: [],                        // dynamic pocket slots
+  // special named slots
+  backpackItem:  null,
+  bladderItem:   null,
+  leftPocket:    null,
+  rightPocket:   null,
+  dragItem: null,   // { name, fromZone, fromIndex }
+  savedLoadouts: {},
+};
+
+// Initialise saved loadouts from presets
+Object.entries(PRESET_LOADOUTS).forEach(([k,v]) => { state.savedLoadouts[k] = JSON.parse(JSON.stringify(v)); });
+
+// ── CONSTANTS ────────────────────────────────────────────────────────
+const SPORT_COLORS  = { hike:'#2a7a4b', bike:'#1a5c8a', climb:'#7a3a8a', run:'#8a4a1a', moto:'#5a3a1a', camp:'#1a3a5c', general:'#2a3a4a' };
+const RARITY_LABELS = { common:'COMMON', uncommon:'UNCOMMON', rare:'RARE', essential:'ESSENTIAL' };
+const SPORT_LABELS  = { hike:'HIKING', bike:'MTB', climb:'CLIMBING', run:'RUNNING', moto:'MOTO', camp:'CAMPING', general:'GENERAL' };
+
+function itemByName(n) { return ITEMS.find(i => i.name === n) || null; }
+function packProfile() { return PACK_PROFILES[state.packProfileKey]; }
+function fmtKg(kg)     { return kg.toFixed(2) + ' kg'; }
+function isCompatible(item) { return item.sport === 'general' || item.sport === state.activeSport; }
+
+// ── TOOLTIP ──────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+
+function showTooltipFull(e, item, restriction) {
+  const compat = isCompatible(item);
+  tooltip.innerHTML = `
+    <div class="tooltip-tags">
+      <span class="tooltip-tag tt-type">${item.type.toUpperCase()}</span>
+      <span class="tooltip-tag tt-${item.rarity}">${RARITY_LABELS[item.rarity]||item.rarity.toUpperCase()}</span>
+      <span class="tooltip-tag tt-${item.sport}">${SPORT_LABELS[item.sport]||item.sport.toUpperCase()}</span>
+      ${compat ? '<span class="tooltip-tag tt-compat">✓ COMPATIBLE</span>' : ''}
+      ${restriction ? `<span class="tooltip-tag tt-restrict">${restriction}</span>` : ''}
+    </div>
+    <div class="tooltip-name">${item.name}</div>
+    <div class="tooltip-desc">${item.desc}</div>
+    <div class="tooltip-stats">
+      <div class="tooltip-stat-row"><span class="tt-key">Volume</span><span class="tt-val tt-highlight">${item.volSlots} slot${item.volSlots>1?'s':''} (${item.volSlots*0.5}L)</span></div>
+      <div class="tooltip-stat-row"><span class="tt-key">Weight</span><span class="tt-val">${fmtKg(item.weightKg)}</span></div>
+      <div class="tooltip-stat-row"><span class="tt-key">Condition</span><span class="tt-val">${item.condition}</span></div>
+      <div class="tooltip-stat-row"><span class="tt-key">Material</span><span class="tt-val">${item.material}</span></div>
+      ${item.calories ? `<div class="tooltip-stat-row"><span class="tt-key">Calories</span><span class="tt-val tt-highlight">${item.calories} kcal</span></div>` : ''}
+    </div>`;
+  tooltip.classList.add('visible');
+  positionTooltip(e);
+}
+function showTooltipByName(e, name) { const it = itemByName(name); if (it) showTooltipFull(e, it); }
+function hideTooltip() { tooltip.classList.remove('visible'); }
+function positionTooltip(e) {
+  const pad=14,w=274,h=320;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if (x+w>window.innerWidth)  x=e.clientX-w-pad;
+  if (y+h>window.innerHeight) y=e.clientY-h-pad;
+  tooltip.style.left=x+'px'; tooltip.style.top=y+'px';
+}
+document.addEventListener('mousemove', e => { if (tooltip.classList.contains('visible')) positionTooltip(e); });
+
+// ── VOL BADGE CLASS ──────────────────────────────────────────────────
+function volClass(v) { return 'v' + Math.min(v, 8); }
+
+// ── SLOT ELEMENT (generic grid) ──────────────────────────────────────
+function makeSlotEl(item, zone, index) {
+  const el = document.createElement('div');
+  el.className = 'slot';
+  el.dataset.zone  = zone;
+  el.dataset.index = index;
+  el.dataset.name  = item.name;
+  el.classList.toggle('slot-compatible',   isCompatible(item));
+  el.classList.toggle('slot-incompatible', !isCompatible(item));
+  el.innerHTML = `
+    <div class="slot-sport-dot" style="background:${SPORT_COLORS[item.sport]||SPORT_COLORS.general}"></div>
+    <div class="slot-vol-badge ${volClass(item.volSlots)}">${item.volSlots}</div>
+    <div class="slot-icon">${item.icon}</div>
+    <div class="slot-rarity ${item.rarity}"></div>`;
+  el.addEventListener('mouseenter', e => showTooltipFull(e, item));
+  el.addEventListener('mouseleave', hideTooltip);
+  el.setAttribute('draggable','true');
+  el.addEventListener('dragstart', e => onDragStart(e, item.name, zone, index));
+  el.addEventListener('dragend', onDragEnd);
+  return el;
+}
+
+function makeEmptySlotEl(zone, index) {
+  const el = document.createElement('div');
+  el.className = 'slot empty interactive';
+  el.dataset.zone  = zone;
+  el.dataset.index = index;
+  el.innerHTML = '<div style="font-size:14px;color:var(--text-secondary)">+</div>';
+  bindDropTarget(el, zone, index);
+  return el;
+}
+
+function makeHiddenSlotEl() {
+  const el = document.createElement('div');
+  el.className = 'slot empty vol-hidden';
+  return el;
+}
+
+// Bind drag-over / drop to any element
+function bindDropTarget(el, zone, index) {
+  el.addEventListener('dragover',  e => { e.preventDefault(); el.classList.add('drop-target'); });
+  el.addEventListener('dragleave', ()  => el.classList.remove('drop-target'));
+  el.addEventListener('drop',      e  => onDrop(e, zone, index));
+}
+
+// ── RENDER STASH ─────────────────────────────────────────────────────
+function renderStash() {
+  const grid = document.getElementById('stashGrid');
+  grid.innerHTML = '';
+
+  // Collect all names currently in the loadout
+  const inUse = new Set([
+    state.backpackItem, state.bladderItem, state.leftPocket, state.rightPocket,
+    ...state.mainSlots, ...state.lidSlots, ...state.wornSlots, ...state.pocketSlots
+  ].filter(Boolean));
+
+  const filter = state.stashFilter;
+  const visible = ITEMS.filter(item => {
+    if (inUse.has(item.name)) return false;
+    if (filter === 'ALL') return true;
+    if (filter === 'MED') return item.medItem || item.safetyItem;
+    const map = { HIKE:'hike', BIKE:'bike', CLIMB:'climb', RUN:'run', MOTO:'moto', CAMP:'camp' };
+    const sport = map[filter];
+    return item.sport === sport || item.sport === 'general';
+  });
+
+  visible.forEach((item, i) => {
+    const el = makeSlotEl(item, 'stash', i);
+    grid.appendChild(el);
+  });
+  for (let i=0;i<6;i++) {
+    const s=document.createElement('div'); s.className='slot empty';
+    grid.appendChild(s);
+  }
+
+  const cnt = document.getElementById('stashCount');
+  if (cnt) cnt.textContent = `${visible.length} / ${ITEMS.filter(i=>i.type!=='Backpack').length} items`;
+}
+
+// ── RENDER GENERIC COMPARTMENT (volume-aware) ─────────────────────────
+// mainSlots/lidSlots store item names; items can occupy >1 slot.
+// We render the slots as a flat grid: item occupies 1 visual cell + (volSlots-1) hidden cells.
+function renderCompartment(gridId, slotArray, capacity, zone, capEl) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  // Build visual array: each entry is {item|null, hidden}
+  let usedSlots = 0;
+  const cells = [];
+  for (let i=0; i<capacity; i++) {
+    const name = slotArray[i] || null;
+    if (name === '__hidden__') { cells.push({hidden:true}); usedSlots++; continue; }
+    const item = name ? itemByName(name) : null;
+    cells.push({item, index:i});
+    if (item && item.volSlots > 1) usedSlots++;
+    if (!item) {} else usedSlots++;
+  }
+
+  // Re-derive cells from authoritative slotArray (which already has __hidden__ markers)
+  grid.innerHTML = '';
+  let itemCount = 0;
+  for (let i=0; i<capacity; i++) {
+    const name = slotArray[i];
+    if (name === '__hidden__') {
+      grid.appendChild(makeHiddenSlotEl());
+    } else if (name) {
+      const item = itemByName(name);
+      itemCount++;
+      if (item) {
+        const el = makeSlotEl(item, zone, i);
+        bindDropTarget(el, zone, i);
+        grid.appendChild(el);
+      }
+    } else {
+      grid.appendChild(makeEmptySlotEl(zone, i));
+    }
+  }
+
+  // Update cap label
+  if (capEl) {
+    const filledSlots = slotArray.filter(s => s && s !== '__hidden__').length;
+    const totalUsed   = slotArray.filter(Boolean).length; // includes __hidden__
+    capEl.textContent = `${filledSlots} items / ${capacity} slots (${capacity - totalUsed} free)`;
+  }
+}
+
+// ── RENDER WORN GRID ─────────────────────────────────────────────────
+function renderWornGrid() {
+  const grid = document.getElementById('wornGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  let filled = 0;
+  WORN_SLOTS_TEMPLATE.forEach((tmpl, i) => {
+    const name = state.wornSlots[i];
+    const item = name ? itemByName(name) : null;
+    if (item) filled++;
+    const el = document.createElement('div');
+    el.className = item ? 'worn-slot' : 'worn-slot empty-slot';
+    el.dataset.zone  = 'worn';
+    el.dataset.index = i;
+    if (item) {
+      el.innerHTML = `<div class="worn-icon">${item.icon}</div><div class="worn-info"><div class="worn-name">${item.name.length>14?item.name.slice(0,13)+'…':item.name}</div><div class="worn-label">${tmpl.label}</div></div>`;
+      el.addEventListener('mouseenter', e => showTooltipFull(e, item));
+      el.addEventListener('mouseleave', hideTooltip);
+      el.setAttribute('draggable','true');
+      el.addEventListener('dragstart', ev => onDragStart(ev, name, 'worn', i));
+      el.addEventListener('dragend', onDragEnd);
+    } else {
+      el.innerHTML = `<div style="font-size:14px;margin-right:6px;color:var(--text-secondary)">+</div><div class="worn-empty-label">${tmpl.label}</div>`;
+    }
+    bindDropTarget(el, 'worn', i);
+    grid.appendChild(el);
+  });
+  const cap = document.getElementById('wornCap');
+  if (cap) cap.textContent = `${filled} / 8`;
+}
+
+// ── RENDER POCKET GRID ───────────────────────────────────────────────
+function renderPocketGrid() {
+  const grid = document.getElementById('pocketGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const CAP = 4;
+  let filled = 0;
+  for (let i=0; i<CAP; i++) {
+    const name = state.pocketSlots[i] || null;
+    const item = name ? itemByName(name) : null;
+    if (item) filled++;
+    const el = document.createElement('div');
+    if (item) {
+      el.className = 'quick-slot';
+      el.innerHTML = `<span style="font-size:22px">${item.icon}</span>
+        <div class="slot-vol-badge ${volClass(item.volSlots)}" style="position:absolute;top:2px;right:2px;font-size:9px">${item.volSlots}</div>`;
+      el.addEventListener('mouseenter', e => showTooltipFull(e, item));
+      el.addEventListener('mouseleave', hideTooltip);
+      el.setAttribute('draggable','true');
+      el.addEventListener('dragstart', ev => onDragStart(ev, name, 'pocket', i));
+      el.addEventListener('dragend', onDragEnd);
+    } else {
+      el.className = 'quick-slot empty-slot';
+      el.textContent = '+';
+    }
+    el.dataset.zone  = 'pocket';
+    el.dataset.index = i;
+    bindDropTarget(el, 'pocket', i);
+    grid.appendChild(el);
+  }
+  const cap = document.getElementById('pocketCap');
+  if (cap) cap.textContent = `${filled} / ${CAP}`;
+}
+
+// ── RENDER SPECIAL SLOTS (backpack, bladder, side pockets) ───────────
+function renderSpecialSlots() {
+  // Backpack
+  const bpEl   = document.getElementById('backpackSlotEl');
+  const bpIcon = document.getElementById('backpackIcon');
+  const bpVol  = document.getElementById('backpackVolBadge');
+  const bpRar  = document.getElementById('backpackRarity');
+  const prof   = packProfile();
+  const bpItem = state.backpackItem ? itemByName(state.backpackItem) : null;
+  const displayItem = bpItem || { icon:prof.icon, volSlots:prof.volSlots, rarity:prof.rarity, name:prof.name };
+
+  if (bpIcon) bpIcon.textContent = displayItem.icon;
+  if (bpVol)  { bpVol.textContent = displayItem.volSlots; bpVol.className = `slot-vol-badge ${volClass(displayItem.volSlots)}`; }
+  if (bpRar)  bpRar.className = `slot-rarity ${displayItem.rarity}`;
+
+  // Remove old listeners & rebind
+  const bpNew = bpEl.cloneNode(true);
+  bpEl.parentNode.replaceChild(bpNew, bpEl);
+  bpNew.addEventListener('mouseenter', e => showTooltipFull(e, bpItem || { ...prof, type:'Backpack', sport:'general', condition:'Good', material:prof.material, volSlots:prof.volSlots, weightKg:prof.packWeightKg, calories:0 }));
+  bpNew.addEventListener('mouseleave', hideTooltip);
+  if (bpItem) {
+    bpNew.setAttribute('draggable','true');
+    bpNew.addEventListener('dragstart', ev => onDragStart(ev, state.backpackItem, 'backpack', 0));
+    bpNew.addEventListener('dragend', onDragEnd);
+  }
+  bpNew.addEventListener('dragover',  e => { e.preventDefault(); bpNew.classList.add('drop-target'); });
+  bpNew.addEventListener('dragleave', ()  => bpNew.classList.remove('drop-target'));
+  bpNew.addEventListener('drop',      e  => onDrop(e, 'backpack', 0));
+
+  // Pack meta
+  document.getElementById('packName').textContent = prof.name;
+  document.getElementById('packMeta1').innerHTML  = `Volume: <span>${prof.volume}</span> &nbsp;|&nbsp; Capacity: <span>${prof.capacity} slots</span>`;
+  document.getElementById('packMeta2').innerHTML  = `Weight: <span>${fmtKg(prof.packWeightKg)}</span> &nbsp;|&nbsp; Bladder: <span>${prof.bladderMax} max</span>`;
+  document.getElementById('packMeta3').innerHTML  = `Max Load: <span>${prof.maxWeightKg} kg</span>`;
+
+  // Bladder slot
+  renderWaterSlot('bladderSlotEl', 'bladderVolBadge', 'bladderRarity', state.bladderItem, 'bladder', 'Hydration Bladder');
+  // Side pockets
+  renderSidePocket('leftPocketEl', 'leftPocketIcon', 'leftPocketVol', 'leftPocketRarity', state.leftPocket,  'leftPocket');
+  renderSidePocket('rightPocketEl','rightPocketIcon','rightPocketVol','rightPocketRarity',state.rightPocket, 'rightPocket');
+}
+
+function renderWaterSlot(elId, volId, rarId, itemName, zone, label) {
+  const el    = document.getElementById(elId);
+  const volEl = document.getElementById(volId);
+  const rarEl = document.getElementById(rarId);
+  if (!el) return;
+  const item  = itemName ? itemByName(itemName) : null;
+  // Clear old content keeping badge+rarity
+  const mainSpan = el.querySelector('span') || document.createElement('span');
+  el.innerHTML = '';
+  el.appendChild(mainSpan);
+  el.appendChild(volEl);
+  el.appendChild(rarEl);
+  if (item) {
+    el.classList.remove('empty-water');
+    mainSpan.textContent = item.icon;
+    mainSpan.style.fontSize = '36px';
+    volEl.textContent  = item.volSlots;
+    volEl.className    = `slot-vol-badge ${volClass(item.volSlots)}`;
+    volEl.style.display = '';
+    rarEl.className    = `slot-rarity ${item.rarity}`;
+    rarEl.style.display = '';
+    el.setAttribute('draggable','true');
+  } else {
+    el.classList.add('empty-water');
+    mainSpan.textContent = '+';
+    mainSpan.style.fontSize = '24px';
+    volEl.style.display  = 'none';
+    rarEl.style.display  = 'none';
+    el.removeAttribute('draggable');
+  }
+  // Rebind events
+  const fresh = el.cloneNode(true);
+  el.parentNode.replaceChild(fresh, el);
+  // restore child refs after clone
+  const fvol = document.getElementById(volId);
+  const frar = document.getElementById(rarId);
+  fresh.addEventListener('mouseenter', e => item ? showTooltipFull(e, item) : null);
+  fresh.addEventListener('mouseleave', hideTooltip);
+  if (item) {
+    fresh.setAttribute('draggable','true');
+    fresh.addEventListener('dragstart', ev => onDragStart(ev, itemName, zone, 0));
+    fresh.addEventListener('dragend', onDragEnd);
+  }
+  fresh.addEventListener('dragover',  e => { e.preventDefault(); fresh.classList.add('drop-target'); });
+  fresh.addEventListener('dragleave', ()  => fresh.classList.remove('drop-target'));
+  fresh.addEventListener('drop',      e  => onDrop(e, zone, 0));
+}
+
+function renderSidePocket(elId, iconId, volId, rarId, itemName, zone) {
+  const el     = document.getElementById(elId);
+  const iconEl = document.getElementById(iconId);
+  const volEl  = document.getElementById(volId);
+  const rarEl  = document.getElementById(rarId);
+  if (!el || !iconEl) return;
+  const item   = itemName ? itemByName(itemName) : null;
+  if (item) {
+    el.classList.add('filled');
+    iconEl.textContent = item.icon;
+    iconEl.style.fontSize = '22px';
+    volEl.textContent = item.volSlots;
+    volEl.className   = `slot-vol-badge ${volClass(item.volSlots)}`;
+    volEl.style.display = '';
+    rarEl.className   = `slot-rarity ${item.rarity}`;
+    rarEl.style.display = '';
+  } else {
+    el.classList.remove('filled');
+    iconEl.textContent = '+';
+    iconEl.style.fontSize = '18px';
+    volEl.style.display = 'none';
+    rarEl.style.display = 'none';
+  }
+  const fresh = el.cloneNode(true);
+  el.parentNode.replaceChild(fresh, el);
+  fresh.addEventListener('mouseenter', e => item ? showTooltipFull(e, item) : null);
+  fresh.addEventListener('mouseleave', hideTooltip);
+  if (item) {
+    fresh.setAttribute('draggable','true');
+    fresh.addEventListener('dragstart', ev => onDragStart(ev, itemName, zone, 0));
+    fresh.addEventListener('dragend', onDragEnd);
+  }
+  fresh.addEventListener('dragover',  e => { e.preventDefault(); fresh.classList.add('drop-target'); });
+  fresh.addEventListener('dragleave', ()  => fresh.classList.remove('drop-target'));
+  fresh.addEventListener('drop',      e  => onDrop(e, zone, 0));
+}
+
+// ── RENDER STATS ─────────────────────────────────────────────────────
+function renderStats() {
+  const prof = packProfile();
+  const allNames = [
+    state.backpackItem, state.bladderItem, state.leftPocket, state.rightPocket,
+    ...state.mainSlots.filter(s => s && s!=='__hidden__'),
+    ...state.lidSlots.filter(s => s && s!=='__hidden__'),
+    ...state.wornSlots,
+    ...state.pocketSlots,
+  ].filter(Boolean);
+
+  let totalKg = prof.packWeightKg;
+  let totalCal = 0;
+  let safetyCount=0, medCount=0, toolCount=0;
+  let hasElectrolyte = false;
+
+  allNames.forEach(name => {
+    const it = itemByName(name);
+    if (!it) return;
+    totalKg   += it.weightKg;
+    totalCal  += it.calories || 0;
+    if (it.safetyItem)   safetyCount++;
+    if (it.medItem)      medCount++;
+    if (it.tool)         toolCount++;
+    if (it.electrolyte)  hasElectrolyte = true;
+  });
+
+  const pct = Math.min(100, (totalKg / prof.maxWeightKg) * 100);
+
+  // Bottom bar
+  const bwv = document.getElementById('bottomWeight');
+  const bwm = document.getElementById('bottomWeightMax');
+  if (bwv) bwv.textContent = fmtKg(totalKg);
+  if (bwm) bwm.textContent = `/ ${prof.maxWeightKg} kg max`;
+
+  // Side weight
+  const swl = document.getElementById('sideWeightLabel');
+  const wf  = document.getElementById('weightFill');
+  if (swl) swl.textContent = `${fmtKg(totalKg)} / ${prof.maxWeightKg} kg`;
+  if (wf)  wf.style.width  = pct + '%';
+
+  // Counters
+  updateCounter('safety-counter',  safetyCount, safetyCount>0?'ok':'warn');
+  updateCounter('medical-counter', medCount,    medCount>0?'ok':'warn');
+  updateCounter('tools-counter',   toolCount,   'neutral');
+
+  // Calories
+  const calEl = document.getElementById('calCounter');
+  if (calEl) calEl.innerHTML = `${totalCal.toLocaleString()} <span>kcal</span>`;
+
+  // Electrolytes
+  const eVal = document.getElementById('electrolyteVal');
+  const eDot = document.getElementById('electrolyteDot');
+  const eCtr = document.getElementById('electrolyteCounter');
+  if (eVal && eDot && eCtr) {
+    if (hasElectrolyte) {
+      eVal.innerHTML = '✓ <span>Packed</span>';
+      eDot.style.background = 'var(--accent-green)';
+      eDot.style.boxShadow  = '0 0 5px var(--accent-green)';
+      eCtr.className = 'nutrition-counter electrolytes ok';
+    } else {
+      eVal.innerHTML = '✗ <span>Missing</span>';
+      eDot.style.background = 'var(--accent-red)';
+      eDot.style.boxShadow  = '0 0 5px var(--accent-red)';
+      eCtr.className = 'nutrition-counter electrolytes';
+      eCtr.style.borderColor = 'rgba(232,64,64,0.28)';
+      eCtr.style.background  = 'rgba(232,64,64,0.05)';
+    }
+  }
+}
+
+function updateCounter(id, count, st) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `item-counter ${st}`;
+  const val = el.querySelector('.item-counter-value');
+  if (val) val.innerHTML = `${count} <span>packed</span>`;
+}
+
+// ── VOLUME-AWARE SLOT INSERTION ───────────────────────────────────────
+// When placing an item in a grid, it occupies item.volSlots consecutive indices.
+// Indices after the first are filled with '__hidden__'.
+function placeInGrid(arr, capacity, atIndex, itemName) {
+  const item = itemByName(itemName);
+  if (!item) return false;
+  const vols = item.volSlots;
+  // Check that atIndex + vols - 1 fits within capacity
+  if (atIndex + vols > capacity) return false;
+  // Check all required slots are free
+  for (let j=0; j<vols; j++) {
+    if (arr[atIndex+j] && arr[atIndex+j] !== '__hidden__') return false;
+  }
+  arr[atIndex] = itemName;
+  for (let j=1; j<vols; j++) arr[atIndex+j] = '__hidden__';
+  return true;
+}
+
+function removeFromGrid(arr, atIndex) {
+  const name = arr[atIndex];
+  if (!name || name === '__hidden__') return null;
+  const item = itemByName(name);
+  arr[atIndex] = null;
+  // Clear hidden slots that follow
+  if (item) {
+    for (let j=1; j<item.volSlots; j++) {
+      if (arr[atIndex+j] === '__hidden__') arr[atIndex+j] = null;
+    }
+  }
+  return name;
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────
+function onDragStart(e, name, zone, index) {
+  hideTooltip();
+  state.dragItem = { name, fromZone:zone, fromIndex:index };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', name);
+  setTimeout(()=> e.target.classList.add('dragging'), 0);
+}
+function onDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.drop-target').forEach(el=>el.classList.remove('drop-target'));
+  state.dragItem = null;
+}
+
+function onDrop(e, toZone, toIndex) {
+  e.preventDefault(); e.stopPropagation();
+  document.querySelectorAll('.drop-target').forEach(el=>el.classList.remove('drop-target'));
+  const drag = state.dragItem;
+  if (!drag) return;
+  const { name, fromZone, fromIndex } = drag;
+  const item = itemByName(name);
+  if (!item) return;
+
+  // ── Validate zone restrictions ──
+  if (toZone === 'backpack' && item.type !== 'Backpack') return;
+  if (toZone === 'worn' && item.type !== 'Worn Item') return;
+  // bladder, leftPocket, rightPocket accept anything (no restriction)
+
+  // ── Remove from source ──
+  if (fromZone === 'main')      removeFromGrid(state.mainSlots, fromIndex);
+  else if (fromZone === 'lid')  removeFromGrid(state.lidSlots,  fromIndex);
+  else if (fromZone === 'worn') state.wornSlots[fromIndex]  = null;
+  else if (fromZone === 'pocket') state.pocketSlots[fromIndex] = null;
+  else if (fromZone === 'backpack')   state.backpackItem  = null;
+  else if (fromZone === 'bladder')    state.bladderItem   = null;
+  else if (fromZone === 'leftPocket') state.leftPocket    = null;
+  else if (fromZone === 'rightPocket')state.rightPocket   = null;
+  // fromZone === 'stash': nothing to remove
+
+  // ── Place in destination ──
+  const prof = packProfile();
+  if (toZone === 'stash') {
+    // dropped back to stash — already removed from source, nothing else needed
+  } else if (toZone === 'main') {
+    const cap = prof.capacity;
+    while (state.mainSlots.length < cap) state.mainSlots.push(null);
+    placeInGrid(state.mainSlots, cap, toIndex, name);
+  } else if (toZone === 'lid') {
+    const cap = prof.lidCapacity;
+    while (state.lidSlots.length < cap) state.lidSlots.push(null);
+    placeInGrid(state.lidSlots, cap, toIndex, name);
+  } else if (toZone === 'worn') {
+    if (!state.wornSlots[toIndex]) state.wornSlots[toIndex] = name;
+  } else if (toZone === 'pocket') {
+    while (state.pocketSlots.length < 4) state.pocketSlots.push(null);
+    if (!state.pocketSlots[toIndex]) state.pocketSlots[toIndex] = name;
+  } else if (toZone === 'backpack')    state.backpackItem = name;
+  else if (toZone === 'bladder')       state.bladderItem  = name;
+  else if (toZone === 'leftPocket')    state.leftPocket   = name;
+  else if (toZone === 'rightPocket')   state.rightPocket  = name;
+
+  renderAll();
+}
+
+// Stash drop zone (return to stash)
+function initStashDropZone() {
+  const grid = document.getElementById('stashGrid');
+  grid.addEventListener('dragover',  e => { e.preventDefault(); grid.classList.add('stash-drop-active'); });
+  grid.addEventListener('dragleave', ()  => grid.classList.remove('stash-drop-active'));
+  grid.addEventListener('drop', e => {
+    e.preventDefault();
+    grid.classList.remove('stash-drop-active');
+    const drag = state.dragItem;
+    if (!drag || drag.fromZone === 'stash') return;
+    onDrop(e, 'stash', -1);
+  });
+}
+
+// ── FULL RENDER ───────────────────────────────────────────────────────
+function renderAll() {
+  const prof = packProfile();
+  // Ensure arrays are right length
+  while (state.mainSlots.length   < prof.capacity)    state.mainSlots.push(null);
+  while (state.lidSlots.length    < prof.lidCapacity)  state.lidSlots.push(null);
+  while (state.wornSlots.length   < 8)                 state.wornSlots.push(null);
+  while (state.pocketSlots.length < 4)                 state.pocketSlots.push(null);
+
+  renderSpecialSlots();
+  renderCompartment('mainCompartment', state.mainSlots, prof.capacity,    'main', document.getElementById('mainCap'));
+  renderCompartment('lidCompartment',  state.lidSlots,  prof.lidCapacity, 'lid',  document.getElementById('lidCap'));
+  renderWornGrid();
+  renderPocketGrid();
+  renderStash();
+  renderStats();
+  applyCompatibilityHighlight();
+}
+
+function applyCompatibilityHighlight() {
+  document.querySelectorAll('.slot:not(.empty)').forEach(el => {
+    const name = el.dataset.name;
+    if (!name) return;
+    const item = itemByName(name);
+    if (!item) return;
+    el.classList.toggle('slot-compatible',   isCompatible(item));
+    el.classList.toggle('slot-incompatible', !isCompatible(item));
+  });
+}
+
+// ── LOADOUT PERSISTENCE ───────────────────────────────────────────────
+function snapshotState() {
+  return {
+    packProfile:  state.packProfileKey,
+    main:         [...state.mainSlots],
+    lid:          [...state.lidSlots],
+    worn:         [...state.wornSlots],
+    pocket:       [...state.pocketSlots],
+    backpackItem: state.backpackItem,
+    bladderItem:  state.bladderItem,
+    leftPocket:   state.leftPocket,
+    rightPocket:  state.rightPocket,
+  };
+}
+
+function loadLoadout(key) {
+  const lo = state.savedLoadouts[key];
+  if (!lo) return;
+  state.currentLoadoutKey = key;
+  state.packProfileKey    = lo.packProfile || 'osprey22';
+  const prof = packProfile();
+  // Populate slot arrays — expand preset arrays with __hidden__ where needed
+  state.mainSlots   = expandSlots(lo.main   || [], prof.capacity);
+  state.lidSlots    = expandSlots(lo.lid    || [], prof.lidCapacity);
+  state.wornSlots   = [...(lo.worn   || [])]; while(state.wornSlots.length<8)   state.wornSlots.push(null);
+  state.pocketSlots = [...(lo.pocket || [])]; while(state.pocketSlots.length<4) state.pocketSlots.push(null);
+  state.backpackItem  = lo.backpackItem  || null;
+  state.bladderItem   = lo.bladderItem   || null;
+  state.leftPocket    = lo.leftPocket    || null;
+  state.rightPocket   = lo.rightPocket   || null;
+  renderAll();
+}
+
+// Re-expand a plain name array (from saved loadout) into a volume-slot grid
+function expandSlots(nameArr, capacity) {
+  const result = new Array(capacity).fill(null);
+  let cursor = 0;
+  nameArr.forEach(name => {
+    if (!name || name === '__hidden__') { cursor++; return; }
+    const item = itemByName(name);
+    const vols = item ? item.volSlots : 1;
+    // find next free run of `vols` slots
+    while (cursor < capacity) {
+      let fits = true;
+      for (let j=0; j<vols; j++) { if (result[cursor+j] !== null) { fits=false; break; } }
+      if (fits && cursor+vols<=capacity) {
+        result[cursor] = name;
+        for (let j=1; j<vols; j++) result[cursor+j] = '__hidden__';
+        cursor += vols;
+        break;
+      }
+      cursor++;
+    }
+  });
+  return result;
+}
+
+function populateLoadoutSelect() {
+  const sel = document.getElementById('loadoutSelect');
+  if (!sel) return;
+  sel.innerHTML = '';
+  Object.entries(state.savedLoadouts).forEach(([key, lo]) => {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = lo.label || key;
+    sel.appendChild(opt);
+  });
+  sel.value = state.currentLoadoutKey;
+}
+
+document.getElementById('loadoutSelect')?.addEventListener('change', function() {
+  loadLoadout(this.value);
+});
+
+// ── MODAL: SAVE NEW LOADOUT ───────────────────────────────────────────
+const saveModal   = document.getElementById('saveModal');
+const saveInput   = document.getElementById('saveModalInput');
+
+document.getElementById('saveNewBtn')?.addEventListener('click', () => {
+  saveInput.value = '';
+  saveModal.classList.add('open');
+  setTimeout(()=> saveInput.focus(), 150);
+});
+document.getElementById('saveCancelBtn')?.addEventListener('click', () => saveModal.classList.remove('open'));
+document.getElementById('saveConfirmBtn')?.addEventListener('click', () => {
+  const label = saveInput.value.trim();
+  if (!label) { saveInput.focus(); return; }
+  const key = label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  state.savedLoadouts[key] = { label, ...snapshotState() };
+  state.currentLoadoutKey  = key;
+  populateLoadoutSelect();
+  document.getElementById('loadoutSelect').value = key;
+  saveModal.classList.remove('open');
+});
+saveInput?.addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('saveConfirmBtn').click(); if (e.key==='Escape') saveModal.classList.remove('open'); });
+saveModal?.addEventListener('click', e => { if (e.target===saveModal) saveModal.classList.remove('open'); });
+
+// ── MODAL: OVERWRITE LOADOUT ──────────────────────────────────────────
+const overwriteModal = document.getElementById('overwriteModal');
+
+document.getElementById('overwriteBtn')?.addEventListener('click', () => {
+  const key = state.currentLoadoutKey;
+  const lo  = state.savedLoadouts[key];
+  const msg = document.getElementById('overwriteModalMsg');
+  if (msg && lo) msg.textContent = `Overwrite "${lo.label}" with your current loadout? This cannot be undone.`;
+  overwriteModal.classList.add('open');
+});
+document.getElementById('overwriteCancelBtn')?.addEventListener('click', () => overwriteModal.classList.remove('open'));
+document.getElementById('overwriteConfirmBtn')?.addEventListener('click', () => {
+  const key = state.currentLoadoutKey;
+  if (state.savedLoadouts[key]) {
+    const label = state.savedLoadouts[key].label;
+    state.savedLoadouts[key] = { label, ...snapshotState() };
+  }
+  overwriteModal.classList.remove('open');
+});
+overwriteModal?.addEventListener('click', e => { if (e.target===overwriteModal) overwriteModal.classList.remove('open'); });
+
+// ── ACTIVITY DROPDOWN ────────────────────────────────────────────────
+document.getElementById('activitySelect')?.addEventListener('change', function() {
+  state.activeSport = this.value;
+  renderStash();
+  applyCompatibilityHighlight();
+});
+
+// ── STASH FILTER BUTTONS ─────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    state.stashFilter = this.dataset.filter || 'ALL';
+    renderStash();
+  });
+});
+
+// ── THEME TOGGLE ─────────────────────────────────────────────────────
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel  = document.getElementById('themeLabel');
+let isLight = false;
+themeToggle?.addEventListener('click', () => {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  themeLabel.textContent = isLight ? '☀️ Light' : '🌙 Dark';
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────
+Object.entries(PRESET_LOADOUTS).forEach(([k,v]) => { state.savedLoadouts[k] = JSON.parse(JSON.stringify(v)); });
+initStashDropZone();
+populateLoadoutSelect();
+loadLoadout('day-hike');
+</script>
+</body>
+</html>
