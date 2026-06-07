@@ -6,7 +6,9 @@ Activities: hike, bike, run, climb, moto, camp.
 
 ## Try it
 
-The released app is a single self-contained HTML file. Open [`TrailKit-1.0.html`](TrailKit-1.0.html) directly in any modern browser — no install, no server.
+**Live demo: https://hiretyler.github.io/TrailKit/**
+
+The released app is also a single self-contained HTML file — open [`TrailKit-1.0.html`](TrailKit-1.0.html) directly in any modern browser, no install or server needed.
 
 ## Highlights
 
@@ -55,4 +57,4 @@ See [`ROADMAP.md`](ROADMAP.md). Near-term: UI polish (v1.05), then "Add Your Gea
 
 ## License
 
-No license specified yet — all rights reserved by default until one is added.
+[MIT](LICENSE) © 2026 Tyler Geddes
