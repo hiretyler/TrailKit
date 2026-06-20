@@ -29,15 +29,16 @@ Persisted app state lives in `localStorage` under key `trailkit_v1`; clear via D
 - `build.mjs` — esbuild orchestrator. Bundles `src/trailkit/app.js` as IIFE, inlines into `src/index.html`, writes `dist/TrailKit.html`.
 - `tests/` — `assert.js` (tiny helpers + test registry), `engine.test.js`, `run-node.mjs` (CLI runner), `test.html` (browser runner).
 
-**Released snapshots at repo root** (do not edit; these are frozen):
-- `TrailKit-1.0.html` — most recent release, hand-authored single file. The source under `src/` was extracted from this. New releases will be cut from `dist/TrailKit.html` and copied to `TrailKit-X.Y.html` at the root.
-- `TrailKit-0.9.html`, `TrailKit-0.95.html`, `TrailKit-0.96.html`, `TrailKit-0.97.html`, `TrailKit-0.98.html`, `TrailKit-0.99.html` — earlier releases.
+**Released snapshots under `releases/`** (do not edit; these are frozen):
+- `releases/TrailKit-1.0.html` — most recent release, hand-authored single file. The source under `src/` was extracted from this. New releases will be cut from `dist/TrailKit.html` and copied to `releases/TrailKit-X.Y.html`.
+- `releases/TrailKit-0.9.html`, `0.95`, `0.96`, `0.97`, `0.98`, `0.99` — earlier releases.
+- `index.html` at the repo root is the GitHub Pages entry point; it redirects to `releases/TrailKit-1.0.html`. Bump that redirect when cutting a new release.
 
 **Historical / reference (also frozen):**
 - `path to 0.9/` — full iteration history `v1-TrailKit.html` … `v23-TrailKit.html` plus the three 0.9.x snapshots, fronted by `index.html` (a step-through showcase that iframes each version). Note: the showcase's hardcoded `iterations/...` paths assume deployment under `/showcase/iterations/` — see `docs/AUDIT.md` notes.
-- `exports/` — sample XML/HTML artifacts produced by the export flows.
-- `trailkit_narrative_blog.html`, `v1/v2/v3-trailkit_narrative_blog.html`, `TrailKit_Development_Narrative.docx` — long-form prose describing the development story.
-- `trailkit-packing-lists-sample*.html` — examples of "Export Packing Lists" output.
+- `exports/` — sample XML/HTML artifacts produced by the export flows; `exports/packing-lists/` holds "Export Packing Lists" HTML samples.
+- `docs/narrative/` — long-form prose describing the development story (`trailkit_narrative_blog.html` + `v1/v2/v3` drafts, `TrailKit_Development_Narrative.docx`).
+- `docs/media/` — screenshots and reference images (app screenshot `.png`, `arc-raiders-inventory.webp`).
 
 **Project docs:**
 - `ROADMAP.md` — release milestones (v1.05 → v1.1 → v1.15) driving session work.
@@ -52,7 +53,7 @@ Same two-layer split as before, but now physically separated:
 - **Planner Engine** — `src/engine/*.js` — generic scaffolding, exported as ES modules.
 - **TrailKit domain** — `src/trailkit/app.js` — imports the engine, contains everything app-specific.
 
-The released `TrailKit-1.0.html` and the built `dist/TrailKit.html` both look the same end-user-wise: `<style>` → markup → `<script>` IIFE. The architecture description below applies to the source modules and to either output.
+The released `releases/TrailKit-1.0.html` and the built `dist/TrailKit.html` both look the same end-user-wise: `<style>` → markup → `<script>` IIFE. The architecture description below applies to the source modules and to either output.
 
 ### 1. Planner Engine (`src/engine/`)
 
@@ -83,7 +84,7 @@ Everything else. Still one big file by intent — the audit pass listed in `docs
 
 ## Working in this codebase
 
-- **Default edit target is `src/`**, not the root snapshots. `TrailKit-1.0.html` and earlier are frozen releases — they only change when we cut a new version (copy `dist/TrailKit.html` to `TrailKit-X.Y.html`).
+- **Default edit target is `src/`**, not the snapshots. `releases/TrailKit-1.0.html` and earlier are frozen releases — they only change when we cut a new version (copy `dist/TrailKit.html` to `releases/TrailKit-X.Y.html`).
 - Keep `src/engine/` generic. If a change needs domain knowledge (item types, zones, sports), it belongs in `src/trailkit/app.js`.
 - After source changes: `npm run build`, then open `dist/TrailKit.html` in a browser to verify. Or `npm run watch` for autobuild during a session.
 - Engine changes must pass `npm test`. Add a test before changing engine behavior; add a test for the new behavior when extending it.

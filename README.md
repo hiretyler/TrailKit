@@ -8,7 +8,7 @@ Activities: hike, bike, run, climb, moto, camp.
 
 **Live demo: https://hiretyler.github.io/TrailKit/**
 
-The released app is also a single self-contained HTML file — open [`TrailKit-1.0.html`](TrailKit-1.0.html) directly in any modern browser, no install or server needed.
+The released app is also a single self-contained HTML file — open [`releases/TrailKit-1.0.html`](releases/TrailKit-1.0.html) directly in any modern browser, no install or server needed.
 
 ## Highlights
 
@@ -40,16 +40,16 @@ npm run test:browser # open tests/test.html in your browser
 npm run serve        # python3 -m http.server 8000
 ```
 
-Default edit target is `src/`. The `TrailKit-*.html` files at the repo root are frozen releases — a new release is cut by copying `dist/TrailKit.html` to `TrailKit-X.Y.html`.
+Default edit target is `src/`. The `releases/TrailKit-*.html` files are frozen releases — a new release is cut by copying `dist/TrailKit.html` to `releases/TrailKit-X.Y.html`.
 
 ## Layout
 
 - `src/` — the ES-module source (engine + domain) and HTML shell.
 - `tests/` — engine test harness (node CLI runner + browser runner).
-- `TrailKit-*.html` — frozen released snapshots (0.9 → 1.0).
+- `releases/` — frozen released snapshots (`TrailKit-0.9.html` → `TrailKit-1.0.html`).
 - `path to 0.9/` — full iteration history with a step-through showcase.
-- `docs/` — [`ROADMAP.md`](ROADMAP.md), [`docs/AUDIT.md`](docs/AUDIT.md), and planning documents.
-- `exports/`, `trailkit-packing-lists-sample*.html` — sample output artifacts.
+- `docs/` — [`ROADMAP.md`](ROADMAP.md), [`docs/AUDIT.md`](docs/AUDIT.md), planning PDFs, plus `docs/narrative/` (development story) and `docs/media/` (screenshots).
+- `exports/` — sample output artifacts, including `exports/packing-lists/`.
 
 ## Roadmap
 

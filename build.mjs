@@ -5,7 +5,7 @@
 // and writes the result to dist/TrailKit.html.
 //
 // Output is a single self-contained HTML file with no external dependencies —
-// the same shape as the hand-authored TrailKit-1.0.html at the repo root, but
+// the same shape as the hand-authored releases/TrailKit-1.0.html, but
 // produced from real modular source.
 //
 // Usage:
