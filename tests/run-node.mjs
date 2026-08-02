@@ -5,6 +5,7 @@
 // and run fine here.
 
 import './engine.test.js';
+import './parse.test.js';
 import { tests } from './assert.js';
 
 let pass = 0, fail = 0;
