@@ -11,12 +11,19 @@ Format conventions:
 
 ## Current state
 
-- **Released:** v1.0 — `TrailKit-1.0.html` at repo root. Single-file HTML app, no build, no deps.
-- **Working on:** Foundation work for sustainable development (git, build, modules, tests, GitHub). Not yet versioned as a release.
+- **Released:** v1.05 — `releases/TrailKit-1.05.html`. First release cut from the `src/` build pipeline.
+- **Working on:** Onboarding follow-ups (v1.1).
 
 ---
 
-## v1.05 — UI polish
+## v1.1 — Onboarding follow-ups (next session)
+
+- [ ] **Post-commit backpack nudge** — when a Quick Add commit includes Backpack items, make the toast actionable ("N packs added - set their sizes?") deep-linking into the existing Edit Item modal, since backpacks are the one type a text line under-specifies (slots, max load, pocket flags)
+- [ ] **Starter loadouts** — pack chips optionally install a ready-made loadout per sport, not just inventory items (install items first; loadouts reference item ids)
+- [ ] **Bulk-add undo** — snapshot USER_INVENTORY before a Quick Add commit and offer one-shot undo from the toast
+- [ ] **CSV template fill-and-upload** — downloadable template, parsed on upload. May be superseded by the Quick Add line grammar; decide at session start whether it still earns its keep
+
+## v1.15 — UI polish (moved from the old v1.05)
 
 - [ ] Bigger logo
 - [ ] File menu (consolidate Import / Export / About into one menu instead of separate topbar buttons)
@@ -24,20 +31,7 @@ Format conventions:
 - [ ] Smaller dark/light switch
 - [ ] No footer
 - [ ] Print mode in packing list opens in a new tab (instead of in-place toggle)
-
-## v1.1 — Add Your Gear onboarding (first pass)
-
-- [ ] Onboarding: **Activity Starter Pack method** — pick an activity, get a curated starter inventory you can edit
-- [ ] Onboarding: **Simple list method** — type names line-by-line, app infers types
-- [ ] Onboarding: **Drag-and-drop gear categories method** — drag category bubbles into your inventory
-- [ ] Sample gear overhaul (refresh the curated SAMPLE_INVENTORY — items, icons, descriptions, balance across activities)
-
-## v1.15 — Activity onboarding + power import methods
-
-- [ ] Onboarding: **Pick your activities** (gate later onboarding methods on which sports you actually do)
-- [ ] Onboarding: **Pick from sample gear** — checkbox UI over SAMPLE_INVENTORY, pulls selected items into Your Gear
-- [ ] Onboarding: **CSV template fill-and-upload** — downloadable template, parsed on upload (reuses XML import scaffolding)
-- [ ] Onboarding: **Picture of gear + prompt → LLM** — user photographs their gear, app sends to an LLM, gets back structured items
+- [ ] Sample gear overhaul (refresh the curated SAMPLE_INVENTORY — items, icons, descriptions, balance across activities; bike/moto still have no sample items)
 
 ---
 
@@ -45,12 +39,16 @@ Format conventions:
 
 Ideas not yet slotted into a release. Add freely; we'll triage during planning.
 
-- _(empty — add as ideas come up)_
+- **Hosted photo-scan (v2 of the AI flow)** — Cloudflare Worker proxy + Claude Haiku/Sonnet with Turnstile and per-IP rate limits, so the photo flow works without leaving the app. Only worth building if the out-of-app flow sees real use. Research notes: Google Vision rejected (generic labels, 10-object cap, unsecurable browser keys); multimodal LLM is the only viable recognizer.
+- **Onboarding: drag-and-drop gear categories** — drag category bubbles into your inventory (from the old v1.1 list; superseded for now by starter packs)
+- **Onboarding: pick from sample gear** — checkbox UI over SAMPLE_INVENTORY, pulls selected items into Your Gear (the ALREADY IN dedup in Quick Add covers most of this need)
+- **Quick Add polish** — per-row icon editing via the emoji picker, slots/capacity editing in the preview, migrate importXML's alert() to the toast
 
 ---
 
 ## Done
 
+- [x] **v1.05 — Quick Add onboarding + build fixes** (2026-08-02) — one modal covering three onboarding paths sharing a single parser, preview, and commit: free-text quick entry ("3x wool socks", pipe fields, weights), per-sport starter packs (74 curated brand-free items including new bike/moto/camp data), and a paste-from-AI photo flow (Copy AI Prompt + permissive parser). Empty-locker CTA, dedup with suffix numbering, persisted draft, toast, mobile bottom-sheet mode, 28 parser tests. Also fixed four latent bugs: dead inline onclick handlers in the bundled build (mobile tab bar, Etc-tab export, essential-modal close), missing #mTapHint element (mobile had no selection/rejection feedback), importXML wiping an in-progress loadout on every import, and the upload button stranding users who cancel the file dialog.
 - [x] **Foundation: git + roadmap + audit** (2026-05-15) — initialized git repo, drafted ROADMAP.md from Google Doc, drafted docs/AUDIT.md with concrete simplification items
 
 ---

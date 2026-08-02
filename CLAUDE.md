@@ -92,3 +92,14 @@ Everything else. Still one big file by intent — the audit pass listed in `docs
 - Watch for the `S` proxy gotcha: code reads `S.mainItems` directly, but mutations must go through `store.dispatch(...)`. See `docs/AUDIT.md` #1 for the planned fix.
 - After any state-changing action, the convention is `dispatch → renderAll()`. `renderAll` itself calls `persistState()`, so don't double-save.
 - The `exportPackingLists` template embeds its own `<script>` — when editing it, preserve the `<' + 'script>` / `<\/script>` splits, otherwise the outer document's parser will close the wrong tag. See `docs/AUDIT.md` #6 for the planned cleanup.
+
+## Local test server
+
+Canonical local port: **8081** - keep this consistent across sessions so
+it does not collide with other ~/projects apps running at the same time.
+
+Start it with:
+
+    python3 -m http.server 8081
+
+(Port registry lives in the tgeddes.dev /dash tracker: dash/projects.json.)
