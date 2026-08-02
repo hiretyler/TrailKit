@@ -15,6 +15,9 @@ import {
   UIUtils,
 } from '../engine/index.js';
 
+import { parseGearLines, matchTypeToken, matchActivityToken } from './parse.js';
+import { STARTER_ITEMS, STARTER_PACKS } from './quickadd-data.js';
+
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
@@ -273,6 +276,22 @@ document.addEventListener('mousemove',e=>{if(TT.classList.contains('visible'))po
 function renderStash(){
   const grid=document.getElementById('stashGrid'); if(!grid)return;
   grid.innerHTML='';
+  // ── Empty user inventory: show the Quick Add onboarding card instead
+  if(INVENTORY.length===0 && !useSampleGear){
+    const cnt0=document.getElementById('stashCount');
+    if(cnt0) cnt0.textContent='0 available · 0 in Loadout';
+    const act0=document.getElementById('stashActivityCount');
+    if(act0) act0.style.display='none';
+    const card=document.createElement('div');
+    card.className='qa-empty-card';
+    card.innerHTML=`
+      <div class="qa-empty-title">Your locker is empty.</div>
+      <div class="qa-empty-sub">Type or paste your gear - one line per item.</div>
+      <button class="qa-empty-btn" data-qa="open">Quick Add Gear</button>
+      <span class="qa-empty-link" data-qa="sample">Browse sample gear instead</span>`;
+    grid.appendChild(card);
+    return;
+  }
   const allocated=allocatedIds();
   const f=S.gearFilter;
 
@@ -873,6 +892,7 @@ Persistence.init(
     useSampleGear,
     userInventory : USER_INVENTORY,
     userLoadouts  : state.userLoadouts,
+    quickAdd      : { seen: _qaSeen, draft: _qaDraft.slice(0, 20000) },
     activeLoadout : {
       sport:       state.sport,
       loadoutKey:  state.loadoutKey,
@@ -889,6 +909,9 @@ Persistence.init(
     if(typeof payload.useSampleGear === 'boolean') useSampleGear = payload.useSampleGear;
     if(Array.isArray(payload.userInventory)) USER_INVENTORY = payload.userInventory;
     INVENTORY = useSampleGear ? SAMPLE_INVENTORY : USER_INVENTORY;
+    const qa = payload.quickAdd || {}; // older payloads have no quickAdd key
+    _qaSeen  = !!qa.seen;
+    _qaDraft = typeof qa.draft === 'string' ? qa.draft.slice(0, 20000) : '';
     const a = payload.activeLoadout || {};
     return {
       userLoadouts: payload.userLoadouts || {},
@@ -1383,6 +1406,417 @@ function exportCSV(){
   downloadBlob(csv, `trailkit-export${isSample}.csv`, 'text/csv');
 }
 
+// ── QUICK ADD ────────────────────────────────────────────────────
+// One modal, three onboarding paths (type/paste, starter-pack chips,
+// AI photo prompt), one parser (parse.js), one commit into
+// USER_INVENTORY. The draft survives any dismissal via persistence,
+// so Cancel/backdrop/Escape are deliberately not intercepted.
+
+const QA_SPORTS=['hike','bike','run','climb','moto','camp'];
+const QA_SPORT_EMOJI={hike:'🥾',bike:'🚵',run:'🏃',climb:'🧗',moto:'🏍️',camp:'⛺'};
+const QA_TYPES=TYPE_ORDER;
+const QA_ACT_OPTS=[['__default__','Auto'],['all','All'],['hike','Hike'],['bike','MTB'],
+  ['run','Run'],['climb','Climb'],['moto','Moto'],['camp','Camp']];
+const QA_DRAFT_MAX=20000;
+const QA_COMMIT_CAP=300;
+
+// Shipped verbatim - keep the hyphens, never em dashes.
+const QA_AI_PROMPT=`I'm cataloguing my outdoor gear for an app called TrailKit.
+Look at the attached photo and list every distinct piece of gear you can see.
+
+Reply with ONLY a plain list, one item per line, in exactly this format:
+
+count x name | type | activity
+
+- count is a whole number. Use it only to group identical items: 3 x wool socks
+- name is short and plain. Skip the brand unless it is clearly printed on the item.
+- type must be exactly one of these eight words:
+    Backpack - packs, rucksacks, duffels, running vests
+    Bladder - hydration reservoirs
+    Bottle - water bottles and soft flasks
+    Safety - headlamps, beacons, whistles, helmets, emergency shelter
+    Medical - first aid supplies
+    Tools - multi-tools, pumps, knives, repair kits
+    Worn - clothing, footwear, gloves, hats, anything worn on the body
+    Item - anything else
+- activity must be exactly one of: hike, bike, run, climb, moto, camp, all
+  Use "all" if the item suits more than one.
+- optionally add a weight as a fourth field if you can judge it: 80g or 0.08kg
+
+A correct reply looks exactly like this:
+
+1 x 22L Daypack | Backpack | hike
+3 x Wool Socks | Worn | hike | 80g
+1 x Headlamp | Safety | all
+1 x Multi-Tool | Tools | all
+
+No intro, no summary, no markdown, no bullets. Just the lines.`;
+
+let _qaDraft='';
+let _qaSeen=false;
+const _qaPacksOn=new Set();       // sports whose starter pack lines are injected
+let _qaRows=[], _qaIgnored=[];    // last parse result
+const _qaChecks=new Map();        // lineIndex -> checked override (in-memory only)
+let _qaRenderTimer=null, _qaSaveTimer=null, _toastTimer=null;
+
+function qaNorm(n){return n.toLowerCase().replace(/\s+/g,' ').replace(/\s*\(\d+\)$/,'').trim();}
+function qaChecked(r){return _qaChecks.has(r.lineIndex)?_qaChecks.get(r.lineIndex):!r._dup;}
+// Overrides are keyed by line index - remap them whenever line
+// removal renumbers the draft, or stale keys land on the wrong rows
+function qaShiftChecks(mapFn){
+  const next=[];
+  _qaChecks.forEach((v,k)=>{const nk=mapFn(k); if(nk!=null)next.push([nk,v]);});
+  _qaChecks.clear();
+  next.forEach(([k,v])=>_qaChecks.set(k,v));
+}
+function qaTa(){return document.getElementById('qaText');}
+
+function qaPersistSoon(){clearTimeout(_qaSaveTimer);_qaSaveTimer=setTimeout(persistState,800);}
+function qaPersistNow(){clearTimeout(_qaSaveTimer);persistState();}
+
+// ── Toast (no alert()) ──
+function showToast(msg){
+  const t=document.getElementById('tkToast'); if(!t)return;
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Parse + dedup ──
+function qaParse(){
+  const res=parseGearLines(_qaDraft);
+  _qaRows=res.rows; _qaIgnored=res.ignored;
+  const seen=new Set(USER_INVENTORY.map(i=>qaNorm(i.name)));
+  _qaRows.forEach(r=>{const k=qaNorm(r.name); r._dup=seen.has(k); seen.add(k);});
+}
+
+function qaRefresh(){qaParse(); qaRenderPreview(); qaUpdateTally();}
+
+// ── Preview rendering ──
+function qaRenderPreview(){
+  const box=document.getElementById('qaPreview'); if(!box)return;
+  const scroll=box.scrollTop;
+  box.innerHTML='';
+  if(!_qaRows.length && !_qaIgnored.length){
+    box.innerHTML='<div class="qa-preview-empty">Preview appears as you type.</div>';
+    return;
+  }
+  _qaRows.forEach(r=>{
+    const on=qaChecked(r);
+    const confCls=r.conf.type==='given'?'given':(r.conf.type==='guessed'?'guessed':'default');
+    const dot={given:'●',guessed:'◐',default:'○'}[confCls];
+    const row=document.createElement('div');
+    row.className='qa-row'+(on?'':' qa-off');
+    row.innerHTML=`
+      <input type="checkbox" class="qa-check"${on?' checked':''}>
+      <span class="qa-row-icon">${r.icon}</span>
+      <span class="qa-row-name" title="${esc(r.raw)}">${esc(r.name)}</span>
+      ${r.count>1?`<span class="qa-count-badge">×${r.count}</span>`:''}
+      ${r.capped?'<span class="qa-pill">MAX 20</span>':''}
+      ${r._dup?'<span class="qa-pill">ALREADY IN</span>':''}
+      <span class="qa-dot ${confCls}" title="type ${r.conf.type} · weight ${r.conf.weight}">${dot}</span>
+      <select class="edit-select qa-mini qa-type-sel"></select>
+      <select class="edit-select qa-mini qa-act-sel"></select>
+      <span class="qa-weight">${fkg(r.weightKg)}</span>
+      <span class="qa-del" title="Remove line">×</span>`;
+    const tsel=row.querySelector('.qa-type-sel');
+    QA_TYPES.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tsel.appendChild(o);});
+    tsel.value=r.type;
+    tsel.addEventListener('change',()=>qaSetLineField(r.lineIndex,'type',tsel.value));
+    const asel=row.querySelector('.qa-act-sel');
+    QA_ACT_OPTS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;asel.appendChild(o);});
+    asel.value=r.activity;
+    asel.addEventListener('change',()=>qaSetLineField(r.lineIndex,'activity',asel.value==='__default__'?null:asel.value));
+    row.querySelector('.qa-check').addEventListener('change',e=>{
+      _qaChecks.set(r.lineIndex,e.target.checked);
+      row.classList.toggle('qa-off',!e.target.checked);
+      qaUpdateTally();
+    });
+    row.querySelector('.qa-del').addEventListener('click',()=>qaDeleteLine(r.lineIndex));
+    box.appendChild(row);
+  });
+  if(_qaIgnored.length){
+    const n=_qaIgnored.length;
+    const tog=document.createElement('div');
+    tog.className='qa-ignored-toggle';
+    tog.textContent=`⌄ ${n} line${n!==1?'s':''} ignored`;
+    const list=document.createElement('div');
+    list.className='qa-ignored-list';
+    list.style.display='none';
+    list.textContent=_qaIgnored.map(i=>i.raw).join('\n');
+    tog.addEventListener('click',()=>{
+      const open=list.style.display==='none';
+      list.style.display=open?'':'none';
+      tog.textContent=`${open?'⌃':'⌄'} ${n} line${n!==1?'s':''} ignored`;
+    });
+    box.appendChild(tog);
+    box.appendChild(list);
+  }
+  box.scrollTop=scroll;
+}
+
+// ── Tally header + live commit button label ──
+function qaUpdateTally(){
+  const inc=_qaRows.filter(qaChecked);
+  const total=inc.reduce((s,r)=>s+r.count,0);
+  const n=Math.min(total,QA_COMMIT_CAP);
+  const guessed=_qaRows.filter(r=>r.conf.type!=='given').length;
+  const dups=_qaRows.filter(r=>r._dup).length;
+  const t=document.getElementById('qaTally');
+  if(t) t.innerHTML=`${n} item${n!==1?'s':''} · ${guessed} guessed · ${dups} duplicate${dups!==1?'s':''}`
+    +(total>QA_COMMIT_CAP?` <span class="qa-cap-note">· capped at ${QA_COMMIT_CAP}</span>`:'');
+  const btn=document.getElementById('qaCommitBtn');
+  if(btn){
+    btn.textContent=n>0?`Add ${n} Item${n!==1?'s':''}`:'Add Items';
+    btn.disabled=n===0;
+  }
+  const seg=document.getElementById('qaSegPreview');
+  if(seg) seg.textContent=`Preview (${_qaRows.length})`;
+}
+
+// ── Row edits write back into the source line ──
+function qaSetLineField(lineIndex,kind,value){
+  const lines=_qaDraft.split('\n');
+  if(lineIndex<0||lineIndex>=lines.length)return;
+  let parts=lines[lineIndex].split('|').map(s=>s.trim());
+  const head=parts.shift();
+  const isKind=kind==='type'?matchTypeToken:matchActivityToken;
+  parts=parts.filter(p=>p&&!isKind(p));
+  if(value)parts.push(value);
+  lines[lineIndex]=[head,...parts].join(' | ');
+  _qaDraft=lines.join('\n');
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  qaRefresh(); qaPersistSoon();
+}
+
+function qaDeleteLine(lineIndex){
+  const lines=_qaDraft.split('\n');
+  if(lineIndex<0||lineIndex>=lines.length)return;
+  lines.splice(lineIndex,1);
+  qaShiftChecks(k=>k===lineIndex?null:(k>lineIndex?k-1:k));
+  _qaDraft=lines.join('\n');
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  qaRefresh(); qaPersistSoon();
+}
+
+// ── Starter-pack chips ──
+function qaPackLines(sport){
+  return (STARTER_PACKS[sport]||[])
+    .map(id=>{const it=STARTER_ITEMS.find(s=>s.id===id);return it?it.name:null;})
+    .filter(Boolean);
+}
+
+function qaRenderChips(){
+  const box=document.getElementById('qaChips'); if(!box)return;
+  box.innerHTML='';
+  QA_SPORTS.forEach(sport=>{
+    const b=document.createElement('button');
+    b.className='qa-chip'+(_qaPacksOn.has(sport)?' active':'');
+    b.style.setProperty('--qa-accent',SPORT_COLOR[sport]);
+    b.textContent=`${QA_SPORT_EMOJI[sport]} ${SPORT_LABEL[sport]} (${qaPackLines(sport).length})`;
+    b.addEventListener('click',()=>qaTogglePack(sport));
+    box.appendChild(b);
+  });
+}
+
+function qaTogglePack(sport){
+  if(_qaPacksOn.has(sport)){
+    // Remove each injected line once, but only if it still matches
+    // exactly - edited lines survive, by design
+    _qaPacksOn.delete(sport);
+    const want=new Map();
+    qaPackLines(sport).forEach(n=>want.set(n,(want.get(n)||0)+1));
+    const kept=[];
+    for(const ln of _qaDraft.split('\n')){
+      const c=want.get(ln)||0;
+      if(c>0){want.set(ln,c-1);continue;}
+      kept.push(ln);
+    }
+    _qaDraft=kept.join('\n').replace(/\n{3,}/g,'\n\n').replace(/\s+$/,'');
+    // Bulk removal plus blank-line collapse renumbers everything -
+    // dropping the overrides beats landing them on the wrong rows
+    _qaChecks.clear();
+  } else {
+    _qaPacksOn.add(sport);
+    const cur=_qaDraft.replace(/\s+$/,'');
+    _qaDraft=(cur?cur+'\n\n':'')+qaPackLines(sport).join('\n');
+  }
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  qaRenderChips(); qaRefresh(); qaPersistSoon();
+}
+
+// ── Copy AI Prompt: clipboard API, execCommand, then visible fallback ──
+function qaShowFallback(on){
+  const fb=document.getElementById('qaPromptFallback');
+  const body=document.getElementById('qaBody');
+  if(fb)fb.style.display=on?'':'none';
+  if(body)body.style.display=on?'none':'';
+  if(on){
+    const ta=document.getElementById('qaFallbackText');
+    if(ta){ta.value=QA_AI_PROMPT;ta.focus();ta.select();}
+  }
+}
+
+function qaCopiedFlash(){
+  const btn=document.getElementById('qaPromptBtn'); if(!btn)return;
+  btn.textContent='✓ Copied';
+  setTimeout(()=>{btn.textContent='📋 Copy AI Prompt';},1600);
+}
+
+function qaCopyLegacy(){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=QA_AI_PROMPT;
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok=document.execCommand('copy');
+    ta.remove();
+    if(ok){qaCopiedFlash();return;}
+  }catch(e){/* fall through to visible fallback */}
+  qaShowFallback(true);
+}
+
+function qaCopyPrompt(){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(QA_AI_PROMPT).then(qaCopiedFlash).catch(qaCopyLegacy);
+  } else qaCopyLegacy();
+}
+
+// ── Mobile WRITE | PREVIEW panes ──
+function qaSetPane(which){
+  const modal=document.querySelector('#quickAddModal .qa-modal');
+  if(modal)modal.classList.toggle('qa-show-preview',which==='preview');
+  const w=document.getElementById('qaSegWrite'), p=document.getElementById('qaSegPreview');
+  if(w)w.classList.toggle('active',which==='write');
+  if(p)p.classList.toggle('active',which==='preview');
+}
+
+// ── Open ──
+function openQuickAdd(){
+  _qaSeen=true;
+  document.getElementById('quickAddBtn')?.classList.remove('qa-unseen');
+  const ta=qaTa();
+  if(ta)ta.value=_qaDraft;
+  qaShowFallback(false);
+  qaSetPane('write');
+  qaRenderChips();
+  qaRefresh();
+  openModal('quickAddModal');
+  setTimeout(()=>{if(ta)ta.focus();},120);
+}
+
+// ── Commit ──
+function qaMintId(){
+  let id;
+  do{id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+  while(USER_INVENTORY.some(i=>i.id===id));
+  return id;
+}
+
+function qaCommit(){
+  const inc=_qaRows.filter(qaChecked);
+  if(!inc.length)return;
+  const bare=n=>n.toLowerCase().replace(/\s+/g,' ').trim();
+  const taken=new Set(USER_INVENTORY.map(i=>bare(i.name)));
+  const tagAs=document.getElementById('qaTagAs')?.value||'all';
+  let added=0;
+  const leftover=[];
+  for(const r of _qaRows){
+    if(!qaChecked(r))continue;
+    let did=0;
+    for(let i=0;i<r.count;i++){
+      if(added>=QA_COMMIT_CAP)break;
+      let name=r.name;
+      if(taken.has(bare(name))){
+        let n=2;
+        while(taken.has(bare(`${r.name} (${n})`)))n++;
+        name=`${r.name} (${n})`;
+      }
+      taken.add(bare(name));
+      const it={id:qaMintId(),icon:r.icon,name,type:r.type,
+        activity:r.activity==='__default__'?tagAs:r.activity,
+        slots:r.slots,weightKg:r.weightKg,
+        capacityL:r.capacityL??null,maxKg:r.maxKg??null,desc:r.desc||''};
+      if(r.type==='Backpack'){
+        it.packSlots=r.packSlots??7;
+        it.backpackBladder=r.backpackBladder!==false;
+        it.backpackLeftBottle=r.backpackLeftBottle!==false;
+        it.backpackRightBottle=r.backpackRightBottle!==false;
+      }
+      USER_INVENTORY.push(it);
+      added++; did++;
+    }
+    // A row the 300-cap cut short keeps its source line in the draft
+    // instead of vanishing with the commit
+    if(did<r.count)leftover.push(r.raw);
+  }
+  if(!added)return;
+  _qaDraft=leftover.join('\n'); _qaPacksOn.clear(); _qaChecks.clear();
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  closeModal('quickAddModal');
+  // Gated epilogue: only reset the loadout when leaving sample mode.
+  // importXML clears unconditionally; Quick Add must not wipe an
+  // in-progress user loadout. renderAll persists - nothing after it.
+  if(useSampleGear){setSampleGear(false);clearState();populateLoadoutSel();}
+  renderAll();
+  showToast(`✓ ${added} item${added!==1?'s':''} added to Your Gear`
+    +(leftover.length?` - ${leftover.length} line${leftover.length!==1?'s':''} kept in Quick Add`:''));
+}
+
+// ── Wiring ──
+qaTa().addEventListener('input',function(){
+  _qaDraft=this.value.slice(0,QA_DRAFT_MAX);
+  clearTimeout(_qaRenderTimer);
+  _qaRenderTimer=setTimeout(qaRefresh,120);
+  qaPersistSoon();
+});
+qaTa().addEventListener('paste',function(){
+  setTimeout(()=>{_qaDraft=this.value.slice(0,QA_DRAFT_MAX);qaRefresh();qaPersistSoon();},0);
+});
+
+document.getElementById('quickAddBtn').addEventListener('click',openQuickAdd);
+document.getElementById('addSampleWarnBulkBtn').addEventListener('click',()=>{
+  closeModal('addToSampleWarnModal'); openQuickAdd();
+});
+document.getElementById('popQuickAddBtn').addEventListener('click',()=>{
+  closeAllPopovers(); openQuickAdd();
+});
+
+document.getElementById('qaPromptBtn').addEventListener('click',qaCopyPrompt);
+document.getElementById('qaFallbackBackBtn').addEventListener('click',()=>qaShowFallback(false));
+document.getElementById('qaSegWrite').addEventListener('click',()=>qaSetPane('write'));
+document.getElementById('qaSegPreview').addEventListener('click',()=>qaSetPane('preview'));
+document.getElementById('qaCommitBtn').addEventListener('click',qaCommit);
+document.getElementById('qaClearBtn').addEventListener('click',()=>{
+  _qaDraft=''; _qaPacksOn.clear(); _qaChecks.clear();
+  const ta=qaTa(); if(ta)ta.value='';
+  qaRenderChips(); qaRefresh(); qaPersistNow();
+});
+document.getElementById('qaCancelBtn').addEventListener('click',()=>{
+  closeModal('quickAddModal'); qaPersistNow();
+});
+// Backdrop and Escape dismissals are handled by the shared modal
+// plumbing; these only flush the draft so dismissal stays lossless.
+document.getElementById('quickAddModal').addEventListener('click',function(e){
+  if(e.target===this)qaPersistNow();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('quickAddModal').classList.contains('open'))qaPersistNow();
+});
+
+// Empty-stash CTA (delegated - the card is re-created every render)
+document.getElementById('stashGrid').addEventListener('click',e=>{
+  const t=e.target.closest('[data-qa]'); if(!t)return;
+  if(t.dataset.qa==='open')openQuickAdd();
+  else if(t.dataset.qa==='sample'){
+    // Mirror sampleToggleBtn: loadLoadout keeps the dropdown and the
+    // board in sync (renderAll alone leaves a phantom selection)
+    setSampleGear(true);clearState();populateLoadoutSel();
+    loadLoadout(document.getElementById('loadoutSelect')?.value||'__default__');
+  }
+});
+
 // ── PARSE XML (new schema) ────────────────────────────────────────
 function importXML(xmlStr){
   try {
@@ -1441,12 +1875,16 @@ function importXML(xmlStr){
       newLoadouts++;
     });
 
-    // Switch to user gear mode after import
-    setSampleGear(false);
-    clearState();
+    // Switch to user gear mode after import. Gated like qaCommit:
+    // clearState only when leaving sample mode, so importing more
+    // items never wipes an in-progress user loadout. renderAll
+    // persists - no explicit persistState after it.
+    if(useSampleGear){
+      setSampleGear(false);
+      clearState();
+    }
     populateLoadoutSel();
     renderAll();
-    persistState();
 
     alert(`Import successful!\n${newItems} item${newItems!==1?'s':''} added to Your Gear.\n${newLoadouts} loadout${newLoadouts!==1?'s':''} imported.`);
   } catch(err){
@@ -2152,8 +2590,8 @@ document.getElementById('importBtn').addEventListener('click', function(e){
   overlay.classList.toggle('open');
 });
 document.getElementById('uploadTrailkitBtn').addEventListener('click', ()=>{
-  // Immediately switch off sample gear when user initiates an upload
-  setSampleGear(false);
+  // Mode flips inside importXML on success - flipping here would
+  // strand the user in an empty inventory if they cancel the dialog
   document.getElementById('importFileInput').click();
 });
 document.getElementById('importFileInput').addEventListener('change', function(){
@@ -2162,6 +2600,14 @@ document.getElementById('importFileInput').addEventListener('change', function()
   closeAllPopovers();
   this.value = '';
 });
+
+// Mobile tab bar, Etc-tab export, essential-modal close - wired
+// here because inline onclick is dead inside the bundled IIFE
+document.getElementById('mTabGear').addEventListener('click', ()=>mSetTab('gear'));
+document.getElementById('mTabPack').addEventListener('click', ()=>mSetTab('pack'));
+document.getElementById('mTabStats').addEventListener('click', ()=>mSetTab('stats'));
+document.getElementById('mExportBtn').addEventListener('click', ()=>openModal('exportModal'));
+document.getElementById('essModalCloseBtn').addEventListener('click', ()=>closeModal('essentialModal'));
 
 // Close popovers when clicking outside
 document.addEventListener('click', e=>{
@@ -2611,6 +3057,9 @@ window.addEventListener('resize', ()=>{
 
 (function init(){
   restoreState(); // rehydrates useSampleGear, USER_INVENTORY, userLoadouts, activeLoadout
+
+  // Amber dot on Quick Add until its first open
+  document.getElementById('quickAddBtn')?.classList.toggle('qa-unseen', !_qaSeen);
 
   // Sync INVENTORY pointer and all UI chrome for sample/user mode
   setSampleGear(useSampleGear);

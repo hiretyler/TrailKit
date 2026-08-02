@@ -39,6 +39,7 @@
       <div class="stash-header-btns">
         <button class="add-items-btn" id="addItemBtn">Add Item</button>
         <button class="edit-items-btn" id="editItemBtn">Edit Item</button>
+        <button class="add-items-btn" id="quickAddBtn">Quick Add</button>
       </div>
     </div>
     <div class="filter-bar">
@@ -178,7 +179,7 @@
       </div>
       <div class="qp-body" style="border-bottom:none;flex-shrink:0;">
         <div class="item-counters">
-          <div class="item-counter warn" id="ctr-Safety" onclick="openEssentialPopup('Safety')" style="cursor:pointer;">
+          <div class="item-counter warn" id="ctr-Safety" style="cursor:pointer;">
             <div class="item-counter-icon">🔦</div>
             <div class="item-counter-body">
               <div class="item-counter-label">Safety</div>
@@ -186,7 +187,7 @@
             </div>
             <div class="item-counter-dot"></div>
           </div>
-          <div class="item-counter warn" id="ctr-Medical" onclick="openEssentialPopup('Medical')" style="cursor:pointer;">
+          <div class="item-counter warn" id="ctr-Medical" style="cursor:pointer;">
             <div class="item-counter-icon">🩺</div>
             <div class="item-counter-body">
               <div class="item-counter-label">Medical</div>
@@ -194,7 +195,7 @@
             </div>
             <div class="item-counter-dot"></div>
           </div>
-          <div class="item-counter neutral" id="ctr-Tools" onclick="openEssentialPopup('Tools')" style="cursor:pointer;">
+          <div class="item-counter neutral" id="ctr-Tools" style="cursor:pointer;">
             <div class="item-counter-icon">🔧</div>
             <div class="item-counter-body">
               <div class="item-counter-label">Tools</div>
@@ -220,7 +221,7 @@
 
 <!-- BOTTOM BAR (desktop only) -->
 <div class="bottom-bar">
-  <div class="bottom-version">TrailKit · v1.0</div>
+  <div class="bottom-version">TrailKit · v1.05</div>
   <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
     <button class="topbar-btn" id="footerImportBtn">⬇ Import My TrailKit</button>
     <button class="export-btn" id="exportBtn">▶ Export My TrailKit</button>
@@ -229,19 +230,22 @@
 
 <!-- MOBILE TAB BAR -->
 <div class="mobile-tab-bar">
-  <button class="mobile-tab m-tab-active" id="mTabGear" onclick="mSetTab('gear')">
+  <button class="mobile-tab m-tab-active" id="mTabGear">
     <span class="m-tab-icon">🎒</span>
     <span class="m-tab-label">Gear</span>
   </button>
-  <button class="mobile-tab" id="mTabPack" onclick="mSetTab('pack')">
+  <button class="mobile-tab" id="mTabPack">
     <span class="m-tab-icon">⬡</span>
     <span class="m-tab-label">Loadout</span>
   </button>
-  <button class="mobile-tab" id="mTabStats" onclick="mSetTab('stats')">
+  <button class="mobile-tab" id="mTabStats">
     <span class="m-tab-icon">⚖</span>
     <span class="m-tab-label">Etc</span>
   </button>
 </div>
+
+<!-- MOBILE SELECTION HINT - fixed overlay above the tab bar -->
+<div id="mTapHint"></div>
 
 <!-- MOBILE STATS PANEL (appended into .main by initMobile()) -->
 <div class="m-stats-panel" id="mStatsPanel">
@@ -302,7 +306,7 @@
 
   <!-- Prominent action buttons -->
   <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-    <button onclick="openModal('exportModal')"
+    <button id="mExportBtn"
       style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;
       text-transform:uppercase;background:var(--accent-amber);color:var(--bg-deep);border:none;
       padding:10px 14px;border-radius:3px;cursor:pointer;width:100%;">
@@ -317,7 +321,7 @@
   </div>
   <div style="text-align:center;margin-top:12px;">
     <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);
-      letter-spacing:1.5px;">TrailKit · v1.0</span>
+      letter-spacing:1.5px;">TrailKit · v1.05</span>
   </div>
 </div>
 
@@ -340,7 +344,7 @@
       No items of this type in your current loadout.
     </div>
     <div class="modal-actions">
-      <button class="modal-btn cancel" onclick="closeModal('essentialModal')">Close</button>
+      <button class="modal-btn cancel" id="essModalCloseBtn">Close</button>
     </div>
   </div>
 </div>
@@ -370,7 +374,7 @@
         <div class="about-logo">Trail<span>Kit</span></div>
         <div class="about-tagline">Gear Loadout Manager</div>
       </div>
-      <span class="about-version">v1.0</span>
+      <span class="about-version">v1.05</span>
     </div>
 
     <div class="about-desc">
@@ -425,6 +429,7 @@
   <div class="popover" id="importPopover">
     <div class="pop-title">Import</div>
     <button class="pop-btn upload" id="uploadTrailkitBtn">⬆ Upload My TrailKit</button>
+    <button class="pop-btn" id="popQuickAddBtn">⌨ Type or Paste Gear</button>
     <input type="file" id="importFileInput" accept=".xml,.trailkit">
   </div>
 </div>
@@ -570,6 +575,7 @@
     <div class="modal-title" style="color:var(--accent-amber);">⬡ Trying to add an item to your own gear?</div>
     <div class="modal-sub">You're currently browsing Sample Gear. Switch to Your Gear to build your own inventory — or add this item to the sample collection.</div>
     <div class="modal-actions" style="flex-direction:column;gap:8px;align-items:stretch;">
+      <button class="modal-btn confirm" id="addSampleWarnBulkBtn" style="width:100%;">Quick Add My Gear</button>
       <button class="modal-btn confirm" id="addSampleWarnSwitchBtn" style="width:100%;">Switch to Your Gear</button>
       <button class="modal-btn cancel" id="addSampleWarnSampleBtn" style="width:100%;">No, Add Item to Sample Gear</button>
     </div>
@@ -634,7 +640,65 @@
   </div>
 </div>
 
+<!-- QUICK ADD MODAL -->
+<div class="modal-overlay" id="quickAddModal">
+  <div class="modal qa-modal">
+    <div class="modal-title">Quick Add</div>
+    <div class="modal-sub" style="margin-bottom:12px;">Type or paste your gear - one item per line. Use 2x for duplicates.</div>
+
+    <div class="qa-chips-row">
+      <div class="qa-chips" id="qaChips"></div>
+      <button class="qa-prompt-btn" id="qaPromptBtn">📋 Copy AI Prompt</button>
+    </div>
+
+    <!-- Mobile-only WRITE | PREVIEW segmented toggle -->
+    <div class="qa-seg">
+      <button class="qa-seg-btn active" id="qaSegWrite">Write</button>
+      <button class="qa-seg-btn" id="qaSegPreview">Preview (0)</button>
+    </div>
+
+    <div class="qa-body" id="qaBody">
+      <textarea id="qaText" maxlength="20000" spellcheck="false" autocomplete="off"
+        placeholder="3x wool socks&#10;headlamp&#10;30L daypack | Backpack"></textarea>
+      <div class="qa-preview-pane">
+        <div class="qa-preview-hdr" id="qaTally">0 items · 0 guessed · 0 duplicates</div>
+        <div class="qa-preview-list" id="qaPreview"></div>
+      </div>
+    </div>
+
+    <!-- Clipboard-blocked fallback: prompt preselected for manual copy -->
+    <div class="qa-fallback" id="qaPromptFallback" style="display:none;">
+      <div class="qa-fallback-label">Press Cmd+C / Ctrl+C to copy</div>
+      <textarea id="qaFallbackText" readonly></textarea>
+      <div><button class="modal-btn cancel" id="qaFallbackBackBtn">← Back</button></div>
+    </div>
+
+    <div class="qa-footer">
+      <div class="qa-legend"><span class="qa-dot given">●</span> from your line&nbsp;&nbsp;<span class="qa-dot guessed">◐</span> guessed&nbsp;&nbsp;<span class="qa-dot default">○</span> default</div>
+      <div class="qa-tag-as">
+        <span class="qa-tag-label">Tag new items as</span>
+        <select class="edit-select qa-mini" id="qaTagAs">
+          <option value="all">All Activities</option>
+          <option value="hike">Hiking</option>
+          <option value="bike">MTB</option>
+          <option value="run">Running</option>
+          <option value="climb">Climbing</option>
+          <option value="moto">Moto</option>
+          <option value="camp">Camping</option>
+        </select>
+      </div>
+      <div class="qa-note">Adds to Your Gear - sample gear stays on the top-bar toggle.</div>
+      <div class="modal-actions" style="margin-left:auto;">
+        <button class="modal-btn cancel" id="qaClearBtn">Clear</button>
+        <button class="modal-btn cancel" id="qaCancelBtn">Cancel</button>
+        <button class="modal-btn confirm" id="qaCommitBtn" disabled>Add Items</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="tooltip" id="tooltip"></div>
+<div id="tkToast" class="tk-toast"></div>
 
 
 <!-- {{SCRIPT}} -->
