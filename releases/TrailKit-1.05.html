@@ -166,6 +166,13 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 .tt-stats{display:flex;flex-direction:column;gap:5px;}
 .tt-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:11px;}
 .tt-key{color:var(--text-secondary);} .tt-val{color:var(--text-primary);} .tt-hi{color:var(--accent-amber);}
+/* Light mode: the name is hardcoded white and the ALL chip pairs the
+   light-mode secondary text with its dark slate background - both
+   vanish on a white card. Sport chips keep dark solid backgrounds in
+   light mode, so their pale text stays readable and is left alone. */
+body.light .tt-name{color:var(--text-primary);}
+body.light .tt-sport{color:#d4dfe9;}
+body.light .tt-type-bg{color:#5a2ea6;}
 
 /* ── RIGHT PANEL ── */
 .right-panel{display:grid;grid-template-columns:1fr 258px;overflow:hidden;
@@ -572,19 +579,24 @@ body.light{
 
 /* ── QUICK ADD ── */
 .qa-modal{min-width:min(760px,94vw);max-width:880px;max-height:88vh;display:flex;flex-direction:column;}
-.qa-chips-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;flex-shrink:0;}
-.qa-chips{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
+.qa-chips-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;flex-shrink:0;}
+.qa-chips-block{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
+.qa-chips-label{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+.qa-chips{display:flex;gap:5px;flex-wrap:wrap;}
 .qa-chip{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;
   text-transform:uppercase;background:var(--bg-slot);color:var(--text-secondary);
   border:1px solid var(--border-bright);border-radius:2px;padding:5px 9px;
   cursor:pointer;transition:all 0.15s;white-space:nowrap;}
 .qa-chip:hover{border-color:var(--accent-teal);color:var(--text-primary);}
 .qa-chip.active{background:var(--qa-accent,var(--sport-all));border-color:transparent;color:#fff;}
-.qa-prompt-btn{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;
-  text-transform:uppercase;background:transparent;color:var(--text-secondary);
-  border:1px solid var(--border-bright);border-radius:2px;padding:5px 11px;
-  cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;margin-left:auto;}
-.qa-prompt-btn:hover{border-color:var(--accent-amber);color:var(--accent-amber);}
+.qa-photo-btn{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;background:linear-gradient(135deg,var(--accent-amber),#ff7d33);
+  color:#1a0e00;border:none;border-radius:4px;padding:11px 18px;
+  cursor:pointer;transition:filter 0.15s,transform 0.1s;white-space:nowrap;flex-shrink:0;
+  margin-left:auto;box-shadow:0 2px 10px rgba(245,166,35,0.35);}
+.qa-photo-btn:hover{filter:brightness(1.08);}
+.qa-photo-btn:active{transform:translateY(1px);}
 .qa-seg{display:none;}
 .qa-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:46vh;min-height:220px;
   margin-bottom:10px;flex-shrink:1;}
@@ -630,12 +642,35 @@ body.light{
 .qa-ignored-list{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);
   padding:4px 8px;background:var(--bg-slot);border:1px dashed var(--border);border-radius:3px;
   white-space:pre-wrap;word-break:break-word;user-select:text;flex-shrink:0;}
-.qa-fallback{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;min-height:0;}
-.qa-fallback-label{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-amber);}
-#qaFallbackText{height:38vh;min-height:220px;font-family:'Share Tech Mono',monospace;font-size:11px;
+.qa-act-btn{text-align:left;cursor:pointer;min-width:64px;max-width:96px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qa-act-btn:hover{border-color:var(--accent-teal);}
+.qa-act-pop{position:fixed;z-index:9600;min-width:160px;background:var(--bg-card);
+  border:1px solid var(--border-bright);border-radius:4px;padding:5px;
+  box-shadow:0 8px 28px rgba(0,0,0,0.55);display:flex;flex-direction:column;}
+.qa-act-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:3px;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;
+  color:var(--text-primary);cursor:pointer;}
+.qa-act-opt:hover{background:var(--bg-slot-hover);}
+.qa-act-opt input{accent-color:var(--accent-teal);cursor:pointer;}
+.qa-act-opt-all{border-bottom:1px solid var(--border);margin-bottom:3px;padding-bottom:6px;}
+
+/* Photo instructions modal (stacks above Quick Add) */
+.qa-photo-modal{max-width:520px;}
+.qa-photo-copied{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent-green);
+  background:rgba(61,220,132,0.08);border:1px solid rgba(61,220,132,0.25);border-radius:3px;
+  padding:7px 10px;margin-bottom:14px;}
+.qa-photo-manual{margin-bottom:14px;}
+.qa-photo-manual-label{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-amber);margin-bottom:6px;}
+#qaPhotoPromptText{width:100%;height:110px;font-family:'Share Tech Mono',monospace;font-size:10px;
   background:var(--bg-slot);color:var(--text-primary);border:1px solid var(--border-bright);
-  border-radius:3px;padding:10px 12px;outline:none;resize:none;line-height:1.55;user-select:text;}
+  border-radius:3px;padding:8px 10px;outline:none;resize:none;line-height:1.5;user-select:text;}
+.qa-photo-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+.qa-photo-step{display:flex;gap:12px;font-size:13px;color:var(--text-secondary);line-height:1.55;}
+.qa-photo-step b{color:var(--text-primary);font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
+.qa-photo-num{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent-teal);
+  flex-shrink:0;padding-top:1px;}
 .qa-footer{border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;
   flex-wrap:wrap;gap:8px 14px;flex-shrink:0;background:var(--bg-card);}
 .qa-legend{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-secondary);white-space:nowrap;}
@@ -892,7 +927,8 @@ body.light{
   .qa-modal.qa-show-preview .qa-preview-pane{display:flex;}
   .qa-modal.qa-show-preview #qaText{display:none;}
   .qa-footer{position:sticky;bottom:0;z-index:5;padding-bottom:6px;}
-  .qa-chip,.qa-prompt-btn{min-height:44px;}
+  .qa-chip,.qa-photo-btn{min-height:44px;}
+  .qa-photo-btn{margin-left:0;width:100%;white-space:normal;}
   .qa-footer .modal-btn,.qa-mini{min-height:44px;}
   .qa-del{padding:12px 10px;}
   .tk-toast{bottom:70px;}
@@ -1546,8 +1582,11 @@ body.light{
     <div class="modal-sub" style="margin-bottom:12px;">Type or paste your gear - one item per line. Use 2x for duplicates.</div>
 
     <div class="qa-chips-row">
-      <div class="qa-chips" id="qaChips"></div>
-      <button class="qa-prompt-btn" id="qaPromptBtn">📋 Copy AI Prompt</button>
+      <div class="qa-chips-block">
+        <div class="qa-chips-label">Starter Packs</div>
+        <div class="qa-chips" id="qaChips"></div>
+      </div>
+      <button class="qa-photo-btn" id="qaPhotoBtn">📸 Take Photo To Add Your Gear</button>
     </div>
 
     <!-- Mobile-only WRITE | PREVIEW segmented toggle -->
@@ -1563,13 +1602,6 @@ body.light{
         <div class="qa-preview-hdr" id="qaTally">0 items · 0 guessed · 0 duplicates</div>
         <div class="qa-preview-list" id="qaPreview"></div>
       </div>
-    </div>
-
-    <!-- Clipboard-blocked fallback: prompt preselected for manual copy -->
-    <div class="qa-fallback" id="qaPromptFallback" style="display:none;">
-      <div class="qa-fallback-label">Press Cmd+C / Ctrl+C to copy</div>
-      <textarea id="qaFallbackText" readonly></textarea>
-      <div><button class="modal-btn cancel" id="qaFallbackBackBtn">← Back</button></div>
     </div>
 
     <div class="qa-footer">
@@ -1592,6 +1624,35 @@ body.light{
         <button class="modal-btn cancel" id="qaCancelBtn">Cancel</button>
         <button class="modal-btn confirm" id="qaCommitBtn" disabled>Add Items</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK ADD PHOTO INSTRUCTIONS (stacks above the Quick Add modal) -->
+<div class="modal-overlay" id="qaPhotoModal">
+  <div class="modal qa-photo-modal">
+    <div class="modal-title">Add Gear From A Photo</div>
+    <div class="qa-photo-copied" id="qaPhotoCopied">✓ The AI prompt is copied to your clipboard.</div>
+    <div class="qa-photo-manual" id="qaPhotoManual" style="display:none;">
+      <div class="qa-photo-manual-label">Copying was blocked - select the prompt below and press Cmd+C / Ctrl+C</div>
+      <textarea id="qaPhotoPromptText" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="qa-photo-steps">
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">01</span>
+        <div><b>Photograph your gear.</b> Spread it on a plain floor or bed with a little space between items. Shoot straight down with everything in frame, in bright, even light - avoid harsh shadows. Big pile? Take a few photos and paste each reply.</div>
+      </div>
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">02</span>
+        <div><b>Send it to an AI.</b> Open claude.ai, ChatGPT, or Gemini. Paste the copied prompt, attach your photo, and send.</div>
+      </div>
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">03</span>
+        <div><b>Paste the reply here.</b> Copy the gear list the AI sends back and paste it into the Quick Add box. Fix anything in the preview before adding.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn confirm" id="qaPhotoOkBtn">Got It</button>
     </div>
   </div>
 </div>
@@ -2066,8 +2127,19 @@ body.light{
     const t = TYPES.find((t2) => t2.toLowerCase() === k);
     return t || TYPE_SYNONYM[k] || null;
   }
+  var SPORT_KEYS = ["hike", "bike", "run", "climb", "moto", "camp"];
   function matchActivityToken(s) {
     const k = String(s || "").trim().toLowerCase();
+    if (!k) return null;
+    if (k.includes(",")) {
+      const parts = k.split(",").map((p) => p.trim()).filter(Boolean);
+      if (!parts.length) return null;
+      const keys = parts.map((p) => ACT_SYNONYM[p]);
+      if (keys.some((x) => !x)) return null;
+      if (keys.includes("all")) return "all";
+      const uniq = SPORT_KEYS.filter((sk) => keys.includes(sk));
+      return uniq.length === SPORT_KEYS.length ? "all" : uniq.join(",");
+    }
     return ACT_SYNONYM[k] || null;
   }
   var r2 = (x) => Math.round(x * 100) / 100;
@@ -2421,6 +2493,20 @@ body.light{
     moto: "Moto",
     camp: "Camping"
   };
+  var SPORT_KEYS2 = ["hike", "bike", "run", "climb", "moto", "camp"];
+  function actList(a) {
+    return String(a || "all").split(",");
+  }
+  function actMatches(a, f) {
+    return f === "all" || a === "all" || actList(a).includes(f);
+  }
+  function actLabel(a) {
+    if (!a || a === "all") return SPORT_LABEL.all;
+    const ks = actList(a);
+    if (ks.length === 1) return SPORT_LABEL[ks[0]] || a;
+    if (ks.length === 2) return ks.map((k) => SPORT_LABEL[k] || k).join(" + ");
+    return `${SPORT_LABEL[ks[0]] || ks[0]} +${ks.length - 1}`;
+  }
   function vc(n) {
     return "v" + Math.min(n, 8);
   }
@@ -2517,7 +2603,7 @@ body.light{
     TT.innerHTML = `
     <div class="tt-tags">
       <span class="tt-tag tt-type-bg">${it.type.toUpperCase()}</span>
-      <span class="tt-tag tt-sport${it.activity !== "all" ? "-" + it.activity : ""}">${SPORT_LABEL[it.activity] || it.activity}</span>
+      <span class="tt-tag tt-sport${it.activity !== "all" ? "-" + actList(it.activity)[0] : ""}">${actLabel(it.activity)}</span>
     </div>
     <div class="tt-name">${it.name}</div>
     <div class="tt-desc">${it.desc}</div>
@@ -2584,7 +2670,7 @@ body.light{
     const f = S.gearFilter;
     const totalAll = INVENTORY.length;
     const inLoadout = INVENTORY.filter((it) => allocated.has(it.id)).length;
-    const activitySpecific = f !== "all" ? INVENTORY.filter((it) => it.activity === f).length : 0;
+    const activitySpecific = f !== "all" ? INVENTORY.filter((it) => it.activity !== "all" && actMatches(it.activity, f)).length : 0;
     const cnt = document.getElementById("stashCount");
     if (cnt) cnt.textContent = `${totalAll - inLoadout} available \xB7 ${inLoadout} in Loadout`;
     const actLine = document.getElementById("stashActivityCount");
@@ -2596,7 +2682,7 @@ body.light{
         actLine.style.display = "none";
       }
     }
-    const visible = INVENTORY.filter((it) => f === "all" || it.activity === "all" || it.activity === f);
+    const visible = INVENTORY.filter((it) => actMatches(it.activity, f));
     visible.sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || a.name.localeCompare(b.name));
     let lastType = null;
     visible.forEach((it) => {
@@ -3559,7 +3645,7 @@ document.addEventListener('keydown', function(e){
       csv += [
         csvQ(it.name),
         csvQ(it.type),
-        csvQ(SPORT_LABEL[it.activity] || it.activity),
+        csvQ(actLabel(it.activity)),
         it.slots,
         it.weightKg.toFixed(2),
         it.capacityL != null ? it.capacityL : "",
@@ -3633,16 +3719,6 @@ document.addEventListener('keydown', function(e){
   var QA_SPORTS = ["hike", "bike", "run", "climb", "moto", "camp"];
   var QA_SPORT_EMOJI = { hike: "\u{1F97E}", bike: "\u{1F6B5}", run: "\u{1F3C3}", climb: "\u{1F9D7}", moto: "\u{1F3CD}\uFE0F", camp: "\u26FA" };
   var QA_TYPES = TYPE_ORDER;
-  var QA_ACT_OPTS = [
-    ["__default__", "Auto"],
-    ["all", "All"],
-    ["hike", "Hike"],
-    ["bike", "MTB"],
-    ["run", "Run"],
-    ["climb", "Climb"],
-    ["moto", "Moto"],
-    ["camp", "Camp"]
-  ];
   var QA_DRAFT_MAX = 2e4;
   var QA_COMMIT_CAP = 300;
   var QA_AI_PROMPT = `I'm cataloguing my outdoor gear for an app called TrailKit.
@@ -3734,7 +3810,55 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     qaRenderPreview();
     qaUpdateTally();
   }
+  var _qaActPop = null;
+  function qaCloseActPop(apply) {
+    if (!_qaActPop) return;
+    const { el, row, orig } = _qaActPop;
+    const checked = SPORT_KEYS2.filter((k) => el.querySelector(`input[data-act="${k}"]`)?.checked);
+    el.remove();
+    _qaActPop = null;
+    if (!apply || !checked.length) return;
+    const value = checked.length === SPORT_KEYS2.length ? "all" : checked.join(",");
+    if (value !== orig) qaSetLineField(row.lineIndex, "activity", value);
+  }
+  function qaOpenActPop(btn, r, eff) {
+    if (_qaActPop) {
+      const same = _qaActPop.btn === btn, before = _qaDraft;
+      qaCloseActPop(true);
+      if (same || _qaDraft !== before) return;
+    }
+    const keys = eff === "all" ? SPORT_KEYS2.slice() : actList(eff).filter((k) => SPORT_KEYS2.includes(k));
+    const pop = document.createElement("div");
+    pop.className = "qa-act-pop";
+    pop.innerHTML = `<label class="qa-act-opt qa-act-opt-all"><input type="checkbox" data-act-all>${SPORT_LABEL.all}</label>` + SPORT_KEYS2.map((k) => `<label class="qa-act-opt"><input type="checkbox" data-act="${k}"${keys.includes(k) ? " checked" : ""}>${QA_SPORT_EMOJI[k]} ${SPORT_LABEL[k]}</label>`).join("");
+    const syncAll = () => {
+      pop.querySelector("[data-act-all]").checked = SPORT_KEYS2.every((k) => pop.querySelector(`input[data-act="${k}"]`).checked);
+    };
+    pop.addEventListener("click", (e) => e.stopPropagation());
+    pop.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t.hasAttribute("data-act-all")) {
+        SPORT_KEYS2.forEach((k) => {
+          pop.querySelector(`input[data-act="${k}"]`).checked = true;
+        });
+      } else if (!t.checked && !SPORT_KEYS2.some((k) => pop.querySelector(`input[data-act="${k}"]`).checked)) {
+        t.checked = true;
+      }
+      syncAll();
+    });
+    const rect = btn.getBoundingClientRect();
+    pop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 180)) + "px";
+    pop.style.top = Math.min(rect.bottom + 4, window.innerHeight - 240) + "px";
+    document.body.appendChild(pop);
+    syncAll();
+    _qaActPop = { el: pop, btn, row: r, orig: eff };
+    document.getElementById("qaPreview")?.addEventListener("scroll", () => qaCloseActPop(true), { once: true });
+  }
+  document.addEventListener("click", (e) => {
+    if (_qaActPop && !_qaActPop.el.contains(e.target)) qaCloseActPop(true);
+  });
   function qaRenderPreview() {
+    qaCloseActPop(false);
     const box = document.getElementById("qaPreview");
     if (!box) return;
     const scroll = box.scrollTop;
@@ -3758,7 +3882,7 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
       ${r._dup ? '<span class="qa-pill">ALREADY IN</span>' : ""}
       <span class="qa-dot ${confCls}" title="type ${r.conf.type} \xB7 weight ${r.conf.weight}">${dot}</span>
       <select class="edit-select qa-mini qa-type-sel"></select>
-      <select class="edit-select qa-mini qa-act-sel"></select>
+      <button class="edit-select qa-mini qa-act-btn" type="button" title="Choose activities"></button>
       <span class="qa-weight">${fkg(r.weightKg)}</span>
       <span class="qa-del" title="Remove line">\xD7</span>`;
       const tsel = row.querySelector(".qa-type-sel");
@@ -3770,15 +3894,13 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
       });
       tsel.value = r.type;
       tsel.addEventListener("change", () => qaSetLineField(r.lineIndex, "type", tsel.value));
-      const asel = row.querySelector(".qa-act-sel");
-      QA_ACT_OPTS.forEach(([v, l]) => {
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = l;
-        asel.appendChild(o);
+      const abtn = row.querySelector(".qa-act-btn");
+      const eff = r.activity === "__default__" ? document.getElementById("qaTagAs")?.value || "all" : r.activity;
+      abtn.textContent = eff === "all" ? "All" : actLabel(eff);
+      abtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        qaOpenActPop(abtn, r, eff);
       });
-      asel.value = r.activity;
-      asel.addEventListener("change", () => qaSetLineField(r.lineIndex, "activity", asel.value === "__default__" ? null : asel.value));
       row.querySelector(".qa-check").addEventListener("change", (e) => {
         _qaChecks.set(r.lineIndex, e.target.checked);
         row.classList.toggle("qa-off", !e.target.checked);
@@ -3894,29 +4016,7 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     qaRefresh();
     qaPersistSoon();
   }
-  function qaShowFallback(on) {
-    const fb = document.getElementById("qaPromptFallback");
-    const body = document.getElementById("qaBody");
-    if (fb) fb.style.display = on ? "" : "none";
-    if (body) body.style.display = on ? "none" : "";
-    if (on) {
-      const ta = document.getElementById("qaFallbackText");
-      if (ta) {
-        ta.value = QA_AI_PROMPT;
-        ta.focus();
-        ta.select();
-      }
-    }
-  }
-  function qaCopiedFlash() {
-    const btn = document.getElementById("qaPromptBtn");
-    if (!btn) return;
-    btn.textContent = "\u2713 Copied";
-    setTimeout(() => {
-      btn.textContent = "\u{1F4CB} Copy AI Prompt";
-    }, 1600);
-  }
-  function qaCopyLegacy() {
+  function qaCopyLegacySilent() {
     try {
       const ta = document.createElement("textarea");
       ta.value = QA_AI_PROMPT;
@@ -3926,18 +4026,32 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
       ta.select();
       const ok = document.execCommand("copy");
       ta.remove();
-      if (ok) {
-        qaCopiedFlash();
-        return;
-      }
+      return ok;
     } catch (e) {
+      return false;
     }
-    qaShowFallback(true);
   }
-  function qaCopyPrompt() {
+  function qaOpenPhotoModal(copied) {
+    const okLine = document.getElementById("qaPhotoCopied");
+    const manual = document.getElementById("qaPhotoManual");
+    if (okLine) okLine.style.display = copied ? "" : "none";
+    if (manual) manual.style.display = copied ? "none" : "";
+    if (!copied) {
+      const ta = document.getElementById("qaPhotoPromptText");
+      if (ta) {
+        ta.value = QA_AI_PROMPT;
+        setTimeout(() => {
+          ta.focus();
+          ta.select();
+        }, 120);
+      }
+    }
+    openModal("qaPhotoModal");
+  }
+  function qaPhotoClick() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(QA_AI_PROMPT).then(qaCopiedFlash).catch(qaCopyLegacy);
-    } else qaCopyLegacy();
+      navigator.clipboard.writeText(QA_AI_PROMPT).then(() => qaOpenPhotoModal(true)).catch(() => qaOpenPhotoModal(qaCopyLegacySilent()));
+    } else qaOpenPhotoModal(qaCopyLegacySilent());
   }
   function qaSetPane(which) {
     const modal = document.querySelector("#quickAddModal .qa-modal");
@@ -3951,7 +4065,6 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     document.getElementById("quickAddBtn")?.classList.remove("qa-unseen");
     const ta = qaTa();
     if (ta) ta.value = _qaDraft;
-    qaShowFallback(false);
     qaSetPane("write");
     qaRenderChips();
     qaRefresh();
@@ -4012,6 +4125,7 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
       if (did < r.count) leftover.push(r.raw);
     }
     if (!added) return;
+    qaCloseActPop(false);
     _qaDraft = leftover.join("\n");
     _qaPacksOn.clear();
     _qaChecks.clear();
@@ -4048,8 +4162,12 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     closeAllPopovers();
     openQuickAdd();
   });
-  document.getElementById("qaPromptBtn").addEventListener("click", qaCopyPrompt);
-  document.getElementById("qaFallbackBackBtn").addEventListener("click", () => qaShowFallback(false));
+  document.getElementById("qaPhotoBtn").addEventListener("click", qaPhotoClick);
+  document.getElementById("qaPhotoOkBtn").addEventListener("click", () => closeModal("qaPhotoModal"));
+  document.getElementById("qaTagAs").addEventListener("change", () => {
+    qaRenderPreview();
+    qaUpdateTally();
+  });
   document.getElementById("qaSegWrite").addEventListener("click", () => qaSetPane("write"));
   document.getElementById("qaSegPreview").addEventListener("click", () => qaSetPane("preview"));
   document.getElementById("qaCommitBtn").addEventListener("click", qaCommit);
@@ -4064,6 +4182,7 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     qaPersistNow();
   });
   document.getElementById("qaCancelBtn").addEventListener("click", () => {
+    qaCloseActPop(false);
     closeModal("quickAddModal");
     qaPersistNow();
   });
@@ -4071,7 +4190,10 @@ No intro, no summary, no markdown, no bullets. Just the lines.`;
     if (e.target === this) qaPersistNow();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && document.getElementById("quickAddModal").classList.contains("open")) qaPersistNow();
+    if (e.key === "Escape" && document.getElementById("quickAddModal").classList.contains("open")) {
+      qaCloseActPop(false);
+      qaPersistNow();
+    }
   });
   document.getElementById("stashGrid").addEventListener("click", (e) => {
     const t = e.target.closest("[data-qa]");
@@ -4695,9 +4817,9 @@ ${newLoadouts} loadout${newLoadouts !== 1 ? "s" : ""} imported.`);
     const type = document.getElementById("editType").value;
     const act = document.getElementById("editActivity").value;
     const c = TYPE_COLORS[type] || TYPE_COLORS.Item, tc = TYPE_TEXT[type] || TYPE_TEXT.Item;
-    const sc = act === "all" ? "tt-sport" : `tt-sport-${act}`;
+    const sc = act === "all" ? "tt-sport" : `tt-sport-${actList(act)[0]}`;
     let html = `<span class="edit-tag" style="background:${c};color:${tc};border:1px solid rgba(255,255,255,0.1);">${type.toUpperCase()}</span>`;
-    if (act !== "all") html += `<span class="edit-tag ${sc}">${SPORT_LABEL[act] || act}</span>`;
+    if (act !== "all") html += `<span class="edit-tag ${sc}">${actLabel(act)}</span>`;
     document.getElementById("editTagsPreview").innerHTML = html;
   }
   function refreshSpecialSections() {
@@ -4777,7 +4899,17 @@ ${newLoadouts} loadout${newLoadouts !== 1 ? "s" : ""} imported.`);
     document.getElementById("detailIcon").textContent = it.icon || "\u{1F4E6}";
     document.getElementById("editName").value = it.name || "";
     document.getElementById("editType").value = it.type || "Item";
-    document.getElementById("editActivity").value = it.activity || "all";
+    const actSel = document.getElementById("editActivity");
+    actSel.querySelectorAll("option[data-multi]").forEach((o) => o.remove());
+    const av = it.activity || "all";
+    if (av.includes(",")) {
+      const o = document.createElement("option");
+      o.value = av;
+      o.textContent = actLabel(av);
+      o.dataset.multi = "1";
+      actSel.appendChild(o);
+    }
+    actSel.value = av;
     document.getElementById("editSlots").value = it.type === "Backpack" ? it.packSlots ?? it.slots ?? 7 : it.slots ?? 1;
     document.getElementById("editWeight").value = it.weightKg ?? 0;
     document.getElementById("editDesc").value = it.desc || "";

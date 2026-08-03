@@ -250,3 +250,28 @@ test('parse: line indexes map to the source lines', () => {
   assertEqual(ignored.length, 1);
   assertEqual(ignored[0].lineIndex, 2);
 });
+
+// ── Multi-activity comma lists ──────────────────────────────────
+test('parse: comma list activity field', () => {
+  const r = row1('headlamp | hike,camp');
+  assertEqual(r.activity, 'hike,camp');
+  assertEqual(r.conf.activity, 'given');
+});
+
+test('parse: comma list normalizes synonyms, spaces, and order', () => {
+  assertEqual(row1('headlamp | camping, hiking').activity, 'hike,camp');
+});
+
+test('parse: comma list of all six sports collapses to all', () => {
+  assertEqual(row1('headlamp | hike,bike,run,climb,moto,camp').activity, 'all');
+});
+
+test('parse: comma list containing all collapses to all', () => {
+  assertEqual(row1('headlamp | hike,all').activity, 'all');
+});
+
+test('parse: comma list with an unknown part is not an activity field', () => {
+  const r = row1('headlamp | hike,xyz');
+  assertEqual(r.activity, '__default__');
+  assertEqual(r.desc.includes('hike,xyz') || r.desc.includes('hike, xyz') ? true : false, true);
+});

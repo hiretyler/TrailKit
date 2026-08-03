@@ -647,8 +647,11 @@
     <div class="modal-sub" style="margin-bottom:12px;">Type or paste your gear - one item per line. Use 2x for duplicates.</div>
 
     <div class="qa-chips-row">
-      <div class="qa-chips" id="qaChips"></div>
-      <button class="qa-prompt-btn" id="qaPromptBtn">📋 Copy AI Prompt</button>
+      <div class="qa-chips-block">
+        <div class="qa-chips-label">Starter Packs</div>
+        <div class="qa-chips" id="qaChips"></div>
+      </div>
+      <button class="qa-photo-btn" id="qaPhotoBtn">📸 Take Photo To Add Your Gear</button>
     </div>
 
     <!-- Mobile-only WRITE | PREVIEW segmented toggle -->
@@ -664,13 +667,6 @@
         <div class="qa-preview-hdr" id="qaTally">0 items · 0 guessed · 0 duplicates</div>
         <div class="qa-preview-list" id="qaPreview"></div>
       </div>
-    </div>
-
-    <!-- Clipboard-blocked fallback: prompt preselected for manual copy -->
-    <div class="qa-fallback" id="qaPromptFallback" style="display:none;">
-      <div class="qa-fallback-label">Press Cmd+C / Ctrl+C to copy</div>
-      <textarea id="qaFallbackText" readonly></textarea>
-      <div><button class="modal-btn cancel" id="qaFallbackBackBtn">← Back</button></div>
     </div>
 
     <div class="qa-footer">
@@ -693,6 +689,35 @@
         <button class="modal-btn cancel" id="qaCancelBtn">Cancel</button>
         <button class="modal-btn confirm" id="qaCommitBtn" disabled>Add Items</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK ADD PHOTO INSTRUCTIONS (stacks above the Quick Add modal) -->
+<div class="modal-overlay" id="qaPhotoModal">
+  <div class="modal qa-photo-modal">
+    <div class="modal-title">Add Gear From A Photo</div>
+    <div class="qa-photo-copied" id="qaPhotoCopied">✓ The AI prompt is copied to your clipboard.</div>
+    <div class="qa-photo-manual" id="qaPhotoManual" style="display:none;">
+      <div class="qa-photo-manual-label">Copying was blocked - select the prompt below and press Cmd+C / Ctrl+C</div>
+      <textarea id="qaPhotoPromptText" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="qa-photo-steps">
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">01</span>
+        <div><b>Photograph your gear.</b> Spread it on a plain floor or bed with a little space between items. Shoot straight down with everything in frame, in bright, even light - avoid harsh shadows. Big pile? Take a few photos and paste each reply.</div>
+      </div>
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">02</span>
+        <div><b>Send it to an AI.</b> Open claude.ai, ChatGPT, or Gemini. Paste the copied prompt, attach your photo, and send.</div>
+      </div>
+      <div class="qa-photo-step">
+        <span class="qa-photo-num">03</span>
+        <div><b>Paste the reply here.</b> Copy the gear list the AI sends back and paste it into the Quick Add box. Fix anything in the preview before adding.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn confirm" id="qaPhotoOkBtn">Got It</button>
     </div>
   </div>
 </div>

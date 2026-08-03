@@ -129,6 +129,18 @@ const SPORT_COLOR = {all:'var(--sport-all)',hike:'var(--sport-hike)',bike:'var(-
   run:'var(--sport-run)',climb:'var(--sport-climb)',moto:'var(--sport-moto)',camp:'var(--sport-camp)'};
 const SPORT_LABEL = {all:'All Activities',hike:'Hiking',bike:'MTB',run:'Running',
   climb:'Climbing',moto:'Moto',camp:'Camping'};
+const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
+
+// activity is 'all', one sport key, or a comma list ('hike,camp')
+function actList(a){return String(a||'all').split(',');}
+function actMatches(a,f){return f==='all'||a==='all'||actList(a).includes(f);}
+function actLabel(a){
+  if(!a||a==='all')return SPORT_LABEL.all;
+  const ks=actList(a);
+  if(ks.length===1)return SPORT_LABEL[ks[0]]||a;
+  if(ks.length===2)return ks.map(k=>SPORT_LABEL[k]||k).join(' + ');
+  return `${SPORT_LABEL[ks[0]]||ks[0]} +${ks.length-1}`;
+}
 function vc(n){return 'v'+Math.min(n,8);}
 function fkg(v){return v.toFixed(2)+' kg';}
 function itemById(id){return INVENTORY.find(i=>i.id===id)||null;}
@@ -220,7 +232,7 @@ function showTip(e,it){
   TT.innerHTML=`
     <div class="tt-tags">
       <span class="tt-tag tt-type-bg">${it.type.toUpperCase()}</span>
-      <span class="tt-tag tt-sport${it.activity!=='all'?'-'+it.activity:''}">${SPORT_LABEL[it.activity]||it.activity}</span>
+      <span class="tt-tag tt-sport${it.activity!=='all'?'-'+actList(it.activity)[0]:''}">${actLabel(it.activity)}</span>
     </div>
     <div class="tt-name">${it.name}</div>
     <div class="tt-desc">${it.desc}</div>
@@ -302,7 +314,7 @@ function renderStash(){
   // ── Activity-specific count: items with a non-'all' activity value
   // Only shown when a specific filter is selected
   const activitySpecific = f !== 'all'
-    ? INVENTORY.filter(it=>it.activity===f).length
+    ? INVENTORY.filter(it=>it.activity!=='all'&&actMatches(it.activity,f)).length
     : 0;
 
   // ── Update header counts
@@ -320,7 +332,7 @@ function renderStash(){
   }
 
   // ── Filter and sort visible items for the grid
-  const visible=INVENTORY.filter(it=>f==='all'||it.activity==='all'||it.activity===f);
+  const visible=INVENTORY.filter(it=>actMatches(it.activity,f));
   visible.sort((a,b)=>TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type)||a.name.localeCompare(b.name));
 
   // ── Render with type group labels
@@ -1334,7 +1346,7 @@ function exportCSV(){
     csv += [
       csvQ(it.name),
       csvQ(it.type),
-      csvQ(SPORT_LABEL[it.activity]||it.activity),
+      csvQ(actLabel(it.activity)),
       it.slots,
       it.weightKg.toFixed(2),
       it.capacityL!=null ? it.capacityL : '',
@@ -1415,8 +1427,6 @@ function exportCSV(){
 const QA_SPORTS=['hike','bike','run','climb','moto','camp'];
 const QA_SPORT_EMOJI={hike:'🥾',bike:'🚵',run:'🏃',climb:'🧗',moto:'🏍️',camp:'⛺'};
 const QA_TYPES=TYPE_ORDER;
-const QA_ACT_OPTS=[['__default__','Auto'],['all','All'],['hike','Hike'],['bike','MTB'],
-  ['run','Run'],['climb','Climb'],['moto','Moto'],['camp','Camp']];
 const QA_DRAFT_MAX=20000;
 const QA_COMMIT_CAP=300;
 
@@ -1492,8 +1502,61 @@ function qaParse(){
 
 function qaRefresh(){qaParse(); qaRenderPreview(); qaUpdateTally();}
 
+// ── Activity multi-select popover (one open at a time) ──
+// Fixed-position and body-appended so the preview pane's scroll
+// clipping cannot cut it off. Checking All Activities checks every
+// sport's box; the selection applies when the popover closes -
+// all six = 'all', a subset = comma list, never fewer than one.
+let _qaActPop=null;
+function qaCloseActPop(apply){
+  if(!_qaActPop)return;
+  const {el,row,orig}=_qaActPop;
+  const checked=SPORT_KEYS.filter(k=>el.querySelector(`input[data-act="${k}"]`)?.checked);
+  el.remove();
+  _qaActPop=null;
+  if(!apply||!checked.length)return;
+  const value=checked.length===SPORT_KEYS.length?'all':checked.join(',');
+  if(value!==orig)qaSetLineField(row.lineIndex,'activity',value);
+}
+function qaOpenActPop(btn,r,eff){
+  if(_qaActPop){
+    const same=_qaActPop.btn===btn, before=_qaDraft;
+    qaCloseActPop(true);
+    // Applying may rewrite the draft and rebuild the rows, detaching
+    // this btn - bail and let the user click the fresh one
+    if(same||_qaDraft!==before)return;
+  }
+  const keys=eff==='all'?SPORT_KEYS.slice():actList(eff).filter(k=>SPORT_KEYS.includes(k));
+  const pop=document.createElement('div');
+  pop.className='qa-act-pop';
+  pop.innerHTML=`<label class="qa-act-opt qa-act-opt-all"><input type="checkbox" data-act-all>${SPORT_LABEL.all}</label>`
+    +SPORT_KEYS.map(k=>`<label class="qa-act-opt"><input type="checkbox" data-act="${k}"${keys.includes(k)?' checked':''}>${QA_SPORT_EMOJI[k]} ${SPORT_LABEL[k]}</label>`).join('');
+  const syncAll=()=>{pop.querySelector('[data-act-all]').checked=SPORT_KEYS.every(k=>pop.querySelector(`input[data-act="${k}"]`).checked);};
+  pop.addEventListener('click',e=>e.stopPropagation());
+  pop.addEventListener('change',e=>{
+    const t=e.target;
+    if(t.hasAttribute('data-act-all')){
+      SPORT_KEYS.forEach(k=>{pop.querySelector(`input[data-act="${k}"]`).checked=true;});
+    } else if(!t.checked&&!SPORT_KEYS.some(k=>pop.querySelector(`input[data-act="${k}"]`).checked)){
+      t.checked=true;
+    }
+    syncAll();
+  });
+  const rect=btn.getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-180))+'px';
+  pop.style.top=Math.min(rect.bottom+4,window.innerHeight-240)+'px';
+  document.body.appendChild(pop);
+  syncAll();
+  _qaActPop={el:pop,btn,row:r,orig:eff};
+  document.getElementById('qaPreview')?.addEventListener('scroll',()=>qaCloseActPop(true),{once:true});
+}
+document.addEventListener('click',e=>{
+  if(_qaActPop&&!_qaActPop.el.contains(e.target))qaCloseActPop(true);
+});
+
 // ── Preview rendering ──
 function qaRenderPreview(){
+  qaCloseActPop(false);
   const box=document.getElementById('qaPreview'); if(!box)return;
   const scroll=box.scrollTop;
   box.innerHTML='';
@@ -1516,17 +1579,17 @@ function qaRenderPreview(){
       ${r._dup?'<span class="qa-pill">ALREADY IN</span>':''}
       <span class="qa-dot ${confCls}" title="type ${r.conf.type} · weight ${r.conf.weight}">${dot}</span>
       <select class="edit-select qa-mini qa-type-sel"></select>
-      <select class="edit-select qa-mini qa-act-sel"></select>
+      <button class="edit-select qa-mini qa-act-btn" type="button" title="Choose activities"></button>
       <span class="qa-weight">${fkg(r.weightKg)}</span>
       <span class="qa-del" title="Remove line">×</span>`;
     const tsel=row.querySelector('.qa-type-sel');
     QA_TYPES.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tsel.appendChild(o);});
     tsel.value=r.type;
     tsel.addEventListener('change',()=>qaSetLineField(r.lineIndex,'type',tsel.value));
-    const asel=row.querySelector('.qa-act-sel');
-    QA_ACT_OPTS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;asel.appendChild(o);});
-    asel.value=r.activity;
-    asel.addEventListener('change',()=>qaSetLineField(r.lineIndex,'activity',asel.value==='__default__'?null:asel.value));
+    const abtn=row.querySelector('.qa-act-btn');
+    const eff=r.activity==='__default__'?(document.getElementById('qaTagAs')?.value||'all'):r.activity;
+    abtn.textContent=eff==='all'?'All':actLabel(eff);
+    abtn.addEventListener('click',e=>{e.stopPropagation();qaOpenActPop(abtn,r,eff);});
     row.querySelector('.qa-check').addEventListener('change',e=>{
       _qaChecks.set(r.lineIndex,e.target.checked);
       row.classList.toggle('qa-off',!e.target.checked);
@@ -1645,25 +1708,11 @@ function qaTogglePack(sport){
   qaRenderChips(); qaRefresh(); qaPersistSoon();
 }
 
-// ── Copy AI Prompt: clipboard API, execCommand, then visible fallback ──
-function qaShowFallback(on){
-  const fb=document.getElementById('qaPromptFallback');
-  const body=document.getElementById('qaBody');
-  if(fb)fb.style.display=on?'':'none';
-  if(body)body.style.display=on?'none':'';
-  if(on){
-    const ta=document.getElementById('qaFallbackText');
-    if(ta){ta.value=QA_AI_PROMPT;ta.focus();ta.select();}
-  }
-}
-
-function qaCopiedFlash(){
-  const btn=document.getElementById('qaPromptBtn'); if(!btn)return;
-  btn.textContent='✓ Copied';
-  setTimeout(()=>{btn.textContent='📋 Copy AI Prompt';},1600);
-}
-
-function qaCopyLegacy(){
+// ── Take Photo To Add Your Gear: copy the prompt, then open the
+// instructions modal. If both clipboard paths fail (file:// is a
+// non-secure context), the modal shows the prompt preselected for
+// a manual copy instead of the copied confirmation.
+function qaCopyLegacySilent(){
   try{
     const ta=document.createElement('textarea');
     ta.value=QA_AI_PROMPT;
@@ -1672,15 +1721,28 @@ function qaCopyLegacy(){
     ta.focus(); ta.select();
     const ok=document.execCommand('copy');
     ta.remove();
-    if(ok){qaCopiedFlash();return;}
-  }catch(e){/* fall through to visible fallback */}
-  qaShowFallback(true);
+    return ok;
+  }catch(e){return false;}
 }
 
-function qaCopyPrompt(){
+function qaOpenPhotoModal(copied){
+  const okLine=document.getElementById('qaPhotoCopied');
+  const manual=document.getElementById('qaPhotoManual');
+  if(okLine)okLine.style.display=copied?'':'none';
+  if(manual)manual.style.display=copied?'none':'';
+  if(!copied){
+    const ta=document.getElementById('qaPhotoPromptText');
+    if(ta){ta.value=QA_AI_PROMPT;setTimeout(()=>{ta.focus();ta.select();},120);}
+  }
+  openModal('qaPhotoModal');
+}
+
+function qaPhotoClick(){
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(QA_AI_PROMPT).then(qaCopiedFlash).catch(qaCopyLegacy);
-  } else qaCopyLegacy();
+    navigator.clipboard.writeText(QA_AI_PROMPT)
+      .then(()=>qaOpenPhotoModal(true))
+      .catch(()=>qaOpenPhotoModal(qaCopyLegacySilent()));
+  } else qaOpenPhotoModal(qaCopyLegacySilent());
 }
 
 // ── Mobile WRITE | PREVIEW panes ──
@@ -1698,7 +1760,6 @@ function openQuickAdd(){
   document.getElementById('quickAddBtn')?.classList.remove('qa-unseen');
   const ta=qaTa();
   if(ta)ta.value=_qaDraft;
-  qaShowFallback(false);
   qaSetPane('write');
   qaRenderChips();
   qaRefresh();
@@ -1752,6 +1813,7 @@ function qaCommit(){
     if(did<r.count)leftover.push(r.raw);
   }
   if(!added)return;
+  qaCloseActPop(false);
   _qaDraft=leftover.join('\n'); _qaPacksOn.clear(); _qaChecks.clear();
   const ta=qaTa(); if(ta)ta.value=_qaDraft;
   closeModal('quickAddModal');
@@ -1783,8 +1845,9 @@ document.getElementById('popQuickAddBtn').addEventListener('click',()=>{
   closeAllPopovers(); openQuickAdd();
 });
 
-document.getElementById('qaPromptBtn').addEventListener('click',qaCopyPrompt);
-document.getElementById('qaFallbackBackBtn').addEventListener('click',()=>qaShowFallback(false));
+document.getElementById('qaPhotoBtn').addEventListener('click',qaPhotoClick);
+document.getElementById('qaPhotoOkBtn').addEventListener('click',()=>closeModal('qaPhotoModal'));
+document.getElementById('qaTagAs').addEventListener('change',()=>{qaRenderPreview();qaUpdateTally();});
 document.getElementById('qaSegWrite').addEventListener('click',()=>qaSetPane('write'));
 document.getElementById('qaSegPreview').addEventListener('click',()=>qaSetPane('preview'));
 document.getElementById('qaCommitBtn').addEventListener('click',qaCommit);
@@ -1794,6 +1857,7 @@ document.getElementById('qaClearBtn').addEventListener('click',()=>{
   qaRenderChips(); qaRefresh(); qaPersistNow();
 });
 document.getElementById('qaCancelBtn').addEventListener('click',()=>{
+  qaCloseActPop(false);
   closeModal('quickAddModal'); qaPersistNow();
 });
 // Backdrop and Escape dismissals are handled by the shared modal
@@ -1802,7 +1866,9 @@ document.getElementById('quickAddModal').addEventListener('click',function(e){
   if(e.target===this)qaPersistNow();
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&document.getElementById('quickAddModal').classList.contains('open'))qaPersistNow();
+  if(e.key==='Escape'&&document.getElementById('quickAddModal').classList.contains('open')){
+    qaCloseActPop(false); qaPersistNow();
+  }
 });
 
 // Empty-stash CTA (delegated - the card is re-created every render)
@@ -2258,9 +2324,9 @@ function refreshTagPreview(){
   const type=document.getElementById('editType').value;
   const act =document.getElementById('editActivity').value;
   const c=TYPE_COLORS[type]||TYPE_COLORS.Item, tc=TYPE_TEXT[type]||TYPE_TEXT.Item;
-  const sc=act==='all'?'tt-sport':`tt-sport-${act}`;
+  const sc=act==='all'?'tt-sport':`tt-sport-${actList(act)[0]}`;
   let html=`<span class="edit-tag" style="background:${c};color:${tc};border:1px solid rgba(255,255,255,0.1);">${type.toUpperCase()}</span>`;
-  if(act!=='all') html+=`<span class="edit-tag ${sc}">${SPORT_LABEL[act]||act}</span>`;
+  if(act!=='all') html+=`<span class="edit-tag ${sc}">${actLabel(act)}</span>`;
   document.getElementById('editTagsPreview').innerHTML=html;
 }
 
@@ -2354,7 +2420,17 @@ function openItemDetail(it){
   document.getElementById('detailIcon').textContent =it.icon||'📦';
   document.getElementById('editName').value         =it.name||'';
   document.getElementById('editType').value         =it.type||'Item';
-  document.getElementById('editActivity').value     =it.activity||'all';
+  // Multi-activity items (comma lists from Quick Add) need a dynamic
+  // option or the single-select silently reverts them on save
+  const actSel=document.getElementById('editActivity');
+  actSel.querySelectorAll('option[data-multi]').forEach(o=>o.remove());
+  const av=it.activity||'all';
+  if(av.includes(',')){
+    const o=document.createElement('option');
+    o.value=av; o.textContent=actLabel(av); o.dataset.multi='1';
+    actSel.appendChild(o);
+  }
+  actSel.value=av;
   // For backpacks "Slots This Empty Backpack Takes Up" = packSlots; "Main Compartment Slots" = slots
   document.getElementById('editSlots').value        =it.type==='Backpack'?(it.packSlots??it.slots??7):it.slots??1;
   document.getElementById('editWeight').value       =it.weightKg??0;

@@ -53,9 +53,26 @@ export function matchTypeToken(s){
   return t || TYPE_SYNONYM[k] || null;
 }
 
-// Exact-match a pipe field to a canonical activity key
+const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
+
+// Exact-match a pipe field to a canonical activity value. Accepts a
+// comma list ('hike,camp' or 'hiking, camping') for multi-activity
+// items - every part must resolve or the whole field is rejected.
+// Canonical output: 'all', one sport key, or a comma list in
+// SPORT_KEYS order. A list naming every sport (or containing 'all')
+// collapses to 'all'.
 export function matchActivityToken(s){
   const k = String(s||'').trim().toLowerCase();
+  if(!k) return null;
+  if(k.includes(',')){
+    const parts = k.split(',').map(p=>p.trim()).filter(Boolean);
+    if(!parts.length) return null;
+    const keys = parts.map(p=>ACT_SYNONYM[p]);
+    if(keys.some(x=>!x)) return null;
+    if(keys.includes('all')) return 'all';
+    const uniq = SPORT_KEYS.filter(sk=>keys.includes(sk));
+    return uniq.length===SPORT_KEYS.length ? 'all' : uniq.join(',');
+  }
   return ACT_SYNONYM[k] || null;
 }
 
