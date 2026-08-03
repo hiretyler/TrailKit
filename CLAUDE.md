@@ -93,6 +93,12 @@ Everything else. Still one big file by intent — the audit pass listed in `docs
 - After any state-changing action, the convention is `dispatch → renderAll()`. `renderAll` itself calls `persistState()`, so don't double-save.
 - The `exportPackingLists` template embeds its own `<script>` — when editing it, preserve the `<' + 'script>` / `<\/script>` splits, otherwise the outer document's parser will close the wrong tag. See `docs/AUDIT.md` #6 for the planned cleanup.
 
+## Deployments
+
+Two public homes, both serving the released single file:
+- **GitHub Pages** — the repo-root `index.html` redirects to `releases/TrailKit-X.Y.html`; goes live on push.
+- **https://tgeddes.dev/trailkit** — served as `trailkit/index.html` on the portfolio host. The push command lives in the private tgeddes.dev repo's DEPLOY.md (server credentials stay out of this public repo). Redeploy it whenever a new release is cut.
+
 ## Local test server
 
 Canonical local port: **8081** - keep this consistent across sessions so
