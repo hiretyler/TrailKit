@@ -77,25 +77,42 @@ export function matchVolToken(s){
 
 const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
 
+// User-defined activities (custom sports) register here so typed and
+// pasted lines can name them. Maps lowercase label AND key → key.
+// The app re-registers on every change; tests never need to.
+let EXTRA_ACT = {};
+let EXTRA_KEYS = [];
+export function setExtraActivities(list){
+  EXTRA_ACT = {}; EXTRA_KEYS = [];
+  for(const {key, label} of list||[]){
+    if(!key) continue;
+    EXTRA_KEYS.push(key);
+    EXTRA_ACT[key.toLowerCase()] = key;
+    if(label) EXTRA_ACT[String(label).toLowerCase()] = key;
+  }
+}
+const actKey = p => ACT_SYNONYM[p] || EXTRA_ACT[p] || null;
+const allActKeys = () => [...SPORT_KEYS, ...EXTRA_KEYS];
+
 // Exact-match a pipe field to a canonical activity value. Accepts a
 // comma list ('hike,camp' or 'hiking, camping') for multi-activity
 // items - every part must resolve or the whole field is rejected.
-// Canonical output: 'all', one sport key, or a comma list in
-// SPORT_KEYS order. A list naming every sport (or containing 'all')
-// collapses to 'all'.
+// Canonical output: 'all', one activity key, or a comma list in
+// canonical order (built-ins first, then customs). A list naming
+// every activity (or containing 'all') collapses to 'all'.
 export function matchActivityToken(s){
   const k = String(s||'').trim().toLowerCase();
   if(!k) return null;
   if(k.includes(',')){
     const parts = k.split(',').map(p=>p.trim()).filter(Boolean);
     if(!parts.length) return null;
-    const keys = parts.map(p=>ACT_SYNONYM[p]);
+    const keys = parts.map(actKey);
     if(keys.some(x=>!x)) return null;
     if(keys.includes('all')) return 'all';
-    const uniq = SPORT_KEYS.filter(sk=>keys.includes(sk));
-    return uniq.length===SPORT_KEYS.length ? 'all' : uniq.join(',');
+    const uniq = allActKeys().filter(sk=>keys.includes(sk));
+    return uniq.length===allActKeys().length ? 'all' : uniq.join(',');
   }
-  return ACT_SYNONYM[k] || null;
+  return actKey(k);
 }
 
 // Volumes reach the DOM unformatted (capacity badges, tooltips), so

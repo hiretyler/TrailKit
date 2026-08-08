@@ -683,6 +683,38 @@ body.light{
 .qa-empty-link{font-size:11px;color:var(--text-secondary);text-decoration:underline;cursor:pointer;}
 .qa-empty-link:hover{color:var(--accent-amber);}
 
+/* ── MANAGE ACTIVITIES ── */
+.act-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.act-list-label{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:4px 0 6px;}
+.act-row{display:flex;align-items:center;gap:8px;padding:6px 8px;
+  background:var(--bg-slot);border:1px solid var(--border);border-radius:3px;}
+.act-row-builtin{opacity:0.65;}
+.act-emoji{font-size:18px;line-height:1;flex-shrink:0;width:30px;text-align:center;}
+.act-emoji-btn{background:transparent;border:1px solid var(--border-bright);border-radius:3px;
+  padding:3px 0;cursor:pointer;transition:border-color 0.12s;}
+.act-emoji-btn:hover{border-color:var(--accent-teal);}
+.act-name{flex:1;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;
+  color:var(--text-primary);}
+.act-name-in{flex:1;min-width:0;font-size:13px;padding:4px 8px;}
+.act-builtin-tag{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);
+  letter-spacing:1px;text-transform:uppercase;}
+.act-swatches{display:flex;gap:4px;flex-shrink:0;}
+.act-swatch{width:16px;height:16px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;padding:0;transition:transform 0.1s;}
+.act-swatch:hover{transform:scale(1.15);}
+.act-swatch.active{border-color:var(--text-primary);}
+.act-del{color:var(--text-dim);cursor:pointer;padding:2px 6px;border-radius:2px;
+  flex-shrink:0;font-size:15px;}
+.act-del:hover{color:var(--accent-red);}
+.act-del.armed{color:var(--accent-red);background:rgba(232,64,64,0.15);
+  animation:samplePulse 0.8s ease-in-out infinite;}
+.act-add-btn{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;background:transparent;
+  color:var(--text-secondary);border:1px dashed var(--border-bright);border-radius:3px;
+  padding:8px;cursor:pointer;width:100%;transition:all 0.15s;margin-bottom:4px;}
+.act-add-btn:hover{border-color:var(--accent-teal);color:var(--accent-teal);}
+
 /* ── TOAST ── */
 .tk-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);
   background:var(--bg-card);border:1px solid var(--accent-teal);color:var(--text-primary);

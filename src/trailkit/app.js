@@ -15,7 +15,7 @@ import {
   UIUtils,
 } from '../engine/index.js';
 
-import { parseGearLines, matchTypeToken, matchActivityToken, matchSlotsToken, matchVolToken, csvToGearLines, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
+import { parseGearLines, matchTypeToken, matchActivityToken, matchSlotsToken, matchVolToken, csvToGearLines, setExtraActivities, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
 import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
 
 
@@ -168,15 +168,25 @@ const SPORT_LABEL = {all:'All Activities',hike:'Hiking',bike:'MTB',run:'Running'
   climb:'Climbing',moto:'Moto',camp:'Camping'};
 const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
 
+// ── ACTIVITIES — six built-ins plus user-defined customs ─────────
+// Custom activities live in S.customActivities [{key,label,emoji,color}].
+// Everything that enumerates sports goes through allSports() and the
+// sport*() lookups so customs appear everywhere built-ins do.
+function allSports(){ return [...SPORT_KEYS, ...S.customActivities.map(c=>c.key)]; }
+function customActivity(k){ return S.customActivities.find(c=>c.key===k) || null; }
+function sportLabel(k){ return SPORT_LABEL[k] || customActivity(k)?.label || k; }
+function sportEmoji(k){ return QA_SPORT_EMOJI[k] || customActivity(k)?.emoji || '⬡'; }
+function sportColor(k){ return SPORT_COLOR[k] || customActivity(k)?.color || 'var(--sport-all)'; }
+
 // activity is 'all', one sport key, or a comma list ('hike,camp')
 function actList(a){return String(a||'all').split(',');}
 function actMatches(a,f){return f==='all'||a==='all'||actList(a).includes(f);}
 function actLabel(a){
   if(!a||a==='all')return SPORT_LABEL.all;
   const ks=actList(a);
-  if(ks.length===1)return SPORT_LABEL[ks[0]]||a;
-  if(ks.length===2)return ks.map(k=>SPORT_LABEL[k]||k).join(' + ');
-  return `${SPORT_LABEL[ks[0]]||ks[0]} +${ks.length-1}`;
+  if(ks.length===1)return sportLabel(ks[0]);
+  if(ks.length===2)return ks.map(sportLabel).join(' + ');
+  return `${sportLabel(ks[0])} +${ks.length-1}`;
 }
 function vc(n){return 'v'+Math.min(n,8);}
 function fkg(v){return v.toFixed(2)+' kg';}
@@ -207,7 +217,7 @@ const A = {
   ADD_ITEMS:'ADD_ITEMS', SET_USER_INVENTORY:'SET_USER_INVENTORY',
   UPDATE_ITEM:'UPDATE_ITEM',
   ADD_ACTIVITY:'ADD_ACTIVITY', UPDATE_ACTIVITY:'UPDATE_ACTIVITY',
-  REMOVE_ACTIVITY:'REMOVE_ACTIVITY',
+  REMOVE_ACTIVITY:'REMOVE_ACTIVITY', DELETE_LOADOUT:'DELETE_LOADOUT',
 };
 
 const store = new PlannerStore({
@@ -287,17 +297,32 @@ store.on(A.ADD_ACTIVITY,   (s, a) => ({ customActivities: [...s.customActivities
 store.on(A.UPDATE_ACTIVITY,(s, a) => ({
   customActivities: s.customActivities.map(c => c.key===a.key ? { ...c, ...a.patch } : c),
 }));
-// Removing an activity also untags items carrying it (falling back to
-// 'all' when it was their only tag). Blocked upstream while the
-// activity still has loadouts - see the Manage Activities modal.
-store.on(A.REMOVE_ACTIVITY,(s, a) => ({
-  customActivities: s.customActivities.filter(c => c.key!==a.key),
-  userInventory: s.userInventory.map(i => {
-    const keys = String(i.activity||'all').split(',').filter(k => k!==a.key);
-    const next = keys.length ? keys.join(',') : 'all';
-    return next===i.activity ? i : { ...i, activity: next };
-  }),
-}));
+// Removing an activity cascades: its loadout namespace is dropped and
+// items carrying it are untagged (falling back to 'all' when it was
+// their only tag). The Manage Activities modal arms a second-click
+// confirm before dispatching when loadouts exist.
+store.on(A.REMOVE_ACTIVITY,(s, a) => {
+  const { [a.key]: _dropped, ...restLoadouts } = s.userLoadouts;
+  return {
+    customActivities: s.customActivities.filter(c => c.key!==a.key),
+    userLoadouts: restLoadouts,
+    userInventory: s.userInventory.map(i => {
+      const keys = String(i.activity||'all').split(',').filter(k => k!==a.key);
+      const next = keys.length ? keys.join(',') : 'all';
+      return next===i.activity ? i : { ...i, activity: next };
+    }),
+  };
+});
+
+// Delete one saved user loadout (samples are untouchable)
+store.on(A.DELETE_LOADOUT,(s, a) => {
+  const bySport = { ...(s.userLoadouts[a.sport] || {}) };
+  delete bySport[a.key];
+  const userLoadouts = { ...s.userLoadouts };
+  if(Object.keys(bySport).length) userLoadouts[a.sport] = bySport;
+  else delete userLoadouts[a.sport];
+  return { userLoadouts };
+});
 
 // ── S — strict read-only live view of store state (AUDIT #1) ─────
 // The old `S` was a mutable alias: `S.mainItems.push(x)` would
@@ -350,10 +375,17 @@ function showTip(e,it){
   const maxLine = it.maxKg!=null
     ? `<div class="tt-row"><span class="tt-key">Max Load</span><span class="tt-val">${it.maxKg} kg</span></div>` : '';
   const slotsLabel = it.type==='Backpack' ? 'Main Compartment' : 'Slots Used';
+  // Custom activities have no tt-sport-* class - style inline from
+  // their preset color (hex + alpha suffix)
+  const a0 = actList(it.activity)[0];
+  const isCustomAct = it.activity!=='all' && !SPORT_LABEL[a0];
+  const actTag = isCustomAct
+    ? `<span class="tt-tag" style="background:${sportColor(a0)}33;color:${sportColor(a0)};">${actLabel(it.activity)}</span>`
+    : `<span class="tt-tag tt-sport${it.activity!=='all'?'-'+a0:''}">${actLabel(it.activity)}</span>`;
   TT.innerHTML=`
     <div class="tt-tags">
       <span class="tt-tag tt-type-bg">${it.type.toUpperCase()}</span>
-      <span class="tt-tag tt-sport${it.activity!=='all'?'-'+actList(it.activity)[0]:''}">${actLabel(it.activity)}</span>
+      ${actTag}
     </div>
     <div class="tt-name">${it.name}</div>
     <div class="tt-desc">${it.desc}</div>
@@ -1132,7 +1164,7 @@ function buildXML(){
 
   // <loadouts> — all user-saved loadouts across all sports
   x += '  <loadouts>\n';
-  ['hike','bike','run','climb','moto','camp'].forEach(sport=>{
+  allSports().forEach(sport=>{
     const map = S.userLoadouts[sport] || {};
     Object.entries(map).forEach(([,lo])=>{
       x += '    <loadout>\n';
@@ -1176,7 +1208,7 @@ function exportXML(){
 }
 
 function exportPackingLists(){
-  const sports = ['hike','bike','run','climb','moto','camp'];
+  const sports = allSports();
   const srcInv = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
 
   function resolveName(id){
@@ -1374,11 +1406,11 @@ html[data-print="1"] .print-btn.active{display:none !important;}
     html += `  <div class="no-loadouts">No saved loadouts found. Build and save loadouts in TrailKit, then re-export.</div>\n`;
   } else {
     sections.forEach((sec, idx)=>{
-      const sportLabel = SPORT_LABEL[sec.sport] || sec.sport;
+      const sportLbl = sportLabel(sec.sport);
       html += `  <div class="loadout-block">
     <div class="loadout-meta">
-      <span class="loadout-activity">${sportLabel}</span>
-      <span class="sport-badge sb-${sec.sport}">${sportLabel}</span>
+      <span class="loadout-activity">${sportLbl}</span>
+      <span class="sport-badge sb-${sec.sport}">${sportLbl}</span>
     </div>
     <div class="loadout-name">${esc(sec.label)}</div>
     <ul class="item-list">
@@ -1477,7 +1509,7 @@ document.addEventListener('keydown', function(e){
 
 function exportCSV(){
   const srcInv = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
-  const sports = ['hike','bike','run','climb','moto','camp'];
+  const sports = allSports();
 
   // ── Sheet 1: Inventory ─────────────────────────────────────
   let csv = 'TRAILKIT getInventory()\r\n';
@@ -1502,7 +1534,7 @@ function exportCSV(){
   sports.forEach(sport=>{
     const map = allLoadouts(sport);
     Object.entries(map).forEach(([,lo])=>{
-      const sportLabel = SPORT_LABEL[sport]||sport;
+      const sportLbl = sportLabel(sport);
 
       // Collect all item IDs in display order: backpack, bladder, bottles, main, worn
       const slots = [];
@@ -1521,7 +1553,7 @@ function exportCSV(){
       slots.forEach(({slot, it})=>{
         csv += [
           csvQ(lo.label||'Loadout'),
-          csvQ(sportLabel),
+          csvQ(sportLbl),
           csvQ(slot),
           csvQ(it.name),
           csvQ(it.type),
@@ -1547,7 +1579,7 @@ function exportCSV(){
       if(!count) return;
       csv += [
         csvQ(lo.label||'Loadout'),
-        csvQ(SPORT_LABEL[sport]||sport),
+        csvQ(sportLabel(sport)),
         totalKg.toFixed(2),
         count
       ].join(',') + '\r\n';
@@ -1672,11 +1704,11 @@ let _qaActPop=null;
 function qaCloseActPop(apply){
   if(!_qaActPop)return;
   const {el,row,orig}=_qaActPop;
-  const checked=SPORT_KEYS.filter(k=>el.querySelector(`input[data-act="${k}"]`)?.checked);
+  const checked=allSports().filter(k=>el.querySelector(`input[data-act="${k}"]`)?.checked);
   el.remove();
   _qaActPop=null;
   if(!apply||!checked.length)return;
-  const value=checked.length===SPORT_KEYS.length?'all':checked.join(',');
+  const value=checked.length===allSports().length?'all':checked.join(',');
   if(value!==orig)qaSetLineField(row.lineIndex,'activity',value);
 }
 function qaOpenActPop(btn,r,eff){
@@ -1687,18 +1719,18 @@ function qaOpenActPop(btn,r,eff){
     // this btn - bail and let the user click the fresh one
     if(same||_qaDraft!==before)return;
   }
-  const keys=eff==='all'?SPORT_KEYS.slice():actList(eff).filter(k=>SPORT_KEYS.includes(k));
+  const keys=eff==='all'?allSports():actList(eff).filter(k=>allSports().includes(k));
   const pop=document.createElement('div');
   pop.className='qa-act-pop';
   pop.innerHTML=`<label class="qa-act-opt qa-act-opt-all"><input type="checkbox" data-act-all>${SPORT_LABEL.all}</label>`
-    +SPORT_KEYS.map(k=>`<label class="qa-act-opt"><input type="checkbox" data-act="${k}"${keys.includes(k)?' checked':''}>${QA_SPORT_EMOJI[k]} ${SPORT_LABEL[k]}</label>`).join('');
-  const syncAll=()=>{pop.querySelector('[data-act-all]').checked=SPORT_KEYS.every(k=>pop.querySelector(`input[data-act="${k}"]`).checked);};
+    +allSports().map(k=>`<label class="qa-act-opt"><input type="checkbox" data-act="${k}"${keys.includes(k)?' checked':''}>${sportEmoji(k)} ${sportLabel(k)}</label>`).join('');
+  const syncAll=()=>{pop.querySelector('[data-act-all]').checked=allSports().every(k=>pop.querySelector(`input[data-act="${k}"]`).checked);};
   pop.addEventListener('click',e=>e.stopPropagation());
   pop.addEventListener('change',e=>{
     const t=e.target;
     if(t.hasAttribute('data-act-all')){
-      SPORT_KEYS.forEach(k=>{pop.querySelector(`input[data-act="${k}"]`).checked=true;});
-    } else if(!t.checked&&!SPORT_KEYS.some(k=>pop.querySelector(`input[data-act="${k}"]`).checked)){
+      allSports().forEach(k=>{pop.querySelector(`input[data-act="${k}"]`).checked=true;});
+    } else if(!t.checked&&!allSports().some(k=>pop.querySelector(`input[data-act="${k}"]`).checked)){
       t.checked=true;
     }
     syncAll();
@@ -3092,8 +3124,175 @@ document.addEventListener('click', e=>{
   }
 });
 
+// ── CUSTOM ACTIVITIES — Manage Activities modal ──────────────────
+// One entry point (the ⚙ row in the activity dropdown), one modal.
+// Built-ins are fixed; up to 4 customs with label, emoji (existing
+// picker), and a preset color swatch. Keys are minted once from the
+// first label and stay stable across renames - items and loadouts
+// reference the key. Deleting requires the activity to have no
+// loadouts; items tagged with it fall back to 'all' (reducer).
+const ACT_CUSTOM_CAP = 4;
+const ACT_PRESET_COLORS = ['#e05252','#e08f3c','#3cc98f','#4a90e0','#b06ae0','#e05a9e'];
+
+function actSlug(label){
+  let base = String(label||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') || 'activity';
+  const taken = new Set(['all','__manage__','__default__',...allSports()]);
+  let key = base, n = 2;
+  while(taken.has(key)) key = `${base}-${n++}`;
+  return key;
+}
+
+// Everything that lists sports re-derives after a change
+function refreshActivities(){
+  setExtraActivities(S.customActivities);
+  populateSportSelects();
+  populateLoadoutSel();
+  renderAll(); // persists; also refreshes tooltips/labels using customs
+}
+
+function populateSportSelects(){
+  const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;return o;};
+  const as=document.getElementById('activitySelect');
+  if(as){
+    as.innerHTML='';
+    allSports().forEach(k=>as.appendChild(opt(k,`${sportEmoji(k)} ${sportLabel(k)}`)));
+    as.appendChild(opt('__manage__','⚙ Manage Activities…'));
+    as.value=allSports().includes(S.sport)?S.sport:'hike';
+  }
+  const gf=document.getElementById('gearFilter');
+  if(gf){
+    const cur=gf.value||S.gearFilter||'all';
+    gf.innerHTML='';
+    gf.appendChild(opt('all','All Activities'));
+    allSports().forEach(k=>gf.appendChild(opt(k,`${sportEmoji(k)} ${sportLabel(k)}`)));
+    gf.value=['all',...allSports()].includes(cur)?cur:'all';
+  }
+  const qt=document.getElementById('qaTagAs');
+  if(qt){
+    const cur=qt.value||'all';
+    qt.innerHTML='';
+    qt.appendChild(opt('all','All Activities'));
+    allSports().forEach(k=>qt.appendChild(opt(k,sportLabel(k))));
+    qt.value=['all',...allSports()].includes(cur)?cur:'all';
+  }
+  const ea=document.getElementById('editActivity');
+  if(ea){
+    const cur=ea.value||'all';
+    ea.innerHTML='';
+    ea.appendChild(opt('all','All Activities'));
+    allSports().forEach(k=>ea.appendChild(opt(k,sportLabel(k))));
+    if(['all',...allSports()].includes(cur)) ea.value=cur;
+  }
+}
+
+function renderActivitiesModal(){
+  const bl=document.getElementById('actBuiltinList');
+  bl.innerHTML='';
+  SPORT_KEYS.forEach(k=>{
+    const row=document.createElement('div');
+    row.className='act-row act-row-builtin';
+    row.innerHTML=`<span class="act-emoji">${sportEmoji(k)}</span>
+      <span class="act-name">${sportLabel(k)}</span>
+      <span class="act-builtin-tag">built-in</span>`;
+    bl.appendChild(row);
+  });
+  const cl=document.getElementById('actCustomList');
+  cl.innerHTML='';
+  S.customActivities.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='act-row';
+    row.innerHTML=`
+      <button class="act-emoji act-emoji-btn" type="button" title="Change emoji">${c.emoji}</button>
+      <input class="edit-input act-name-in" maxlength="18" value="${esc(c.label)}">
+      <span class="act-swatches">${ACT_PRESET_COLORS.map(col=>
+        `<button class="act-swatch${col===c.color?' active':''}" type="button" style="background:${col}" data-col="${col}"></button>`).join('')}</span>
+      <span class="act-del" title="Delete activity">×</span>`;
+    const emBtn=row.querySelector('.act-emoji-btn');
+    emBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      openEmojiPicker({anchor:emBtn,onPick:em=>{
+        store.dispatch({type:A.UPDATE_ACTIVITY,key:c.key,patch:{emoji:em}});
+        refreshActivities(); renderActivitiesModal();
+      }});
+    });
+    const nameIn=row.querySelector('.act-name-in');
+    nameIn.addEventListener('change',()=>{
+      const label=nameIn.value.trim();
+      if(!label){ nameIn.value=c.label; return; }
+      const patch={label};
+      // While nothing references the key yet (no loadouts, no tagged
+      // items, not the active sport), re-slug it from the new label so
+      // keys read 'skiing', not 'new-activity-1'. Once referenced, the
+      // key is frozen and only the label changes.
+      const referenced = Object.keys(S.userLoadouts[c.key]||{}).length>0
+        || S.userInventory.some(i=>actList(i.activity).includes(c.key))
+        || S.sport===c.key;
+      if(!referenced) patch.key=actSlug(label);
+      store.dispatch({type:A.UPDATE_ACTIVITY,key:c.key,patch});
+      refreshActivities(); renderActivitiesModal();
+    });
+    row.querySelectorAll('.act-swatch').forEach(sw=>{
+      sw.addEventListener('click',()=>{
+        store.dispatch({type:A.UPDATE_ACTIVITY,key:c.key,patch:{color:sw.dataset.col}});
+        refreshActivities(); renderActivitiesModal();
+      });
+    });
+    const delBtn=row.querySelector('.act-del');
+    delBtn.addEventListener('click',()=>{
+      const n=Object.keys(S.userLoadouts[c.key]||{}).length;
+      // With loadouts attached, deletion is a two-click confirm: the
+      // first click arms the button and names the cascade, the second
+      // (within 4s) deletes activity + loadouts together
+      if(n && !delBtn.dataset.armed){
+        delBtn.dataset.armed='1';
+        delBtn.classList.add('armed');
+        delBtn.title=`Also deletes ${n} loadout${n!==1?'s':''} - click again to confirm`;
+        showToast(`"${c.label}" has ${n} loadout${n!==1?'s':''} - click × again to delete both`,{duration:4000});
+        setTimeout(()=>{delete delBtn.dataset.armed;delBtn.classList.remove('armed');},4000);
+        return;
+      }
+      const wasActive = S.sport===c.key;
+      store.dispatch({type:A.REMOVE_ACTIVITY,key:c.key});
+      if(wasActive){
+        store.dispatch({type:A.SET_SPORT,sport:'hike'});
+        clearState();
+      }
+      refreshActivities(); renderActivitiesModal();
+    });
+    cl.appendChild(row);
+  });
+  document.getElementById('actAddBtn').style.display =
+    S.customActivities.length>=ACT_CUSTOM_CAP ? 'none' : '';
+}
+
+function openActivitiesModal(){
+  renderActivitiesModal();
+  openModal('activitiesModal');
+}
+
+document.getElementById('actAddBtn').addEventListener('click',()=>{
+  if(S.customActivities.length>=ACT_CUSTOM_CAP) return;
+  const label=`New Activity ${S.customActivities.length+1}`;
+  const used=new Set(S.customActivities.map(c=>c.color));
+  const color=ACT_PRESET_COLORS.find(c=>!used.has(c))||ACT_PRESET_COLORS[0];
+  store.dispatch({type:A.ADD_ACTIVITY,activity:{key:actSlug(label),label,emoji:'⛰️',color}});
+  refreshActivities(); renderActivitiesModal();
+  const ins=document.querySelectorAll('#actCustomList .act-name-in');
+  const last=ins[ins.length-1];
+  if(last){ last.focus(); last.select(); }
+});
+document.getElementById('actCloseBtn').addEventListener('click',()=>closeModal('activitiesModal'));
+
 // ── ACTIVITY / LOADOUT SELECTS ───────────────────────────────────
 document.getElementById('activitySelect').addEventListener('change', function(){
+  if(this.value==='__manage__'){
+    this.value=S.sport;             // never leave ⚙ selected
+    openActivitiesModal();
+    return;
+  }
+  // Guard against programmatic/bogus values - a stray SET_SPORT would
+  // mint a phantom loadout namespace under that key
+  if(!allSports().includes(this.value)){ this.value=S.sport; return; }
   store.dispatch({ type: A.SET_SPORT, sport: this.value });
   populateLoadoutSel();
   loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
@@ -3122,6 +3321,7 @@ document.getElementById('saveConfirmBtn').addEventListener('click', ()=>{
   populateLoadoutSel();
   document.getElementById('loadoutSelect').value = key;
   closeModal('saveModal');
+  persistState(); // the save must survive an immediate tab close
 });
 saveInput.addEventListener('keydown', e=>{
   if(e.key==='Enter') document.getElementById('saveConfirmBtn').click();
@@ -3139,6 +3339,29 @@ document.getElementById('overwriteConfirmBtn').addEventListener('click', ()=>{
   const existing = allLoadouts(S.sport)[S.loadoutKey];
   store.dispatch({ type:A.SAVE_LOADOUT, sport:S.sport, key:S.loadoutKey, snapshot:snapshotLoadout((existing||{}).label || S.loadoutKey) });
   closeModal('overwriteModal');
+  persistState(); // ditto Save New - dispatch alone never persists
+});
+
+// ── DELETE LOADOUT ───────────────────────────────────────────────
+// Deletes the selected SAVED user loadout (the board is untouched
+// until reload; gear items always stay in the inventory). Sample
+// loadouts are baked in and refuse.
+document.getElementById('deleteLoadoutBtn').addEventListener('click', ()=>{
+  const key=S.loadoutKey;
+  if(key==='__default__'){ showToast('No saved loadout selected'); return; }
+  const userLo=S.userLoadouts[S.sport]?.[key];
+  if(!userLo){ showToast('Sample loadouts are built in and can\'t be deleted'); return; }
+  document.getElementById('deleteLoMsg').textContent=
+    `Delete "${userLo.label||key}"? Your gear items stay in the inventory.`;
+  openModal('deleteLoModal');
+});
+document.getElementById('deleteLoCancelBtn').addEventListener('click', ()=>closeModal('deleteLoModal'));
+document.getElementById('deleteLoConfirmBtn').addEventListener('click', ()=>{
+  store.dispatch({ type:A.DELETE_LOADOUT, sport:S.sport, key:S.loadoutKey });
+  closeModal('deleteLoModal');
+  clearState();
+  populateLoadoutSel();
+  loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
 });
 
 // ── CLEAR ────────────────────────────────────────────────────────
@@ -3537,9 +3760,10 @@ window.addEventListener('resize', ()=>{
   // Sync the sample/user chrome (inventory itself is derived state)
   syncSampleChrome();
 
-  // Sync activity dropdown
-  const actSel = document.getElementById('activitySelect');
-  if(actSel) actSel.value = S.sport;
+  // Activities: register customs with the parser, then build every
+  // sport dropdown (also selects S.sport in the activity select)
+  setExtraActivities(S.customActivities);
+  populateSportSelects();
 
   initStashDrop();
   populateLoadoutSel();

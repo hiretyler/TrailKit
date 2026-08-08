@@ -40,15 +40,8 @@
     </div>
     <div class="filter-bar">
       <div class="gear-filter-wrap">
-        <select class="gear-filter-select" id="gearFilter">
-          <option value="all">All Activities</option>
-          <option value="hike">🥾 Hiking</option>
-          <option value="bike">🚵 MTB</option>
-          <option value="run">🏃 Running</option>
-          <option value="climb">🧗 Climbing</option>
-          <option value="moto">🏍️ Moto</option>
-          <option value="camp">⛺ Camping</option>
-        </select>
+        <!-- Options populated by populateSportSelects() (customs included) -->
+        <select class="gear-filter-select" id="gearFilter"></select>
         <div class="sel-arrow">▾</div>
       </div>
     </div>
@@ -63,14 +56,8 @@
       <div class="loadout-header">
         <div class="panel-title" style="flex-shrink:0;">Loadout</div>
         <div class="sel-wrap">
-          <select class="lo-select" id="activitySelect">
-            <option value="hike">🥾 Hiking</option>
-            <option value="bike">🚵 MTB</option>
-            <option value="run">🏃 Running</option>
-            <option value="climb">🧗 Climbing</option>
-            <option value="moto">🏍️ Moto</option>
-            <option value="camp">⛺ Camping</option>
-          </select>
+          <!-- Options populated by populateSportSelects() (customs + ⚙ Manage row) -->
+          <select class="lo-select" id="activitySelect"></select>
           <div class="sel-arrow">▾</div>
         </div>
         <div class="sel-wrap">
@@ -80,6 +67,7 @@
         <button class="hdr-btn amber" id="saveNewBtn">Save New</button>
         <button class="hdr-btn ghost" id="overwriteBtn">Overwrite</button>
         <button class="hdr-btn danger" id="clearBtn">Clear</button>
+        <button class="hdr-btn danger" id="deleteLoadoutBtn" title="Delete the selected saved loadout">✕</button>
       </div>
 
       <div class="loadout-body">
@@ -449,15 +437,8 @@
         <div class="edit-field">
           <label class="edit-label">Activity</label>
           <div class="edit-select-wrap">
-            <select class="edit-select" id="editActivity">
-              <option value="all">All Activities</option>
-              <option value="hike">🥾 Hiking</option>
-              <option value="bike">🚵 MTB</option>
-              <option value="run">🏃 Running</option>
-              <option value="climb">🧗 Climbing</option>
-              <option value="moto">🏍️ Moto</option>
-              <option value="camp">⛺ Camping</option>
-            </select>
+            <!-- Options populated by populateSportSelects() -->
+            <select class="edit-select" id="editActivity"></select>
           </div>
         </div>
       </div>
@@ -617,6 +598,33 @@
   </div>
 </div>
 
+<!-- DELETE LOADOUT CONFIRM -->
+<div class="modal-overlay" id="deleteLoModal">
+  <div class="modal" style="min-width:300px;max-width:400px;">
+    <div class="modal-title">Delete Loadout</div>
+    <div class="modal-sub" id="deleteLoMsg">Delete this loadout?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="deleteLoCancelBtn">Cancel</button>
+      <button class="modal-btn confirm" id="deleteLoConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE ACTIVITIES MODAL -->
+<div class="modal-overlay" id="activitiesModal">
+  <div class="modal" style="min-width:380px;max-width:460px;">
+    <div class="modal-title">Manage Activities</div>
+    <div class="modal-sub">Built-in activities are fixed. Add up to 4 of your own - name, emoji, and a color.</div>
+    <div class="act-list" id="actBuiltinList"></div>
+    <div class="act-list-label">Your Activities</div>
+    <div class="act-list" id="actCustomList"></div>
+    <button class="act-add-btn" id="actAddBtn">+ Add Activity</button>
+    <div class="modal-actions">
+      <button class="modal-btn confirm" id="actCloseBtn">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- QUICK ADD MODAL -->
 <div class="modal-overlay" id="quickAddModal">
   <div class="modal qa-modal">
@@ -661,15 +669,8 @@
       <div class="qa-legend"><span class="qa-dot given">●</span> from your line&nbsp;&nbsp;<span class="qa-dot guessed">◐</span> guessed&nbsp;&nbsp;<span class="qa-dot default">○</span> default</div>
       <div class="qa-tag-as">
         <span class="qa-tag-label">Tag new items as</span>
-        <select class="edit-select qa-mini" id="qaTagAs">
-          <option value="all">All Activities</option>
-          <option value="hike">Hiking</option>
-          <option value="bike">MTB</option>
-          <option value="run">Running</option>
-          <option value="climb">Climbing</option>
-          <option value="moto">Moto</option>
-          <option value="camp">Camping</option>
-        </select>
+        <!-- Options populated by populateSportSelects() -->
+        <select class="edit-select qa-mini" id="qaTagAs"></select>
       </div>
       <div class="qa-note">Adds to Your Gear - sample gear stays on the top-bar toggle.</div>
       <div class="modal-actions" style="margin-left:auto;">
