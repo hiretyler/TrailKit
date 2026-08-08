@@ -55,6 +55,26 @@ export function matchTypeToken(s){
   return t || TYPE_SYNONYM[k] || null;
 }
 
+// "N slots" pipe field (the unit word is required so bare numbers
+// stay in the name/desc). For a Backpack this sizes the main
+// compartment; for everything else it's slots consumed. Clamped to
+// the app's 1-24 slot range.
+const PIPE_SLOTS_RE = /^(\d{1,2})\s*slots?$/i;
+export function matchSlotsToken(s){
+  const m = String(s||'').trim().match(PIPE_SLOTS_RE);
+  if(!m) return null;
+  return Math.max(1, Math.min(24, parseInt(m[1],10)));
+}
+
+// Volume pipe field ("2L", "500ml") to liters - the capacity editor
+// in the Quick Add preview rewrites this field, so it needs the same
+// matcher the parser uses.
+export function matchVolToken(s){
+  const m = String(s||'').trim().match(PIPE_VOL_RE);
+  if(!m) return null;
+  return r2(m[2].toLowerCase()==='ml' ? parseFloat(m[1])/1000 : parseFloat(m[1]));
+}
+
 const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
 
 // Exact-match a pipe field to a canonical activity value. Accepts a
@@ -137,7 +157,7 @@ function parseLine(body, raw, lineIndex){
   if(count > 20){ count = 20; capped = true; }
 
   // Classify pipe fields by content
-  let pipeType=null, pipeAct=null, pipeWeight=null, pipeVol=null;
+  let pipeType=null, pipeAct=null, pipeWeight=null, pipeVol=null, pipeSlots=null;
   const descExtra = [];
   for(const f of fields){
     const t = matchTypeToken(f);
@@ -146,8 +166,10 @@ function parseLine(body, raw, lineIndex){
     if(a && !pipeAct){ pipeAct = a; continue; }
     const w = f.match(PIPE_WEIGHT_RE);
     if(w && pipeWeight==null){ pipeWeight = toKg(parseFloat(w[1]), w[2]); continue; }
-    const v = f.match(PIPE_VOL_RE);
-    if(v && pipeVol==null){ pipeVol = r2(v[2].toLowerCase()==='ml' ? parseFloat(v[1])/1000 : parseFloat(v[1])); continue; }
+    const v = matchVolToken(f);
+    if(v!=null && pipeVol==null){ pipeVol = v; continue; }
+    const sl = matchSlotsToken(f);
+    if(sl!=null && pipeSlots==null){ pipeSlots = sl; continue; }
     descExtra.push(f);
   }
 
@@ -259,6 +281,10 @@ function parseLine(body, raw, lineIndex){
     row.slots = 1;
   }
 
+  // An explicit "N slots" field wins over starter, keyword, and
+  // volume-derived sizing for every type
+  if(pipeSlots != null) row.slots = pipeSlots;
+
   if(descExtra.length) row.desc = (row.desc ? row.desc+' ' : '') + descExtra.join(' ');
 
   return row;
@@ -302,11 +328,11 @@ export function parseCSV(text){
 // positional name,count,type,activity,weight. Rows without a name
 // are skipped (counted); everything else is passed through permissively
 // and left for parseGearLines to judge.
-const CSV_COLS=['name','count','type','activity','weight'];
+const CSV_COLS=['name','count','type','activity','weight','slots','capacity'];
 export function csvToGearLines(text){
   const rows=parseCSV(text);
   if(!rows.length) return { lines:[], skipped:0 };
-  let map={name:0,count:1,type:2,activity:3,weight:4}, start=0;
+  let map={name:0,count:1,type:2,activity:3,weight:4,slots:5,capacity:6}, start=0;
   const hdr=rows[0].map(c=>c.trim().toLowerCase());
   if(hdr.includes('name')){
     map={};
@@ -326,6 +352,10 @@ export function csvToGearLines(text){
     const act=get('activity').replace(/\|/g,'/'); if(act)parts.push(act);
     let w=get('weight');
     if(w){ if(/^\d+(\.\d+)?$/.test(w))w+='kg'; parts.push(w.replace(/\|/g,'/')); }
+    const sl=get('slots');
+    if(/^\d{1,2}$/.test(sl)) parts.push(sl+' slots');
+    let cap=get('capacity');
+    if(cap){ if(/^\d+(\.\d+)?$/.test(cap))cap+='L'; parts.push(cap.replace(/\|/g,'/')); }
     lines.push(parts.join(' | '));
   }
   return { lines, skipped };

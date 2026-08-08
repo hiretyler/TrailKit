@@ -11,12 +11,12 @@ Format conventions:
 
 ## Current state
 
-- **Released:** v1.1 — `releases/TrailKit-1.1.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
-- **Working on:** v1.15 UI polish implemented in `src/` (2026-08-07); ready to cut whenever. One item deferred: slots/capacity editing in the Quick Add preview.
+- **Released:** v1.15 — `releases/TrailKit-1.15.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
+- **Working on:** nothing in flight. The roadmap has no scheduled milestones; remaining known work is the tech-debt list in [docs/AUDIT.md](docs/AUDIT.md). Candidates for a v1.2: an audit/maintenance pass, or custom user-defined activities.
 
 ---
 
-## v1.15 — UI polish (implemented 2026-08-07, release not yet cut)
+## v1.15 — UI polish (shipped 2026-08-07)
 
 - [x] Bigger logo (shipped 2026-08-05, commit 464a2a0; +15% again 2026-08-07: 31px desktop / 24px / 21px tiers)
 - [x] File menu — one topbar "File ▾" popover holding Upload / Type-or-Paste / Download / Packing Lists / CSV / About; replaced the import popover, the export modal, the footer buttons, and the ? help button. Mobile Etc-tab import/export delegate to it
@@ -26,7 +26,7 @@ Format conventions:
 - [x] Print in packing list opens a print view in a new tab (serializes the checked state, forces the B/W print style, auto-opens the print dialog); replaced the in-place print-mode toggle
 - [x] Sample gear overhaul — 16 new items fill bike/moto/camp (was zero bike/moto), icon fixes (puffy, belay), MIPS helmet retyped bike/Safety; every sport now has a sample loadout (new Trail Ride, Dual-Sport Day, Weekend Camp — each slot-budget-exact)
 - [x] Quick Add polish — per-row icon editing via the emoji picker (writes the emoji into the source line), importXML's alert() migrated to the toast
-- [ ] Quick Add: slots/capacity editing in the preview (deferred - slots have no line-grammar token yet; decide whether to extend the grammar or edit rows directly)
+- [x] Quick Add: slots/capacity editing in the preview — the grammar gained an explicit "N slots" pipe token (bare numbers still land in the name/desc); preview rows show a slots editor (all types - for a Backpack it sizes the main compartment) and a capacity editor (Bottle/Bladder, writes the existing "NL" volume field). CSV template/upload gained slots + capacity columns riding the same tokens
 
 ---
 

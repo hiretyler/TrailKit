@@ -335,3 +335,38 @@ test('csv: crlf line endings and count 1 omit the count prefix', () => {
   const { lines } = csvToGearLines('name,count\r\nHeadlamp,1\r\n');
   assertDeepEqual(lines, ['Headlamp']);
 });
+
+// ── Slots pipe field ────────────────────────────────────────────
+test('slots: pipe "N slots" sets slots', () => {
+  const r = row1('tent | 6 slots');
+  assertEqual(r.slots, 6);
+  assertEqual(r.type, 'Item');
+});
+
+test('slots: sizes a backpack main compartment over the volume guess', () => {
+  assertEqual(row1('30L daypack | Backpack | 20 slots').slots, 20);
+});
+
+test('slots: overrides starter sizing', () => {
+  assertEqual(row1('Day Pack | 14 slots').slots, 14);
+});
+
+test('slots: singular "slot" accepted, clamps to 24', () => {
+  assertEqual(row1('headlamp | 2 slot').slots, 2);
+  assertEqual(row1('duffel | 99 slots').slots, 24);
+});
+
+test('slots: bare number field is NOT a slots token', () => {
+  const r = row1('tent | 6');
+  assertEqual(r.slots, 1);
+  assert(r.desc.includes('6'), 'bare number should land in desc');
+});
+
+test('csv: slots and capacity columns ride into the grammar', () => {
+  const { lines } = csvToGearLines('name,type,slots,capacity\nDaypack,Backpack,12,\nBottle,Bottle,,1');
+  assertEqual(lines[0], 'Daypack | Backpack | 12 slots');
+  assertEqual(lines[1], 'Bottle | Bottle | 1L');
+  const { rows } = parseGearLines(lines.join('\n'));
+  assertEqual(rows[0].slots, 12);
+  assertEqual(rows[1].capacityL, 1);
+});

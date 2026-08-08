@@ -612,6 +612,13 @@ body.light{
 .qa-dot.guessed{color:var(--accent-amber);}
 .qa-dot.default{color:var(--text-dim);}
 .qa-mini{width:auto;font-size:10px;padding:3px 6px;letter-spacing:0.5px;flex-shrink:0;}
+.qa-num-wrap{display:flex;align-items:center;gap:2px;flex-shrink:0;
+  font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);}
+.qa-num{width:42px;text-align:right;font-family:'Share Tech Mono',monospace;padding:3px 4px;}
+.qa-num::-webkit-outer-spin-button,.qa-num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.qa-num{-moz-appearance:textfield;appearance:textfield;}
+/* Container rows show the capacity editor instead of the weight readout */
+.qa-row.qa-has-cap .qa-weight{display:none;}
 .qa-weight{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-secondary);
   white-space:nowrap;flex-shrink:0;}
 .qa-del{color:var(--text-dim);cursor:pointer;padding:2px 5px;border-radius:2px;flex-shrink:0;}

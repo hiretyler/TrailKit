@@ -15,7 +15,7 @@ import {
   UIUtils,
 } from '../engine/index.js';
 
-import { parseGearLines, matchTypeToken, matchActivityToken, csvToGearLines, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
+import { parseGearLines, matchTypeToken, matchActivityToken, matchSlotsToken, matchVolToken, csvToGearLines, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
 import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
 
 
@@ -1326,7 +1326,7 @@ html[data-print="1"] .print-btn.active{display:none !important;}
 
 <!-- FOOTER -->
 <div class="footer-bar">
-  <span class="footer-ver">TrailKit v1.1</span>
+  <span class="footer-ver">TrailKit v1.15</span>
   <span>·</span>
   <span>Packing Lists</span>
   <span>·</span>
@@ -1653,7 +1653,8 @@ function qaRenderPreview(){
     const confCls=r.conf.type==='given'?'given':(r.conf.type==='guessed'?'guessed':'default');
     const dot={given:'●',guessed:'◐',default:'○'}[confCls];
     const row=document.createElement('div');
-    row.className='qa-row'+(on?'':' qa-off');
+    row.className='qa-row'+(on?'':' qa-off')
+      +(r.type==='Bottle'||r.type==='Bladder'?' qa-has-cap':'');
     row.innerHTML=`
       <input type="checkbox" class="qa-check"${on?' checked':''}>
       <span class="qa-row-icon">${r.icon}</span>
@@ -1664,6 +1665,10 @@ function qaRenderPreview(){
       <span class="qa-dot ${confCls}" title="type ${r.conf.type} · weight ${r.conf.weight}">${dot}</span>
       <select class="edit-select qa-mini qa-type-sel"></select>
       <button class="edit-select qa-mini qa-act-btn" type="button" title="Choose activities"></button>
+      <span class="qa-num-wrap" title="${r.type==='Backpack'?'Main compartment slots':'Slots this item takes up'}">
+        <input type="number" class="edit-select qa-mini qa-num qa-slots-in" min="1" max="24" step="1">▦</span>
+      ${r.type==='Bottle'||r.type==='Bladder'?`<span class="qa-num-wrap" title="Capacity in liters">
+        <input type="number" class="edit-select qa-mini qa-num qa-cap-in" min="0.1" max="99" step="0.1">L</span>`:''}
       <span class="qa-weight">${fkg(r.weightKg)}</span>
       <span class="qa-del" title="Remove line">×</span>`;
     const tsel=row.querySelector('.qa-type-sel');
@@ -1681,6 +1686,20 @@ function qaRenderPreview(){
       qaCloseActPop(true);
       openEmojiPicker({anchor:iconEl,onPick:em=>qaSetLineIcon(r.lineIndex,em)});
     });
+    const slIn=row.querySelector('.qa-slots-in');
+    slIn.value=r.slots;
+    slIn.addEventListener('change',()=>{
+      const v=Math.max(1,Math.min(24,parseInt(slIn.value,10)||1));
+      qaSetLineField(r.lineIndex,'slots',v+' slots');
+    });
+    const capIn=row.querySelector('.qa-cap-in');
+    if(capIn){
+      capIn.value=r.capacityL??'';
+      capIn.addEventListener('change',()=>{
+        const v=Math.max(0.1,Math.min(99,parseFloat(capIn.value)||1));
+        qaSetLineField(r.lineIndex,'capacity',v+'L');
+      });
+    }
     row.querySelector('.qa-check').addEventListener('change',e=>{
       _qaChecks.set(r.lineIndex,e.target.checked);
       row.classList.toggle('qa-off',!e.target.checked);
@@ -1729,13 +1748,19 @@ function qaUpdateTally(){
 }
 
 // ── Row edits write back into the source line ──
+// Each editable kind maps to the parser's own matcher, so the old
+// field is found and stripped exactly the way parsing classifies it
+const QA_FIELD_MATCHERS={
+  type:matchTypeToken, activity:matchActivityToken,
+  slots:matchSlotsToken, capacity:matchVolToken,
+};
 function qaSetLineField(lineIndex,kind,value){
   const lines=_qaDraft.split('\n');
   if(lineIndex<0||lineIndex>=lines.length)return;
   let parts=lines[lineIndex].split('|').map(s=>s.trim());
   const head=parts.shift();
-  const isKind=kind==='type'?matchTypeToken:matchActivityToken;
-  parts=parts.filter(p=>p&&!isKind(p));
+  const isKind=QA_FIELD_MATCHERS[kind];
+  parts=parts.filter(p=>p&&isKind(p)==null);
   if(value)parts.push(value);
   lines[lineIndex]=[head,...parts].join(' | ');
   _qaDraft=lines.join('\n');
@@ -2073,12 +2098,13 @@ document.getElementById('qaPhotoOkBtn').addEventListener('click',()=>closeModal(
 // other text. Junk rows fall into the parser's ignored bucket.
 document.getElementById('qaCsvTemplateBtn').addEventListener('click',()=>{
   downloadBlob([
-    'name,count,type,activity,weight',
-    'Wool Socks,3,Worn,hike,80g',
-    '22L Daypack,1,Backpack,hike,0.9kg',
-    'Headlamp,1,Safety,all,90g',
-    'First Aid Kit,1,Medical,,',
-    'Multi-Tool,1,,,',
+    'name,count,type,activity,weight,slots,capacity',
+    'Wool Socks,3,Worn,hike,80g,,',
+    '22L Daypack,1,Backpack,hike,0.9kg,12,',
+    'Water Bottle,1,Bottle,all,150g,,1L',
+    'Headlamp,1,Safety,all,90g,,',
+    'First Aid Kit,1,Medical,,,2,',
+    'Multi-Tool,1,,,,,',
   ].join('\n'),'TrailKit-gear-template.csv','text/csv');
 });
 document.getElementById('qaCsvUploadBtn').addEventListener('click',()=>{
