@@ -16,7 +16,7 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 /* ── TOP BAR ── */
 .topbar{display:flex;align-items:center;padding:0 16px;height:48px;background:var(--bg-panel);
   border-bottom:1px solid var(--border);flex-shrink:0;gap:12px;}
-.topbar-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:27px;letter-spacing:3px;
+.topbar-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:31px;letter-spacing:3px;
   color:var(--accent-teal);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
 .topbar-logo span{color:var(--text-secondary);font-weight:400;}
 .topbar-spacer{flex:1;}
@@ -26,14 +26,10 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 .topbar-btn:hover{background:#00e8d0;box-shadow:0 0 14px rgba(0,200,180,0.4);transform:translateY(-1px);}
 
 /* ── SAMPLE GEAR TOPBAR CENTER ── */
+/* One button carries both the indicator (amber pulse when sample mode
+   is on) and the toggle - the separate SAMPLE GEAR IN USE chip is gone */
 .sample-gear-center{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.sample-indicator{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
-  letter-spacing:2.5px;text-transform:uppercase;color:var(--accent-amber);
-  padding:4px 10px;border:1px solid rgba(245,166,35,0.35);border-radius:2px;
-  background:rgba(245,166,35,0.08);white-space:nowrap;
-  animation:samplePulse 2.8s ease-in-out infinite;}
 @keyframes samplePulse{0%,100%{opacity:1;}50%{opacity:0.55;}}
-.sample-indicator.hidden{display:none;}
 .sample-toggle-btn{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;
   text-transform:uppercase;background:transparent;color:var(--text-secondary);
   border:1px solid var(--border-bright);padding:5px 13px;border-radius:2px;
@@ -41,7 +37,8 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 .sample-toggle-btn:hover{border-color:var(--accent-amber);color:var(--accent-amber);
   background:rgba(245,166,35,0.07);}
 .sample-toggle-btn.sample-active{border-color:var(--accent-amber);color:var(--accent-amber);
-  background:rgba(245,166,35,0.1);}
+  background:rgba(245,166,35,0.1);animation:samplePulse 2.8s ease-in-out infinite;}
+.sample-toggle-btn.sample-active:hover{animation:none;}
 
 /* ── LAYOUT ── */
 .main{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden;}
@@ -306,24 +303,6 @@ body.light .tt-type-bg{color:#5a2ea6;}
 .weight-zones{display:flex;justify-content:space-between;
   font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);}
 
-/* ── BOTTOM BAR ── */
-.bottom-bar{height:46px;background:var(--bg-panel);border-top:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
-.bottom-weight{display:flex;align-items:center;gap:10px;}
-.bottom-weight-label{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);}
-.bottom-weight-value{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;
-  color:var(--accent-teal);letter-spacing:1px;text-shadow:0 0 12px rgba(0,200,180,0.45);}
-.bottom-weight-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-secondary);}
-.bottom-version{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);
-  letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
-.help-btn{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;
-  width:24px;height:24px;border-radius:50%;background:transparent;
-  border:1px solid var(--border-bright);color:var(--text-dim);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  transition:all 0.15s;line-height:1;padding:0;}
-.help-btn:hover{border-color:var(--accent-teal);color:var(--accent-teal);
-  box-shadow:0 0 8px rgba(0,200,180,0.3);}
 .about-modal{min-width:440px;max-width:560px;max-height:88vh;overflow-y:auto;
   scrollbar-width:thin;scrollbar-color:var(--border-bright) transparent;}
 .about-logo{font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;
@@ -347,20 +326,15 @@ body.light .tt-type-bg{color:#5a2ea6;}
   line-height:1.55;}
 .about-tip strong{color:var(--accent-amber);}
 .about-tip-block{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;}
-.export-btn{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2.5px;
-  text-transform:uppercase;background:var(--accent-amber);color:var(--bg-deep);border:none;
-  padding:7px 22px;cursor:pointer;border-radius:3px;transition:all 0.15s;position:relative;}
-.export-btn:hover{background:#ffbb44;transform:translateY(-1px);}
-.theme-toggle{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;}
-.theme-toggle-label{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;color:var(--text-secondary);}
-.toggle-track{position:relative;width:44px;height:22px;background:var(--bg-slot);
-  border:1px solid var(--border-bright);border-radius:11px;flex-shrink:0;}
-.toggle-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+/* Compact icon-only theme switch (label text removed in v1.15) */
+.theme-toggle{display:flex;align-items:center;flex-shrink:0;cursor:pointer;}
+.toggle-track{position:relative;width:34px;height:18px;background:var(--bg-slot);
+  border:1px solid var(--border-bright);border-radius:9px;flex-shrink:0;}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
   background:var(--text-secondary);transition:transform 0.25s,background 0.25s;
-  display:flex;align-items:center;justify-content:center;font-size:9px;}
+  display:flex;align-items:center;justify-content:center;font-size:8px;}
 body.light .toggle-track{background:rgba(0,200,180,0.15);border-color:var(--accent-teal);}
-body.light .toggle-thumb{transform:translateX(22px);background:var(--accent-teal);}
+body.light .toggle-thumb{transform:translateX(16px);background:var(--accent-teal);}
 
 /* ── POPOVERS ── */
 .popover-overlay{position:fixed;inset:0;z-index:7000;display:none;}
@@ -377,6 +351,7 @@ body.light .toggle-thumb{transform:translateX(22px);background:var(--accent-teal
 .pop-btn:not(.upload):hover{border-color:var(--accent-teal);color:var(--accent-teal);}
 .pop-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;
   text-transform:uppercase;color:var(--text-dim);margin-bottom:2px;}
+.pop-divider{height:1px;background:var(--border);margin:4px 0;flex-shrink:0;}
 #importFileInput{display:none;}
 
 /* ── STASH HEADER BUTTON STACK ── */
@@ -621,7 +596,9 @@ body.light{
   border:1px solid var(--border);border-radius:3px;flex-shrink:0;}
 .qa-row.qa-off{opacity:0.45;}
 .qa-check{accent-color:var(--accent-teal);cursor:pointer;flex-shrink:0;}
-.qa-row-icon{font-size:16px;line-height:1;flex-shrink:0;}
+.qa-row-icon{font-size:16px;line-height:1;flex-shrink:0;cursor:pointer;
+  padding:2px 3px;border-radius:3px;border:1px solid transparent;transition:border-color 0.12s;}
+.qa-row-icon:hover{border-color:var(--accent-teal);background:rgba(0,200,180,0.08);}
 .qa-row-name{flex:1;min-width:60px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;
   color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .qa-count-badge{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent-teal);
@@ -723,7 +700,7 @@ body.light{
    MOBILE LAYOUT  ≤ 720px
    Strategy:
    - Three-tab layout: Gear (inventory) | Pack (loadout) | Stats
-   - Tab bar replaces bottom bar; bottom-bar hidden on mobile
+   - Tab bar carries mobile navigation (desktop has no bottom bar since v1.15)
    - Touch-to-place replaces drag-and-drop:
        tap item in Gear tab → ring highlight + hint banner
        tap valid drop zone  → places item, clears selection
@@ -738,8 +715,6 @@ body.light{
 .m-stats-panel{display:none;}
 .m-tap-hint{display:none;}
 .m-worn-section{display:none;}
-/* importBtn lives in topbar for mobile anchor/display; hidden on desktop (footer has it) */
-#importBtn{visibility:hidden;width:0;padding:0;margin:0;overflow:hidden;flex:none;}
 
 /* ── Selected item ring (mobile tap-to-place) ── */
 .slot.m-selected,
@@ -791,19 +766,9 @@ body.light{
   /* Full-height column */
   body{height:100dvh;overflow:hidden;}
 
-  /* On mobile, hide importBtn — it lives in Etc tab via mImportBtn */
-  #importBtn{display:none!important;}
-  /* Footer Import btn is desktop-only */
-  #footerImportBtn{display:none!important;}
-  /* Help and theme toggle: hide label text on mobile, keep icon+toggle compact */
-  #themeLabel{display:none;}
-  /* Theme label text hidden on mobile (icon-only toggle) */
-  #themeLabel{display:none;}
-
   /* Compact top bar */
   .topbar{padding:0 10px;height:44px;gap:6px;}
-  .topbar-logo{font-size:21px;letter-spacing:2px;}
-  .sample-indicator{font-size:9px;letter-spacing:1px;padding:3px 7px;}
+  .topbar-logo{font-size:24px;letter-spacing:2px;}
   .sample-toggle-btn{font-size:10px;padding:4px 9px;letter-spacing:1px;}
   .topbar-btn{font-size:11px;padding:5px 10px;letter-spacing:1px;}
 
@@ -855,7 +820,6 @@ body.light{
   .m-stat-card-body{padding:12px 13px;}
 
   /* Hide desktop bottom bar, show mobile tab bar */
-  .bottom-bar{display:none!important;}
   .mobile-tab-bar{
     display:flex;height:56px;
     background:var(--bg-panel);border-top:1px solid var(--border-bright);
@@ -948,6 +912,5 @@ body.light{
 
 @media(max-width:380px){
   :root{--slot-size:56px;--slot-gap:4px;}
-  .sample-indicator{display:none;}
-  .topbar-logo{font-size:18px;}
+  .topbar-logo{font-size:21px;}
 }

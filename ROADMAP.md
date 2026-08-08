@@ -12,20 +12,21 @@ Format conventions:
 ## Current state
 
 - **Released:** v1.1 — `releases/TrailKit-1.1.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
-- **Working on:** nothing in flight; v1.15 UI polish is next.
+- **Working on:** v1.15 UI polish implemented in `src/` (2026-08-07); ready to cut whenever. One item deferred: slots/capacity editing in the Quick Add preview.
 
 ---
 
-## v1.15 — UI polish (moved from the old v1.05)
+## v1.15 — UI polish (implemented 2026-08-07, release not yet cut)
 
-- [x] Bigger logo (shipped 2026-08-05, commit 464a2a0)
-- [ ] File menu (consolidate Import / Export / About into one menu instead of separate topbar buttons)
-- [ ] Condensed indicator button for sample gear (currently the indicator + toggle button take two slots)
-- [ ] Smaller dark/light switch
-- [ ] No footer
-- [ ] Print mode in packing list opens in a new tab (instead of in-place toggle)
-- [ ] Sample gear overhaul (refresh the curated SAMPLE_INVENTORY — items, icons, descriptions, balance across activities; bike/moto still have no sample items)
-- [ ] Quick Add polish — per-row icon editing via the emoji picker, slots/capacity editing in the preview, migrate importXML's alert() to the toast (moved from backlog 2026-08-07)
+- [x] Bigger logo (shipped 2026-08-05, commit 464a2a0; +15% again 2026-08-07: 31px desktop / 24px / 21px tiers)
+- [x] File menu — one topbar "File ▾" popover holding Upload / Type-or-Paste / Download / Packing Lists / CSV / About; replaced the import popover, the export modal, the footer buttons, and the ? help button. Mobile Etc-tab import/export delegate to it
+- [x] Condensed indicator button for sample gear — the toggle button IS the indicator now ("⬡ Sample Gear" + amber pulse when on)
+- [x] Smaller dark/light switch — icon-only, 34px track (was label + 44px)
+- [x] No footer — bottom bar removed; version lives in About and the mobile Etc tab
+- [x] Print in packing list opens a print view in a new tab (serializes the checked state, forces the B/W print style, auto-opens the print dialog); replaced the in-place print-mode toggle
+- [x] Sample gear overhaul — 16 new items fill bike/moto/camp (was zero bike/moto), icon fixes (puffy, belay), MIPS helmet retyped bike/Safety; every sport now has a sample loadout (new Trail Ride, Dual-Sport Day, Weekend Camp — each slot-budget-exact)
+- [x] Quick Add polish — per-row icon editing via the emoji picker (writes the emoji into the source line), importXML's alert() migrated to the toast
+- [ ] Quick Add: slots/capacity editing in the preview (deferred - slots have no line-grammar token yet; decide whether to extend the grammar or edit rows directly)
 
 ---
 

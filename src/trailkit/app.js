@@ -15,7 +15,7 @@ import {
   UIUtils,
 } from '../engine/index.js';
 
-import { parseGearLines, matchTypeToken, matchActivityToken, csvToGearLines } from './parse.js';
+import { parseGearLines, matchTypeToken, matchActivityToken, csvToGearLines, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
 import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
 
 
@@ -63,13 +63,13 @@ const SAMPLE_INVENTORY = [
   // ── Tools
   {id:'tl_leatherman', icon:'🔧', name:'Leatherman Wave+',     type:'Tools',    activity:'all',   slots:1,  weightKg:0.24, capacityL:null, maxKg:null, desc:'Full-size multi-tool with 18 tools.'},
   {id:'tl_spork',      icon:'🥄', name:'Snow Peak Ti Spork',   type:'Tools',    activity:'camp',  slots:1,  weightKg:0.03, capacityL:null, maxKg:null, desc:'Ultralight titanium spork. 26g.'},
-  {id:'tl_belay',      icon:'🔑', name:'Petzl Rig Belay',      type:'Tools',    activity:'climb', slots:1,  weightKg:0.17, capacityL:null, maxKg:null, desc:'Assisted-braking belay/rappel device.'},
+  {id:'tl_belay',      icon:'🪝', name:'Petzl Rig Belay',      type:'Tools',    activity:'climb', slots:1,  weightKg:0.17, capacityL:null, maxKg:null, desc:'Assisted-braking belay/rappel device.'},
   // ── Worn
   {id:'wn_shoes',      icon:'🥾', name:'Salomon X Ultra 4',    type:'Worn',     activity:'hike',  slots:2,  weightKg:0.90, capacityL:null, maxKg:null, desc:'High-traction mid-cut trail shoe. Waterproof GTX membrane.'},
   {id:'wn_shell',      icon:'🧥', name:"Arc'teryx Beta LT",    type:'Worn',     activity:'hike',  slots:3,  weightKg:0.35, capacityL:null, maxKg:null, desc:'Lightweight 3-layer Gore-Tex shell. Packable, waterproof.'},
   {id:'wn_socks',      icon:'🧦', name:'Darn Tough Micro Crew',type:'Worn',     activity:'hike',  slots:1,  weightKg:0.08, capacityL:null, maxKg:null, desc:'Merino wool hiking sock. Lifetime guarantee.'},
   {id:'wn_gloves',     icon:'🧤', name:'BD Crag Gloves',       type:'Worn',     activity:'climb', slots:1,  weightKg:0.06, capacityL:null, maxKg:null, desc:'Lightweight climbing gloves with touchscreen fingertips.'},
-  {id:'wn_puffy',      icon:'🧊', name:'Insulated Puffy Jacket',type:'Worn',    activity:'all',   slots:3,  weightKg:0.42, capacityL:null, maxKg:null, desc:'850 fill down puffy. Packable. -10°C comfort.'},
+  {id:'wn_puffy',      icon:'🪶', name:'Insulated Puffy Jacket',type:'Worn',    activity:'all',   slots:3,  weightKg:0.42, capacityL:null, maxKg:null, desc:'850 fill down puffy. Packable. -10°C comfort.'},
   {id:'wn_pants',      icon:'🩳', name:'Smartwool Hiking Pants',type:'Worn',    activity:'hike',  slots:2,  weightKg:0.31, capacityL:null, maxKg:null, desc:'Merino-blend trail pants. 4-way stretch. UPF 50+.'},
   {id:'wn_hat',        icon:'🧢', name:'OR Sun Hat',           type:'Worn',     activity:'all',   slots:1,  weightKg:0.09, capacityL:null, maxKg:null, desc:'Wide brim sun hat. UPF 50+. Moisture-wicking band.'},
   {id:'wn_glasses',    icon:'🕶️',name:'Julbo Aerospace',       type:'Worn',     activity:'hike',  slots:1,  weightKg:0.04, capacityL:null, maxKg:null, desc:'Photochromic glacier glasses. Cat 2–4.'},
@@ -84,7 +84,32 @@ const SAMPLE_INVENTORY = [
   {id:'it_rope',       icon:'🪢', name:'Dynamic Rope 60m',     type:'Item',     activity:'climb', slots:8,  weightKg:3.80, capacityL:null, maxKg:null, desc:'Dry-treated 9.8mm single rope. UIAA certified.'},
   {id:'it_harness',    icon:'🧗', name:'BD Momentum Harness',  type:'Item',     activity:'climb', slots:2,  weightKg:0.34, capacityL:null, maxKg:null, desc:'Momentum adjustable harness. UIAA certified.'},
   {id:'it_towel',      icon:'🧽', name:'PackTowl UltraLite',   type:'Item',     activity:'all',   slots:2,  weightKg:0.08, capacityL:null, maxKg:null, desc:'Absorbent microfiber towel. XL.'},
-  {id:'it_helmet',     icon:'🪖', name:'MIPS Trail Helmet',    type:'Item',     activity:'hike',  slots:4,  weightKg:0.29, capacityL:null, maxKg:null, desc:'Lightweight XC trail helmet. 18 vents, MIPS liner.'},
+  {id:'it_helmet',     icon:'🪖', name:'MIPS Trail Helmet',    type:'Safety',   activity:'bike',  slots:4,  weightKg:0.29, capacityL:null, maxKg:null, desc:'Lightweight XC trail helmet. 18 vents, MIPS liner.'},
+
+  // ── Mountain biking (added in the v1.15 sample overhaul)
+  {id:'bp_mule12',     icon:'🚴', name:'CamelBak M.U.L.E. 12', type:'Backpack', activity:'bike',  slots:9,  weightKg:0.65, capacityL:null, maxKg:9,  desc:'12L trail riding pack. Reservoir sleeve, tool organizer.'},
+  {id:'sf_bikelights', icon:'💡', name:'Bontrager Ion Lights', type:'Safety',   activity:'bike',  slots:1,  weightKg:0.14, capacityL:null, maxKg:null, desc:'USB front and rear light set. Daytime flash modes.'},
+  {id:'tl_crankpump',  icon:'💨', name:'Crankbrothers Klic',   type:'Tools',    activity:'bike',  slots:1,  weightKg:0.16, capacityL:null, maxKg:null, desc:'Hand pump with hidden hose and pressure gauge.'},
+  {id:'tl_tubekit',    icon:'🛞', name:'Tube + Lever Kit',     type:'Tools',    activity:'bike',  slots:1,  weightKg:0.25, capacityL:null, maxKg:null, desc:'Spare 29" tube, two levers, glueless patches.'},
+  {id:'tl_bikemulti',  icon:'🪛', name:'Crankbrothers M17',    type:'Tools',    activity:'bike',  slots:1,  weightKg:0.17, capacityL:null, maxKg:null, desc:'17-function bike multi-tool with chain breaker.'},
+  {id:'wn_bikegloves', icon:'🧤', name:'Fox Ranger Gloves',    type:'Worn',     activity:'bike',  slots:1,  weightKg:0.06, capacityL:null, maxKg:null, desc:'Padded trail gloves. Touchscreen fingertips.'},
+  {id:'wn_jersey',     icon:'🎽', name:'Patagonia Merino Jersey',type:'Worn',   activity:'bike',  slots:1,  weightKg:0.16, capacityL:null, maxKg:null, desc:'Merino-blend riding jersey. Rear zip pocket.'},
+  {id:'wn_bikeshorts', icon:'🩳', name:'POC Trail Shorts',     type:'Worn',     activity:'bike',  slots:1,  weightKg:0.24, capacityL:null, maxKg:null, desc:'Stretch trail shorts with padded liner.'},
+
+  // ── Adventure moto (added in the v1.15 sample overhaul)
+  {id:'bp_kriega25',   icon:'🏍️', name:'Kriega R25 Pack',      type:'Backpack', activity:'moto',  slots:12, weightKg:1.20, capacityL:null, maxKg:15, desc:'Waterproof 25L riding pack. Quadloc harness, zero bounce.'},
+  {id:'sf_motohelmet', icon:'🪖', name:'Arai XD-5 Helmet',     type:'Safety',   activity:'moto',  slots:6,  weightKg:1.60, capacityL:null, maxKg:null, desc:'Dual-sport helmet. Peak, wide eye port, Snell rated.'},
+  {id:'sf_earplugs',   icon:'👂', name:'EarPeace Moto Plugs',  type:'Safety',   activity:'moto',  slots:1,  weightKg:0.01, capacityL:null, maxKg:null, desc:'Filtered earplugs. Cut wind roar, keep speech.'},
+  {id:'wn_motojacket', icon:'🧥', name:'Klim Baja S4 Jacket',  type:'Worn',     activity:'moto',  slots:4,  weightKg:2.00, capacityL:null, maxKg:null, desc:'Vented adventure jacket. CE armor at shoulders and elbows.'},
+  {id:'wn_motogloves', icon:'🧤', name:"REV'IT Sand 4 Gloves", type:'Worn',     activity:'moto',  slots:1,  weightKg:0.18, capacityL:null, maxKg:null, desc:'Vented ADV gloves with knuckle protection.'},
+  {id:'wn_motoboots',  icon:'🥾', name:'Forma Adventure Boots',type:'Worn',     activity:'moto',  slots:4,  weightKg:2.30, capacityL:null, maxKg:null, desc:'Waterproof ADV boots. Ankle bracing, grippy sole.'},
+  {id:'tl_toolroll',   icon:'🧰', name:'Kriega Tool Roll',     type:'Tools',    activity:'moto',  slots:3,  weightKg:1.10, capacityL:null, maxKg:null, desc:'Compact roll with bike-specific hex and torx bits.'},
+
+  // ── Camping (added in the v1.15 sample overhaul)
+  {id:'bp_basecamp',   icon:'🧳', name:'REI Big Haul 60',      type:'Backpack', activity:'camp',  slots:18, weightKg:1.30, capacityL:null, maxKg:25, desc:'60L duffel with backpack straps and daisy chains.'},
+  {id:'it_sleepbag',   icon:'🛌', name:'Kelty Cosmic 20',      type:'Item',     activity:'camp',  slots:5,  weightKg:1.13, capacityL:null, maxKg:null, desc:'20°F down bag. Packs small for the price.'},
+  {id:'it_sleeppad',   icon:'🛏️', name:'Therm-a-Rest ProLite', type:'Item',     activity:'camp',  slots:3,  weightKg:0.51, capacityL:null, maxKg:null, desc:'Self-inflating 3-season pad. R-value 3.2.'},
+  {id:'it_stove',      icon:'🔥', name:'Jetboil Flash',        type:'Item',     activity:'camp',  slots:2,  weightKg:0.37, capacityL:null, maxKg:null, desc:'Integrated canister stove. Boils in about 100 seconds.'},
 ];
 
 // SAMPLE LOADOUTS — paired with SAMPLE_INVENTORY
@@ -111,7 +136,24 @@ const SAMPLE_LOADOUTS = {
       mainItems:['sf_beacon','md_blister','it_sunscreen'],
       wornItems:['wn_hat']},
   },
-  bike:{},moto:{},camp:{},
+  bike:{
+    'trail-ride':{label:'Trail Ride',
+      backpackId:'bp_mule12',bladderIds:'bl_hydrapak2',bottleLeft:null,bottleRight:null,
+      mainItems:['tl_crankpump','tl_tubekit','tl_bikemulti','sf_bikelights','md_blister','it_helmet'],
+      wornItems:['wn_bikegloves','wn_jersey','wn_bikeshorts','wn_glasses']},
+  },
+  moto:{
+    'dual-sport-day':{label:'Dual-Sport Day',
+      backpackId:'bp_kriega25',bladderIds:'bl_hydrapak2',bottleLeft:'bt_klean32',bottleRight:null,
+      mainItems:['tl_toolroll','sf_earplugs','md_kit','it_powerbank','sf_headlamp','it_towel'],
+      wornItems:['wn_motojacket','wn_motogloves','wn_motoboots']},
+  },
+  camp:{
+    'weekend-camp':{label:'Weekend Camp',
+      backpackId:'bp_basecamp',bladderIds:null,bottleLeft:'bt_nalgene1',bottleRight:'bt_klean32',
+      mainItems:['it_tent','it_sleepbag','it_sleeppad','it_stove','tl_spork','sf_headlamp'],
+      wornItems:['wn_puffy','wn_basetop']},
+  },
 };
 
 // USER GEAR — starts empty, populated by user actions and imports
@@ -1238,9 +1280,8 @@ html[data-print="1"] .print-btn.active{display:none !important;}
 
   <!-- TOOLBAR -->
   <div class="toolbar">
-    <button class="toolbar-btn print-btn" id="printModeBtn" onclick="togglePrintMode()">⬡ Print Mode</button>
     <button class="toolbar-btn mode-btn" id="modeBtn" onclick="toggleMode()">☀ Light Mode</button>
-    <button class="toolbar-btn mode-btn" onclick="window.print()" style="opacity:0.7;">🖨 Print</button>
+    <button class="toolbar-btn print-btn" id="printModeBtn" onclick="openPrintView()">🖨 Print</button>
   </div>
 
   <!-- PAGE HEADER -->
@@ -1285,7 +1326,7 @@ html[data-print="1"] .print-btn.active{display:none !important;}
 
 <!-- FOOTER -->
 <div class="footer-bar">
-  <span class="footer-ver">TrailKit v0.98</span>
+  <span class="footer-ver">TrailKit v1.1</span>
   <span>·</span>
   <span>Packing Lists</span>
   <span>·</span>
@@ -1294,7 +1335,6 @@ html[data-print="1"] .print-btn.active{display:none !important;}
 
 <' + 'script>
 var _mode = 'dark';
-var _print = false;
 
 function toggleMode(){
   _mode = _mode === 'dark' ? 'light' : 'dark';
@@ -1303,27 +1343,38 @@ function toggleMode(){
     _mode === 'dark' ? '☀ Light Mode' : '🌙 Dark Mode';
 }
 
-function togglePrintMode(){
-  _print = !_print;
-  document.documentElement.setAttribute('data-print', _print ? '1' : '0');
-  var btn = document.getElementById('printModeBtn');
-  if(_print){
-    // Switch to light mode automatically for print
-    _mode = 'light';
-    document.documentElement.setAttribute('data-mode','light');
-    document.getElementById('modeBtn').textContent = '🌙 Dark Mode';
-    btn.classList.add('active');
-    btn.textContent = '✕ Exit Print Mode';
-  } else {
-    btn.classList.remove('active');
-    btn.textContent = '⬡ Print Mode';
+// Print opens a clean black-and-white copy in a new tab (v1.15).
+// Checkbox state lives in DOM properties, not attributes - mirror it
+// into attributes first so it survives serialization, then hand the
+// copy (forced to data-print mode) to a new window and open its
+// print dialog.
+function openPrintView(){
+  var cbs = document.querySelectorAll('.item-cb');
+  for(var i = 0; i < cbs.length; i++){
+    if(cbs[i].checked) cbs[i].setAttribute('checked','checked');
+    else cbs[i].removeAttribute('checked');
   }
+  var root = document.documentElement;
+  var prevMode  = root.getAttribute('data-mode')  || 'dark';
+  var prevPrint = root.getAttribute('data-print') || '0';
+  root.setAttribute('data-print','1');
+  root.setAttribute('data-mode','light');
+  var html = '<!DOCTYPE html>' + root.outerHTML;
+  root.setAttribute('data-print', prevPrint);
+  root.setAttribute('data-mode', prevMode);
+  var w = window.open('about:blank','_blank');
+  if(!w){ alert('Pop-up blocked - allow pop-ups for this page to open the print view.'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(function(){ try{ w.print(); }catch(e){} }, 350);
 }
 
-// Keyboard shortcut: P toggles print mode, D toggles dark/light
+// Keyboard shortcut: P opens the print view, D toggles dark/light
 document.addEventListener('keydown', function(e){
   if(e.target.tagName==='INPUT') return;
-  if(e.key==='p'||e.key==='P') togglePrintMode();
+  if(e.key==='p'||e.key==='P') openPrintView();
   if(e.key==='d'||e.key==='D') toggleMode();
 });
 <\/script>
@@ -1623,6 +1674,13 @@ function qaRenderPreview(){
     const eff=r.activity==='__default__'?(document.getElementById('qaTagAs')?.value||'all'):r.activity;
     abtn.textContent=eff==='all'?'All':actLabel(eff);
     abtn.addEventListener('click',e=>{e.stopPropagation();qaOpenActPop(abtn,r,eff);});
+    const iconEl=row.querySelector('.qa-row-icon');
+    iconEl.title='Change icon';
+    iconEl.addEventListener('click',e=>{
+      e.stopPropagation();
+      qaCloseActPop(true);
+      openEmojiPicker({anchor:iconEl,onPick:em=>qaSetLineIcon(r.lineIndex,em)});
+    });
     row.querySelector('.qa-check').addEventListener('change',e=>{
       _qaChecks.set(r.lineIndex,e.target.checked);
       row.classList.toggle('qa-off',!e.target.checked);
@@ -1680,6 +1738,27 @@ function qaSetLineField(lineIndex,kind,value){
   parts=parts.filter(p=>p&&!isKind(p));
   if(value)parts.push(value);
   lines[lineIndex]=[head,...parts].join(' | ');
+  _qaDraft=lines.join('\n');
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  qaRefresh(); qaPersistSoon();
+}
+
+// ── Per-row icon editing: the emoji is written into the source line ──
+// The grammar reads a leading emoji (after an optional count token) as
+// the row's icon, so an icon edit is just a text edit - the reparse
+// keeps preview and draft honest, and the choice survives in the text.
+function qaSetLineIcon(lineIndex, emoji){
+  const lines=_qaDraft.split('\n');
+  if(lineIndex<0||lineIndex>=lines.length)return;
+  const line=lines[lineIndex];
+  const bullet=(line.match(/^\s*(?:[-*•·+]\s+|\d{1,3}[.)]\s+)?/)||[''])[0];
+  let rest=line.slice(bullet.length);
+  const count=rest.match(LEAD_COUNT_RE);
+  const countTok=count?count[0]:'';
+  if(count)rest=rest.slice(countTok.length);
+  const em=rest.match(EMOJI_RE);
+  if(em)rest=rest.slice(em[0].length);
+  lines[lineIndex]=bullet+countTok+emoji+' '+rest;
   _qaDraft=lines.join('\n');
   const ta=qaTa(); if(ta)ta.value=_qaDraft;
   qaRefresh(); qaPersistSoon();
@@ -2144,9 +2223,9 @@ function importXML(xmlStr){
     populateLoadoutSel();
     renderAll();
 
-    alert(`Import successful!\n${newItems} item${newItems!==1?'s':''} added to Your Gear.\n${newLoadouts} loadout${newLoadouts!==1?'s':''} imported.`);
+    showToast(`✓ ${newItems} item${newItems!==1?'s':''} and ${newLoadouts} loadout${newLoadouts!==1?'s':''} imported to Your Gear`);
   } catch(err){
-    alert('Import failed: ' + err.message);
+    showToast('Import failed: ' + err.message, {duration:6000});
   }
 }
 
@@ -2163,7 +2242,7 @@ function handleImportFile(file){
     })
     .catch(err => {
       URL.revokeObjectURL(url);
-      alert('Could not read file: ' + err.message);
+      showToast('Could not read file: ' + err.message, {duration:6000});
     });
 }
 
@@ -2469,16 +2548,23 @@ function renderEmojiGrid(){
   });
 }
 
+// Default consumer is the Edit Item modal (writes to #detailIcon).
+// Other callers (Quick Add preview rows) pass {anchor, onPick} to
+// borrow the picker; the target dies with the picker either way.
+let _epTarget = null;
 function selectEmoji(em){
-  document.getElementById('detailIcon').textContent = em;
+  const t = _epTarget;
   closeEmojiPicker();
+  if(t){ t.onPick(em); return; }
+  document.getElementById('detailIcon').textContent = em;
 }
 
-function openEmojiPicker(){
+function openEmojiPicker(target){
+  _epTarget = target || null;
   const overlay = document.getElementById('emojiPickerOverlay');
   const picker  = document.getElementById('emojiPicker');
   overlay.classList.add('open');
-  const r = document.getElementById('editIconBtn').getBoundingClientRect();
+  const r = (target ? target.anchor : document.getElementById('editIconBtn')).getBoundingClientRect();
   let left = Math.max(8, r.left - 40);
   let top  = r.bottom + 8;
   if(left + 328 > window.innerWidth) left = window.innerWidth - 336;
@@ -2488,6 +2574,7 @@ function openEmojiPicker(){
 }
 
 function closeEmojiPicker(){
+  _epTarget = null;
   document.getElementById('emojiPickerOverlay').classList.remove('open');
 }
 
@@ -2779,12 +2866,14 @@ function setSampleGear(on){
   useSampleGear = on;
   INVENTORY = on ? SAMPLE_INVENTORY : USER_INVENTORY;
   // Update topbar UI
-  const indicator  = document.getElementById('sampleIndicator');
+  // One condensed control: the button IS the indicator (amber pulse
+  // via .sample-active) and the toggle. Title carries the action.
   const toggleBtn  = document.getElementById('sampleToggleBtn');
   const panelTitle = document.getElementById('stashPanelTitle');
-  if(indicator)  indicator.classList.toggle('hidden', !on);
   if(toggleBtn){
-    toggleBtn.textContent = on ? 'Switch to Your Gear' : 'Use Sample Gear';
+    toggleBtn.textContent = on ? '⬡ Sample Gear' : 'Use Sample Gear';
+    toggleBtn.title = on ? 'Sample gear is in use - click to switch back to Your Gear'
+                         : 'Load the demo inventory and loadouts';
     toggleBtn.classList.toggle('sample-active', on);
   }
   if(panelTitle) panelTitle.textContent = 'Inventory';
@@ -2807,7 +2896,7 @@ const EXPORT_WARN_MSGS = {
 };
 
 function maybeExport(exportFn, type){
-  closeModal('exportModal');
+  closeAllPopovers();
   if(useSampleGear){
     pendingExportFn = exportFn;
     const msgEl = document.getElementById('sampleExportWarnMsg');
@@ -2818,11 +2907,10 @@ function maybeExport(exportFn, type){
   }
 }
 
-document.getElementById('exportBtn').addEventListener('click', ()=>openModal('exportModal'));
-document.getElementById('exportCancelBtn').addEventListener('click', ()=>closeModal('exportModal'));
-
 // ── ABOUT / HELP MODAL ───────────────────────────────────────────
-document.getElementById('helpBtn').addEventListener('click', ()=>openModal('aboutModal'));
+document.getElementById('fmAboutBtn').addEventListener('click', ()=>{
+  closeAllPopovers(); openModal('aboutModal');
+});
 document.getElementById('aboutCloseBtn').addEventListener('click', ()=>closeModal('aboutModal'));
 
 document.getElementById('dlTrailkitBtn').addEventListener('click',  ()=>maybeExport(exportXML,           'xml'));
@@ -2839,18 +2927,13 @@ document.getElementById('sampleWarnExportBtn').addEventListener('click', ()=>{
   if(pendingExportFn){ pendingExportFn(); pendingExportFn = null; }
 });
 
-// ── IMPORT POPOVER ───────────────────────────────────────────────
-// Footer import btn (desktop) delegates to the same popover logic as topbar importBtn
-document.getElementById('footerImportBtn').addEventListener('click', function(e){
-  // Reuse the importBtn handler by simulating a click on it
-  document.getElementById('importBtn').dispatchEvent(
-    new MouseEvent('click', {bubbles:false, cancelable:true})
-  );
-});
-document.getElementById('importBtn').addEventListener('click', function(e){
+// ── FILE MENU ────────────────────────────────────────────────────
+// One popover consolidating Import / Export / About (v1.15). Also the
+// anchor the mobile Etc-tab import/export buttons delegate to.
+document.getElementById('fileMenuBtn').addEventListener('click', function(e){
   e.stopPropagation();
-  const overlay = document.getElementById('importOverlay');
-  const pop     = document.getElementById('importPopover');
+  const overlay = document.getElementById('fileOverlay');
+  const pop     = document.getElementById('fileMenu');
   const rect    = this.getBoundingClientRect();
   pop.style.right = (window.innerWidth - rect.right) + 'px';
   pop.style.top   = (rect.bottom + 6) + 'px';
@@ -2874,13 +2957,12 @@ document.getElementById('importFileInput').addEventListener('change', function()
 document.getElementById('mTabGear').addEventListener('click', ()=>mSetTab('gear'));
 document.getElementById('mTabPack').addEventListener('click', ()=>mSetTab('pack'));
 document.getElementById('mTabStats').addEventListener('click', ()=>mSetTab('stats'));
-document.getElementById('mExportBtn').addEventListener('click', ()=>openModal('exportModal'));
+document.getElementById('mExportBtn').addEventListener('click', ()=>document.getElementById('fileMenuBtn').click());
 document.getElementById('essModalCloseBtn').addEventListener('click', ()=>closeModal('essentialModal'));
 
 // Close popovers when clicking outside
 document.addEventListener('click', e=>{
-  if(!e.target.closest('#importOverlay') && !e.target.closest('#importBtn')
-     && !e.target.closest('#footerImportBtn')){
+  if(!e.target.closest('#fileOverlay') && !e.target.closest('#fileMenuBtn')){
     closeAllPopovers();
   }
 });
@@ -2947,7 +3029,6 @@ let isLight = false;
 document.getElementById('themeToggle').addEventListener('click', ()=>{
   isLight = !isLight;
   document.body.classList.toggle('light', isLight);
-  document.getElementById('themeLabel').textContent = isLight ? '☀️ Light' : '🌙 Dark';
 });
 
 // ── ESSENTIAL ITEMS POPUP ────────────────────────────────────────
@@ -3307,7 +3388,7 @@ function initMobile(){
   const mImp = document.getElementById('mImportBtn');
   if(mImp && !mImp._wired){
     mImp._wired = true;
-    mImp.addEventListener('click', ()=> document.getElementById('importBtn').click());
+    mImp.addEventListener('click', ()=> document.getElementById('fileMenuBtn').click());
   }
 }
 

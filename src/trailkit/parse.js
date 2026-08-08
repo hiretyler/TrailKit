@@ -36,14 +36,16 @@ const TYPE_ICON   = {Backpack:'🎒',Bladder:'💧',Bottle:'🥤',Safety:'🔦',
 const TYPE_WEIGHT = {Backpack:0.9,Bladder:0.18,Bottle:0.1};
 
 const PREAMBLE_RE = /^(here|sure|okay|of course|these|based on|note:|i (can|see)|hope|let me know)\b/i;
-const LEAD_COUNT_RE  = /^(\d{1,3})\s*[x×*]\s*/i;
+export const LEAD_COUNT_RE  = /^(\d{1,3})\s*[x×*]\s*/i;
 const TAIL_COUNT_RE  = /\s*\(?\s*[x×]\s*(\d{1,3})\s*\)?$/i;
 const PIPE_WEIGHT_RE = /^(\d+(?:\.\d+)?)\s*(kg|g|lbs?|oz)$/i;
 const PIPE_VOL_RE    = /^(\d+(?:\.\d+)?)\s*(l|ml)$/i;
 const NAME_WEIGHT_RE = /\s(\d+(?:\.\d+)?)\s*(kg|g|lbs?|oz)$/i;
 const NAME_VOL_RE    = /(\d+(?:\.\d+)?)\s*(l|ml|oz)\b/i;
+// Exported with LEAD_COUNT_RE: the Quick Add icon editor rewrites
+// source lines and must tokenize prefixes exactly as parsing does.
 // Leading emoji (incl. variation selectors and ZWJ sequences)
-const EMOJI_RE = /^((?:\p{Extended_Pictographic}|[\u2600-\u27BF])(?:[\uFE0F\u200D](?:\p{Extended_Pictographic}|[\u2600-\u27BF])?)*)\s*/u;
+export const EMOJI_RE = /^((?:\p{Extended_Pictographic}|[\u2600-\u27BF])(?:[\uFE0F\u200D](?:\p{Extended_Pictographic}|[\u2600-\u27BF])?)*)\s*/u;
 
 // Exact-match a pipe field (or rewritten value) to a canonical type
 export function matchTypeToken(s){

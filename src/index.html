@@ -14,17 +14,13 @@
   <div class="topbar-logo">Trail<span>Kit</span></div>
   <div class="topbar-spacer"></div>
   <div class="sample-gear-center" id="sampleGearCenter">
-    <div class="sample-indicator" id="sampleIndicator">⬡ SAMPLE GEAR IN USE</div>
-    <button class="sample-toggle-btn" id="sampleToggleBtn">Switch to Your Gear</button>
+    <button class="sample-toggle-btn" id="sampleToggleBtn">⬡ Sample Gear</button>
   </div>
   <div class="topbar-spacer"></div>
-  <button class="help-btn" id="helpBtn" title="About &amp; Help" style="flex-shrink:0;">?</button>
-  <div class="theme-toggle" id="themeToggle" style="flex-shrink:0;">
-    <span class="theme-toggle-label" id="themeLabel">🌙 Dark</span>
+  <div class="theme-toggle" id="themeToggle" title="Toggle dark / light" style="flex-shrink:0;">
     <div class="toggle-track"><div class="toggle-thumb">☀</div></div>
   </div>
-  <!-- Import hidden on mobile — lives in Etc tab instead -->
-  <button class="topbar-btn" id="importBtn" style="flex-shrink:0;">⬇ Import My TrailKit</button>
+  <button class="topbar-btn" id="fileMenuBtn" style="flex-shrink:0;">File ▾</button>
 </div>
 
 <div class="main">
@@ -219,15 +215,6 @@
   </div>
 </div>
 
-<!-- BOTTOM BAR (desktop only) -->
-<div class="bottom-bar">
-  <div class="bottom-version">TrailKit · v1.1</div>
-  <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
-    <button class="topbar-btn" id="footerImportBtn">⬇ Import My TrailKit</button>
-    <button class="export-btn" id="exportBtn">▶ Export My TrailKit</button>
-  </div>
-</div>
-
 <!-- MOBILE TAB BAR -->
 <div class="mobile-tab-bar">
   <button class="mobile-tab m-tab-active" id="mTabGear">
@@ -349,23 +336,6 @@
   </div>
 </div>
 
-<!-- EXPORT MODAL (centered) -->
-<div class="modal-overlay" id="exportModal">
-  <div class="modal" style="min-width:340px;">
-    <div class="modal-title">Export My TrailKit</div>
-    <div class="modal-sub">Choose an export format.</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-      <button class="export-modal-btn primary" id="dlTrailkitBtn">⬇ Download My TrailKit</button>
-      <div style="height:1px;background:var(--border);margin:4px 0;"></div>
-      <button class="export-modal-btn secondary" id="dlPackingBtn">Export as Packing Lists</button>
-      <button class="export-modal-btn secondary" id="dlCsvBtn">Export as CSV</button>
-    </div>
-    <div class="modal-actions">
-      <button class="modal-btn cancel" id="exportCancelBtn">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <!-- ABOUT / HELP MODAL -->
 <div class="modal-overlay" id="aboutModal">
   <div class="modal about-modal">
@@ -405,7 +375,7 @@
       </div>
       <div class="about-step">
         <span class="about-step-num">06</span>
-        <div class="about-step-text"><strong>Export.</strong> Click <strong>Export My TrailKit ▶</strong> in the bottom bar. Download your full TrailKit as an XML file for backup and re-import, export a styled <strong>HTML packing checklist</strong> (with dark/light mode and print mode), or export a <strong>CSV</strong> with your full inventory and all loadouts.</div>
+        <div class="about-step-text"><strong>Export.</strong> Open the <strong>File</strong> menu in the top bar. Download your full TrailKit as an XML file for backup and re-import, export a styled <strong>HTML packing checklist</strong> (with dark/light mode and a print view), or export a <strong>CSV</strong> with your full inventory and all loadouts.</div>
       </div>
     </div>
 
@@ -424,12 +394,19 @@
   </div>
 </div>
 
-<!-- IMPORT POPOVER -->
-<div class="popover-overlay" id="importOverlay">
-  <div class="popover" id="importPopover">
+<!-- FILE MENU (consolidates Import / Export / About, v1.15) -->
+<div class="popover-overlay" id="fileOverlay">
+  <div class="popover" id="fileMenu">
     <div class="pop-title">Import</div>
     <button class="pop-btn upload" id="uploadTrailkitBtn">⬆ Upload My TrailKit</button>
     <button class="pop-btn" id="popQuickAddBtn">⌨ Type or Paste Gear</button>
+    <div class="pop-divider"></div>
+    <div class="pop-title">Export</div>
+    <button class="pop-btn" id="dlTrailkitBtn">⬇ Download My TrailKit</button>
+    <button class="pop-btn" id="dlPackingBtn">⎙ Export Packing Lists</button>
+    <button class="pop-btn" id="dlCsvBtn">▤ Export CSV</button>
+    <div class="pop-divider"></div>
+    <button class="pop-btn" id="fmAboutBtn">? About &amp; Help</button>
     <input type="file" id="importFileInput" accept=".xml,.trailkit">
   </div>
 </div>
