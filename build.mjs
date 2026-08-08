@@ -41,6 +41,8 @@ const esbuildOpts = {
   write:       false,
   logLevel:    'info',
   legalComments: 'inline',
+  // .html imports (the packing-list export template) inline as strings
+  loader:      { '.html': 'text' },
 };
 
 async function inlineBundle() {

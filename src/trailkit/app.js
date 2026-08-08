@@ -17,6 +17,8 @@ import {
 
 import { parseGearLines, matchTypeToken, matchActivityToken, matchSlotsToken, matchVolToken, csvToGearLines, setExtraActivities, LEAD_COUNT_RE, EMOJI_RE } from './parse.js';
 import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
+import PACKING_TEMPLATE from './exports/packing-list.html';
+import { EP_DATA, EP_TABS } from './emoji-data.js';
 
 
 
@@ -806,7 +808,6 @@ function renderAll(){
   renderStash();
   renderStats();
   persistState();
-  if(isMobile()) mBindTapListeners();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1233,181 +1234,18 @@ function exportPackingLists(){
 
   const now = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
-  let html = `<!DOCTYPE html>
-<html lang="en" data-mode="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TrailKit — Packing Lists</title>
-<style>
-/* ── DESIGN TOKENS ── */
-html[data-mode="dark"]{
-  --bg:#0f1419;--bg2:#141c24;--border:#1e2d3d;--border2:#2a4060;
-  --teal:#00c8b4;--amber:#f5a623;--text:#d4dfe9;--dim:#6a8aa0;--deep:#0a0e12;
-  --cb-bg:#0a0e12;--cb-border:#2a4060;--header-border:var(--teal);
-  --activity-color:var(--dim);--name-color:var(--text);--name-border:var(--border2);
-  --item-sep:rgba(30,45,61,0.7);--label-color:var(--text);--checked-color:var(--dim);
-  --sport-hike-bg:#1a3d2b;--sport-hike-fg:#7dffb4;
-  --sport-bike-bg:#0e2d44;--sport-bike-fg:#7dd4ff;
-  --sport-run-bg:#44250e;--sport-run-fg:#ffb47d;
-  --sport-climb-bg:#3d1d44;--sport-climb-fg:#d4a0ff;
-  --sport-moto-bg:#2d1d0e;--sport-moto-fg:#ffcc7d;
-  --sport-camp-bg:#0e1d2d;--sport-camp-fg:#aae8ff;
-  --tb-bg:#141c24;--tb-border:#2a4060;--tb-text:#6a8aa0;--tb-active-text:#00c8b4;
-  --ui-btn-bg:rgba(0,200,180,0.08);--ui-btn-border:rgba(0,200,180,0.22);
-  --ui-btn-text:#00c8b4;--ui-btn-hover-bg:rgba(0,200,180,0.18);
-  --print-btn-bg:rgba(245,166,35,0.1);--print-btn-border:rgba(245,166,35,0.3);
-  --print-btn-text:#f5a623;--print-btn-hover:rgba(245,166,35,0.2);
-}
-html[data-mode="light"]{
-  --bg:#f4f6f8;--bg2:#ffffff;--border:#d5dde7;--border2:#b8c8d8;
-  --teal:#008c7e;--amber:#c07800;--text:#1a2430;--dim:#6a8aa0;--deep:#ffffff;
-  --cb-bg:#ffffff;--cb-border:#b8c8d8;--header-border:#008c7e;
-  --activity-color:#6a8aa0;--name-color:#1a2430;--name-border:#d5dde7;
-  --item-sep:rgba(0,0,0,0.06);--label-color:#1a2430;--checked-color:#a0b4c8;
-  --sport-hike-bg:#d4f0e0;--sport-hike-fg:#1a6b3a;
-  --sport-bike-bg:#d4e8f8;--sport-bike-fg:#0a4a7a;
-  --sport-run-bg:#fce8d4;--sport-run-fg:#7a3a0a;
-  --sport-climb-bg:#ecddf8;--sport-climb-fg:#5a1a7a;
-  --sport-moto-bg:#f8ead4;--sport-moto-fg:#6a3a0a;
-  --sport-camp-bg:#d4eaf8;--sport-camp-fg:#0a3a6a;
-  --tb-bg:#ffffff;--tb-border:#d5dde7;--tb-text:#6a8aa0;--tb-active-text:#008c7e;
-  --ui-btn-bg:rgba(0,140,126,0.06);--ui-btn-border:rgba(0,140,126,0.25);
-  --ui-btn-text:#008c7e;--ui-btn-hover-bg:rgba(0,140,126,0.14);
-  --print-btn-bg:rgba(192,120,0,0.06);--print-btn-border:rgba(192,120,0,0.25);
-  --print-btn-text:#c07800;--print-btn-hover:rgba(192,120,0,0.14);
-}
-
-/* ── PRINT MODE overrides all token-based styles ── */
-html[data-print="1"] *{
-  background:transparent !important;border-color:#ccc !important;
-  color:#000 !important;box-shadow:none !important;text-shadow:none !important;
-}
-html[data-print="1"] body{background:#fff !important;}
-html[data-print="1"] .loadout-block{border:1px solid #ccc !important;background:#fff !important;}
-html[data-print="1"] .page-header{border-bottom:2px solid #000 !important;}
-html[data-print="1"] .page-title{color:#000 !important;}
-html[data-print="1"] .page-title span{color:#555 !important;}
-html[data-print="1"] .page-date,.loadout-activity,.loadout-name{color:#000 !important;}
-html[data-print="1"] .sport-badge{display:none !important;}
-html[data-print="1"] .item-cb{border:1.5px solid #999 !important;background:#fff !important;}
-html[data-print="1"] .toolbar{display:none !important;}
-html[data-print="1"] .item-label{color:#000 !important;}
-html[data-print="1"] .item-cb:checked{background:#ddd !important;}
-html[data-print="1"] .item-cb:checked + .item-label{color:#888 !important;}
-html[data-print="1"] .loadout-name{border-bottom:1px solid #ccc !important;color:#000 !important;}
-html[data-print="1"] .footer-bar{display:none !important;}
-
-/* ── BASE ── */
-*, *::before, *::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;transition:background 0.2s,color 0.2s;}
-.page-wrap{max-width:780px;margin:0 auto;padding:24px 20px 80px;}
-
-/* ── TOOLBAR (top controls) ── */
-.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;
-  margin-bottom:28px;}
-.toolbar-btn{font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;
-  letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;border-radius:4px;
-  padding:6px 14px;transition:all 0.15s;white-space:nowrap;}
-.mode-btn{background:var(--ui-btn-bg);border:1px solid var(--ui-btn-border);
-  color:var(--ui-btn-text);}
-.mode-btn:hover{background:var(--ui-btn-hover-bg);}
-.print-btn{background:var(--print-btn-bg);border:1px solid var(--print-btn-border);
-  color:var(--print-btn-text);}
-.print-btn:hover{background:var(--print-btn-hover);}
-.print-btn.active{background:var(--print-btn-text) !important;
-  color:#fff !important;border-color:var(--print-btn-text) !important;}
-html[data-print="1"] .print-btn.active{display:none !important;}
-
-/* ── PAGE HEADER ── */
-.page-header{border-bottom:2px solid var(--header-border);padding-bottom:14px;margin-bottom:28px;}
-.page-title{font-size:26px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
-  color:var(--teal);font-family:'Courier New',monospace;}
-.page-title span{color:var(--dim);font-weight:400;}
-.page-date{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:5px;}
-
-/* ── LOADOUT CARDS ── */
-.loadout-block{background:var(--bg2);border:1px solid var(--border);border-radius:6px;
-  padding:18px 22px;margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;
-  transition:background 0.2s,border-color 0.2s;}
-.loadout-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.loadout-activity{font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
-  color:var(--activity-color);}
-.sport-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;
-  text-transform:uppercase;padding:2px 8px;border-radius:2px;}
-.sb-hike{background:var(--sport-hike-bg);color:var(--sport-hike-fg);}
-.sb-bike{background:var(--sport-bike-bg);color:var(--sport-bike-fg);}
-.sb-run{background:var(--sport-run-bg);color:var(--sport-run-fg);}
-.sb-climb{background:var(--sport-climb-bg);color:var(--sport-climb-fg);}
-.sb-moto{background:var(--sport-moto-bg);color:var(--sport-moto-fg);}
-.sb-camp{background:var(--sport-camp-bg);color:var(--sport-camp-fg);}
-.loadout-name{font-size:20px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--name-color);font-family:'Courier New',monospace;margin-bottom:14px;
-  border-bottom:1px solid var(--name-border);padding-bottom:10px;
-  transition:color 0.2s,border-color 0.2s;}
-.item-list{list-style:none;display:flex;flex-direction:column;}
-.item-row{display:flex;align-items:center;gap:12px;padding:7px 0;
-  border-bottom:1px solid var(--item-sep);}
-.item-row:last-child{border-bottom:none;}
-.item-cb{
-  width:18px;height:18px;border:2px solid var(--cb-border);border-radius:3px;
-  flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;
-  background:var(--cb-bg);position:relative;transition:all 0.12s;}
-.item-cb:checked{background:var(--teal);border-color:var(--teal);}
-.item-cb:checked::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;
-  justify-content:center;font-size:11px;font-weight:900;color:#fff;line-height:1;}
-.item-label{font-size:14px;color:var(--label-color);cursor:pointer;user-select:none;flex:1;
-  transition:color 0.12s,text-decoration 0.12s;}
-.item-cb:checked + .item-label{text-decoration:line-through;color:var(--checked-color);}
-.item-count{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--dim);
-  text-transform:uppercase;margin-top:12px;padding-top:4px;}
-
-/* ── FOOTER ── */
-.footer-bar{position:fixed;bottom:0;left:0;right:0;height:44px;
-  background:var(--tb-bg);border-top:1px solid var(--tb-border);
-  display:flex;align-items:center;justify-content:center;gap:24px;
-  font-size:10px;font-family:'Courier New',monospace;letter-spacing:1px;
-  color:var(--tb-text);z-index:100;}
-.footer-ver{color:var(--tb-active-text);}
-
-/* ── EMPTY STATE ── */
-.no-loadouts{color:var(--dim);font-size:13px;font-style:italic;text-align:center;
-  padding:40px;border:1px dashed var(--border);border-radius:6px;}
-
-/* ── PRINT MEDIA ── */
-@media print{
-  .toolbar{display:none !important;}
-  .footer-bar{display:none !important;}
-  .loadout-block{page-break-inside:avoid;break-inside:avoid;}
-  body{background:#fff !important;color:#000 !important;}
-}
-</style>
-</head>
-<body>
-<div class="page-wrap">
-
-  <!-- TOOLBAR -->
-  <div class="toolbar">
-    <button class="toolbar-btn mode-btn" id="modeBtn" onclick="toggleMode()">☀ Light Mode</button>
-    <button class="toolbar-btn print-btn" id="printModeBtn" onclick="openPrintView()">🖨 Print</button>
-  </div>
-
-  <!-- PAGE HEADER -->
-  <div class="page-header">
-    <div class="page-title">Trail<span>Kit</span> — Packing Lists</div>
-    <div class="page-date">Generated ${now}${S.useSampleGear?' &nbsp;·&nbsp; Sample Gear':''}</div>
-  </div>
-
-  <!-- PACKING LIST CONTENT -->
-`;
+  // Template lives in exports/packing-list.html (AUDIT #6), inlined
+  // as a string at build time - real <script> tags in the source,
+  // no more <' + 'script> splitting hacks. Placeholders are
+  // replaced with function replacers so '$' in data stays literal.
+  let content = '';
 
   if(!sections.length){
-    html += `  <div class="no-loadouts">No saved loadouts found. Build and save loadouts in TrailKit, then re-export.</div>\n`;
+    content += `  <div class="no-loadouts">No saved loadouts found. Build and save loadouts in TrailKit, then re-export.</div>\n`;
   } else {
     sections.forEach((sec, idx)=>{
       const sportLbl = sportLabel(sec.sport);
-      html += `  <div class="loadout-block">
+      content += `  <div class="loadout-block">
     <div class="loadout-meta">
       <span class="loadout-activity">${sportLbl}</span>
       <span class="sport-badge sb-${sec.sport}">${sportLbl}</span>
@@ -1417,91 +1255,24 @@ html[data-print="1"] .print-btn.active{display:none !important;}
 `;
       sec.names.forEach((name, i)=>{
         const cbId = `cb_${idx}_${i}`;
-        html += `      <li class="item-row">
+        content += `      <li class="item-row">
         <input class="item-cb" type="checkbox" id="${cbId}">
         <label class="item-label" for="${cbId}">${esc(name)}</label>
       </li>
 `;
       });
-      html += `    </ul>
+      content += `    </ul>
     <div class="item-count">${sec.names.length} item${sec.names.length!==1?'s':''}</div>
   </div>
 `;
     });
   }
 
-  html += `
-</div><!-- /page-wrap -->
-
-<!-- FOOTER -->
-<div class="footer-bar">
-  <span class="footer-ver">TrailKit v1.15</span>
-  <span>·</span>
-  <span>Packing Lists</span>
-  <span>·</span>
-  <span>${now}</span>
-</div>
-
-<' + 'script>
-var _mode = 'dark';
-
-function toggleMode(){
-  _mode = _mode === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-mode', _mode);
-  document.getElementById('modeBtn').textContent =
-    _mode === 'dark' ? '☀ Light Mode' : '🌙 Dark Mode';
-}
-
-// Print opens a clean black-and-white copy in a new tab (v1.15).
-// Checkbox state lives in DOM properties, not attributes - mirror it
-// into attributes first so it survives serialization, then hand the
-// copy (forced to data-print mode) to a new window and open its
-// print dialog.
-function openPrintView(){
-  var cbs = document.querySelectorAll('.item-cb');
-  for(var i = 0; i < cbs.length; i++){
-    if(cbs[i].checked) cbs[i].setAttribute('checked','checked');
-    else cbs[i].removeAttribute('checked');
-  }
-  var root = document.documentElement;
-  var prevMode  = root.getAttribute('data-mode')  || 'dark';
-  var prevPrint = root.getAttribute('data-print') || '0';
-  root.setAttribute('data-print','1');
-  root.setAttribute('data-mode','light');
-  var html = '<!DOCTYPE html>' + root.outerHTML;
-  root.setAttribute('data-print', prevPrint);
-  root.setAttribute('data-mode', prevMode);
-  var w = window.open('about:blank','_blank');
-  if(!w){ alert('Pop-up blocked - allow pop-ups for this page to open the print view.'); return; }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(function(){ try{ w.print(); }catch(e){} }, 350);
-}
-
-// Keyboard shortcut: P opens the print view, D toggles dark/light
-document.addEventListener('keydown', function(e){
-  if(e.target.tagName==='INPUT') return;
-  if(e.key==='p'||e.key==='P') openPrintView();
-  if(e.key==='d'||e.key==='D') toggleMode();
-});
-<\/script>
-<!-- MOBILE SELECTION HINT — fixed overlay, persists across tab switches -->
-<div id="mTapHint" style="
-  display:none;position:fixed;left:0;right:0;bottom:56px;
-  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--accent-teal);text-align:center;
-  padding:8px 16px;
-  background:rgba(0,200,180,0.09);
-  border-top:1px solid rgba(0,200,180,0.22);
-  z-index:300;
-  pointer-events:none;
-"></div>
-
-</body>
-</html>`;
+  const html = PACKING_TEMPLATE
+    .replace(/{{NOW}}/g, () => now)
+    .replace('{{SAMPLE_NOTE}}', () => S.useSampleGear ? ' &nbsp;·&nbsp; Sample Gear' : '')
+    .replace('{{VERSION}}', () => '1.15')
+    .replace('{{CONTENT}}', () => content);
 
   const isSample = S.useSampleGear ? '-sample' : '';
   downloadBlob(html, `trailkit-packing-lists${isSample}.html`, 'text/html');
@@ -2417,225 +2188,8 @@ let _editingItem = null;   // item object being mutated (null in add mode)
 let _modalMode   = 'edit'; // 'edit' | 'add'
 let _addToSample = false;  // true = adding to SAMPLE_INVENTORY
 
-// ══════════════════════════════════════════════════════════════
-//  EMOJI PICKER  — keyword-searchable, ~600 emoji across 10 tabs
-// ══════════════════════════════════════════════════════════════
-// Format: { emoji: 'keywords space separated' }
-const EP_DATA = {
-  // ── Packs & Containers
-  '🎒':'backpack pack bag daypack hiking gear', '🧳':'luggage suitcase travel bag',
-  '👜':'bag purse handbag', '👝':'pouch clutch bag small',
-  '🎽':'vest running sports shirt gym', '📦':'box package container item gear',
-  '🗃️':'card box file organize storage', '🪣':'bucket pail water container',
-  '🫙':'jar container preserve bottle store', '🧴':'bottle lotion sunscreen liquid soap',
-  '🫗':'flask pour liquid tilt', '🥤':'cup bottle soft flask drink straw',
-  '🍶':'flask sake nalgene bottle container', '🥛':'milk bottle white drink dairy',
-  '🧃':'juice box drink carton pack', '🧋':'boba bubble tea cup drink',
-  '🫖':'teapot kettle hot brew drink', '☕':'coffee hot espresso energy drink',
-  '🍺':'beer bottle drink cold brown', '🍷':'wine glass red drink',
-  '💧':'water drop hydration liquid wet', '💦':'water splash drops sweat hydrate',
-  '🚰':'faucet tap water clean sink', '⛲':'fountain water jet pump',
-  // ── Outdoor & Shelter
-  '⛺':'tent camping camp outdoor shelter', '🏕️':'campsite camp outdoor fire tent',
-  '🛖':'hut cabin shelter camp lodge', '🏡':'house home cabin shelter',
-  '🪵':'log wood fuel fire camp', '🔥':'fire flame camp hot burn fuel',
-  '🕯️':'candle light flame camp dark', '🪔':'lamp oil light diya fire',
-  '🔦':'flashlight torch light headlamp emergency', '💡':'light bulb idea lamp bright',
-  '🌲':'tree pine forest evergreen camp', '🌳':'tree deciduous forest nature oak',
-  '🌵':'cactus desert dry southwest prickly', '🌴':'palm tropical beach island',
-  '🌿':'herb plant green nature leaf', '🍃':'leaf green wind nature blowing',
-  '🍀':'clover luck green four leaf', '🌾':'wheat grass grain field straw',
-  '🌻':'sunflower flower yellow summer bright', '🌹':'rose red flower bloom',
-  '🍄':'mushroom fungus forest food', '🌰':'chestnut nut food autumn fall',
-  '🏔️':'mountain snow peak alpine summit climb', '⛰️':'mountain hill peak elevation',
-  '🗻':'mountain fuji peak snow japan', '🌋':'volcano lava mountain erupt',
-  '🏜️':'desert sand dry arid dune', '🏞️':'park landscape valley nature river',
-  '🌄':'sunrise mountain dawn landscape morning', '🌅':'sunrise sunset horizon ocean',
-  '🌌':'galaxy space stars milky way night', '🌠':'shooting star wish night falling',
-  '🌈':'rainbow colorful arc weather sky', '⭐':'star yellow rate shine',
-  '🌟':'glowing star shine sparkle bright', '💫':'dizzy star spin sparkle',
-  '✨':'sparkles shine magic glitter', '☀️':'sun sunny solar summer heat bright',
-  '🌤️':'mostly sunny cloud weather partly', '⛅':'partly cloudy weather cloud sun',
-  '🌧️':'rain water wet storm weather cloud', '🌨️':'snow flurry blizzard winter cold',
-  '🌩️':'thunderstorm lightning storm cloud', '🌪️':'tornado twister storm wind',
-  '🌫️':'fog mist haze cloud weather', '❄️':'snow cold ice winter freeze flake',
-  '🧊':'ice cube cold freeze water chill', '☃️':'snowman winter cold snow holiday',
-  '🌊':'wave ocean sea water surf swell', '🏖️':'beach sand ocean summer sun',
-  '🏞️':'park nature landscape river valley', '🌁':'fog mist bridge city',
-  // ── Clothing & Worn
-  '🥾':'boot hiking trail outdoor shoe footwear', '👟':'sneaker running shoe sport trainer',
-  '👠':'heel shoe dress formal women', '🥿':'flat shoe casual loafer',
-  '🧥':'jacket coat shell rain windbreaker outdoor', '🥼':'coat lab white long',
-  '👘':'kimono japanese robe traditional dress', '🧣':'scarf warm winter neck wool',
-  '🧤':'gloves warm hands winter climbing grip', '🧢':'cap hat sun visor baseball',
-  '👒':'hat sun floppy brim women summer', '🎩':'top hat formal tall black',
-  '⛑️':'helmet hard safety rescue white', '🪖':'helmet military safety hard hat mips',
-  '🕶️':'sunglasses sun cool eye shade uv', '🥽':'goggles safety ski eye snow swim',
-  '🧦':'socks feet warm wool merino hike', '👕':'shirt tshirt base layer top clothing',
-  '👗':'dress clothes women formal', '👖':'pants jeans trousers clothing',
-  '🩳':'shorts pants summer swim casual', '🩲':'briefs underwear base layer bottom',
-  '🧊':'ice cold freeze', '🌡️':'thermometer temperature fever heat cold measure',
-  '🧣':'scarf wrap warm', '🧤':'gloves mittens warm',
-  '🦺':'vest safety reflective high vis jacket', '👔':'tie shirt formal business dress',
-  // ── Sport & Activity
-  '🚵':'mountain bike mtb cycling trail sport', '🚴':'cycling bike road sport pedal',
-  '🏃':'running run jog sprint trail race', '🏋️':'weightlifting gym strong barbell fitness',
-  '🧗':'climbing rock boulder ascent sport crag', '🤸':'gymnastics cartwheel acrobatics flex',
-  '🏊':'swimming swim pool water sport freestyle', '🤽':'water polo swim pool sport',
-  '🏄':'surfing surf wave beach board sport', '🛶':'canoe kayak paddle river water',
-  '🚣':'rowing boat oar water crew sport', '🤿':'scuba dive snorkel underwater mask',
-  '⛷️':'skiing ski snow alpine downhill winter', '🏂':'snowboarding snow sport winter jump',
-  '🛷':'sled toboggan snow winter slide', '🎿':'ski slope snow sport winter',
-  '🏇':'horse racing jockey equestrian sport ride', '🤺':'fencing sword épée sport',
-  '🥊':'boxing glove fight punch sport', '🥋':'martial arts karate judo fight',
-  '🎣':'fishing fish rod catch angling lake', '🏹':'bow arrow archery aim shoot sport',
-  '🧘':'yoga meditation balance pose calm breath', '⛹️':'basketball dribble sport ball',
-  '🤼':'wrestling grapple fight sport pair mat', '🤾':'handball throw ball sport',
-  '🏌️':'golf club sport swing green putt', '🎯':'target aim bullseye archery goal',
-  '🎱':'billiards pool ball eight cue game', '🛹':'skateboard skate board trick',
-  '🧜':'mermaid sea swim ocean mythical', '🏆':'trophy win champion gold prize award',
-  '🥇':'gold medal first champion winner sport', '🥈':'silver medal second runner up',
-  '🥉':'bronze medal third place sport', '🏅':'medal sport award winner prize',
-  // ── Safety & Emergency
-  '🔦':'flashlight torch light headlamp dark emergency', '🚨':'alarm siren police rescue red emergency',
-  '🛟':'lifebuoy rescue safety water ring flotation', '⛑️':'helmet hard safety rescue first aid',
-  '📡':'satellite dish signal communication beacon antenna', '🛰️':'satellite gps tracker orbit beacon',
-  '🆘':'sos help emergency rescue distress call', '☣️':'biohazard danger warning toxic chemical',
-  '⚠️':'warning caution danger alert sign hazard', '🚫':'no prohibited ban forbidden stop',
-  '⛔':'no entry stop prohibit traffic red', '🔴':'red circle dot stop danger alert',
-  '🟡':'yellow circle dot caution warning amber', '🟢':'green circle dot go safe ok',
-  '🔺':'red triangle up warning danger alert', '🪬':'nazar protection evil eye bead amulet',
-  '🛡️':'shield protect defend safety armor guard', '⚔️':'swords crossed battle fight guard',
-  '🏳️':'flag white surrender peace signal', '🚩':'red flag warning marker signal',
-  // ── Medical & Health
-  '🩺':'stethoscope doctor medical health kit check', '💊':'pill medicine tablet drug pharmacy',
-  '🩹':'bandage wound first aid cut blister patch', '🩻':'xray scan bone medical injury',
-  '🩼':'crutch injury broken support leg', '🩸':'blood drop medical emergency injury',
-  '🧬':'dna science biology genetics medical lab', '🔬':'microscope science lab biology magnify',
-  '🏥':'hospital medical emergency health clinic', '💉':'injection needle vaccine medical syringe',
-  '🧪':'flask lab science chemical experiment test', '🧫':'petri dish science lab biology culture',
-  '🚑':'ambulance emergency rescue medical red', '🧠':'brain mind think medical neuro',
-  '🦷':'tooth dental oral medical health', '🦴':'bone skeleton medical anatomy',
-  '👁️':'eye sight vision medical optical', '🫀':'heart cardiac organ medical anatomy',
-  '🫁':'lungs breathing organ medical anatomy', '💪':'strong muscle flex fitness arm gym',
-  '🤝':'handshake assist partnership help support', '🫶':'care love support heart hands',
-  // ── Tools & Hardware
-  '🔧':'wrench tool fix repair mechanic adjust', '🔨':'hammer tool build hit construct',
-  '⛏️':'pickaxe mine dig climb tool', '🪛':'screwdriver tool fix repair tighten',
-  '🪚':'saw tool cut woodwork lumber', '🔩':'bolt nut screw hardware fasten thread',
-  '🗜️':'clamp tool compress fix vise grip', '⚙️':'gear cog settings mechanical tool system',
-  '🪝':'hook hang clip attach carabiner catch', '🧲':'magnet attract metal stick pull',
-  '🔋':'battery power charge electric energy cell', '🪫':'battery low empty dead uncharged',
-  '💡':'light bulb idea lamp bright electric glow', '🔌':'plug power electric connect outlet cord',
-  '📎':'paperclip attach clip link fasten', '🧷':'safety pin pin sew attach fix clasp',
-  '✂️':'scissors cut tool craft snip trim', '🪤':'mousetrap trap catch snap spring',
-  '🏗️':'construction build scaffold crane structure', '⚒️':'hammer pick tool mining work labor',
-  '🛠️':'tools repair build wrench hammer fix kit', '🧰':'toolbox tools repair kit organize',
-  '🪜':'ladder climb step rungs ascend tall', '🔑':'key lock access open carabiner unlock',
-  '🗝️':'key old lock access skeleton vintage', '🔐':'locked key secure padlock shut',
-  '🔒':'lock secure locked shut padlock', '🔓':'unlocked open lock access free',
-  '🪓':'axe chop cut hatchet wood fell', '🗡️':'dagger knife blade cut sharp weapon',
-  '🪃':'boomerang throw return sport curve', '🏹':'bow arrow archery aim shoot sport',
-  '🪄':'wand magic trick sparkle fantasy', '🔮':'crystal ball magic predict future mystic',
-  // ── Navigation & Tech
-  '🗺️':'map navigation explore topo route geography', '🧭':'compass navigation direction orienteering bearing',
-  '📍':'pin location map place marker spot', '📌':'pushpin note location mark bulletin',
-  '🌐':'globe world earth international network web', '📻':'radio communication signal listen broadcast',
-  '📡':'satellite dish signal beacon antenna', '🛰️':'satellite gps space orbit track',
-  '📱':'phone mobile smartphone sos communicate gps', '💻':'laptop computer notebook device screen',
-  '🖥️':'computer monitor screen desktop display', '⌚':'watch time wrist gps smart',
-  '📷':'camera photo picture photography document', '📸':'camera flash photo selfie snap',
-  '🎥':'movie camera film video record', '🔭':'telescope astronomy scout view observe',
-  '📐':'ruler angle math geometry measure square', '📏':'ruler measure straight line length',
-  '🖨️':'printer print paper output copy', '💾':'disk save storage data floppy',
-  '🔍':'search magnify zoom find inspect glass', '📲':'phone download tap touch screen',
-  // ── Food & Nutrition
-  '🍎':'apple fruit red food snack healthy', '🍊':'orange citrus fruit food vitamin',
-  '🍋':'lemon citrus yellow sour food tart', '🍇':'grapes purple fruit food wine',
-  '🍓':'strawberry red berry fruit food sweet', '🫐':'blueberry berry blue fruit food antioxidant',
-  '🍒':'cherry red fruit food sweet stone', '🍑':'peach fruit food soft sweet',
-  '🥭':'mango tropical fruit food yellow sweet', '🍍':'pineapple tropical fruit food spiky',
-  '🥥':'coconut tropical food drink milk white', '🥝':'kiwi green fruit food slice fresh',
-  '🍌':'banana yellow fruit food energy potassium', '🍐':'pear green fruit food sweet',
-  '🍏':'green apple fruit food healthy crisp', '🍈':'melon fruit food green sweet cantaloupe',
-  '🍅':'tomato red vegetable food pizza sauce', '🫑':'pepper bell vegetable food green yellow red',
-  '🥦':'broccoli green vegetable food healthy fiber', '🥕':'carrot orange vegetable food healthy beta',
-  '🌽':'corn maize vegetable food yellow grain', '🥜':'peanut nut food snack protein butter',
-  '🫘':'bean legume food protein fiber lentil', '🧅':'onion food cook vegetable savory',
-  '🧄':'garlic food cook vegetable flavor pungent', '🥔':'potato food starch vegetable carb',
-  '🍞':'bread loaf food baked wheat carb', '🥐':'croissant bread baked food french pastry',
-  '🫓':'flatbread pita food baked wrap tortilla', '🥚':'egg food protein breakfast chicken',
-  '🍳':'frying egg cook breakfast pan', '🧇':'waffle breakfast food grid sweet',
-  '🥞':'pancake breakfast food stack syrup', '🧀':'cheese dairy food yellow melted',
-  '🥩':'meat steak protein food beef grill', '🍗':'chicken poultry food protein leg',
-  '🌭':'hotdog sausage food frank bun grill', '🍔':'burger food beef bun grill fast',
-  '🍟':'fries potato food fast fried salty', '🥪':'sandwich food lunch bread meat deli',
-  '🌮':'taco mexican food tortilla corn', '🌯':'wrap burrito food tortilla chicken',
-  '🥗':'salad green healthy food vegetable bowl', '🍜':'noodle ramen soup food asian bowl',
-  '🍫':'chocolate sweet candy food bar dark', '🍬':'candy sweet sugar food treat',
-  '🍭':'lollipop candy sweet food swirl stick', '🍯':'honey jar sweet food golden bear',
-  '🧂':'salt spice seasoning food mineral sodium', '🫙':'jar container preserve store pickle',
-  '🍄':'mushroom fungus forest food earthy', '🌰':'chestnut nut food autumn fall roast',
-  // ── Vehicles & Transport
-  '🏍️':'motorcycle motorbike moto ride speed trail', '🚗':'car vehicle drive transport auto',
-  '🛻':'pickup truck offroad utility vehicle rugged', '🚙':'suv car jeep offroad vehicle 4wd',
-  '🏎️':'racing car fast formula speed race track', '🚓':'police car emergency law rescue',
-  '🚑':'ambulance emergency medical rescue red lights', '🚒':'fire truck emergency rescue red fighter',
-  '🚚':'truck delivery transport cargo haul', '🚛':'semi truck cargo transport hauler',
-  '🚜':'tractor farm agriculture vehicle field', '🚲':'bicycle bike cycle pedal ride',
-  '🛵':'scooter moped ride urban electric', '🛴':'kick scooter electric ride urban',
-  '🚁':'helicopter fly air rescue hover emergency', '✈️':'airplane fly travel plane air trip',
-  '🛩️':'small plane fly aircraft private', '🚀':'rocket space launch fast nasa',
-  '🛳️':'ship cruise ocean sea travel boat large', '⛵':'sailboat sail wind ocean sea',
-  '🚤':'speedboat fast water motor boat', '🛶':'canoe kayak paddle river water',
-  '🛸':'ufo flying saucer space alien sci-fi disc',
-  // ── Symbols & Misc
-  '💎':'diamond gem precious valuable crystal', '💰':'money bag rich gold cash coins',
-  '🎖️':'medal military honor award achievement', '🎗️':'ribbon awareness fundraiser charity',
-  '🎪':'circus tent show carnival performance fun', '🎨':'art palette paint color creative',
-  '🎭':'theater mask drama performance stage', '🎬':'film clapper movie video slate',
-  '🎤':'microphone sing music perform vocal', '🎵':'music note song sound melody',
-  '🎶':'music notes song melody harmony', '🎸':'guitar music rock string instrument',
-  '🥁':'drum music beat rhythm percussion', '🎺':'trumpet music brass instrument jazz',
-  '🎻':'violin music classical string instrument', '🎲':'dice game random chance board',
-  '🎰':'slot machine casino game luck spin', '🃏':'joker card game wild deck',
-  '🎮':'game controller video play console', '🧩':'puzzle piece jigsaw fit connect',
-  '🧸':'teddy bear stuffed toy soft comfort', '🪆':'doll matryoshka nesting toy',
-  '🪁':'slingshot toy shoot aim rubber band', '🎁':'gift present wrap surprise box',
-  '🎀':'ribbon bow pink gift decoration', '🎊':'confetti party celebrate pop',
-  '🎉':'party popper celebrate tada fun confetti', '🪅':'piñata celebrate candy hit fiesta',
-  '🔐':'locked padlock secure private key', '🔏':'locked pen privacy signature',
-  '📢':'megaphone announce loud speaker broadcast', '📣':'loudspeaker announce cheering',
-  '🔔':'bell alert notify sound ring', '🔕':'mute silent no sound bell off',
-  '🎵':'music note sound audio', '🎼':'sheet music score compose notation',
-  '🧯':'fire extinguisher safety emergency red', '🪠':'plunger tool drain fix unclog',
-  '🧹':'broom sweep clean brush floor', '🧺':'basket hamper laundry carry weave',
-  '🪑':'chair seat furniture sit rest', '🛏️':'bed sleep rest night hotel camp',
-  '🪞':'mirror reflection glass look vanity', '🪟':'window glass look outside frame',
-  '🚪':'door open close enter exit room', '🗑️':'trash bin delete garbage waste',
-  '🛁':'bathtub bath soak clean water tub', '🚿':'shower wash spray clean hygiene',
-  '🧼':'soap clean wash hygiene lather bar', '🪥':'toothbrush dental clean oral hygiene',
-  '🧻':'toilet paper tissue roll clean wipe', '🪒':'razor shave blade cut sharp groom',
-  '💈':'barber pole spin red white blue groom', '🧲':'magnet attract stick metal pull',
-  '🪤':'mousetrap snap catch spring trap pest', '🔗':'link chain connect attach bind',
-  '⛽':'fuel gas petrol fill energy station', '🚧':'construction warning road barrier orange',
-  '🛤️':'railway track rail road path trail', '🛣️':'highway road freeway asphalt drive',
-  '🏗️':'construction build scaffold crane work site',
-};
+// Emoji picker data lives in emoji-data.js (AUDIT #5)
 
-// Tab definitions — curated list of emoji keys for each tab
-const EP_TABS = [
-  {label:'🎒', name:'Packs',    keys:['🎒','🧳','📦','🫙','🥤','🍶','💧','💦','🚰','🪣','🧴','🫗','🧃','🧋','☕','🍺','🍷','🥛','🫖','⛲']},
-  {label:'⛺', name:'Outdoors', keys:['⛺','🏕️','🛖','🔥','🕯️','🪔','🔦','💡','🌲','🌳','🌵','🌴','🌿','🍃','🌾','🌻','🍄','🌰','🏔️','⛰️','🗻','🌋','🏜️','🏞️','🌄','🌅','🌊','🌈','☀️','⛅','🌧️','🌨️','❄️','🧊','🌌','🌠','🌪️','🌩️','🌫️','🪵']},
-  {label:'🥾', name:'Worn',     keys:['🥾','👟','🧥','🧣','🧤','🧢','⛑️','🪖','🕶️','🥽','🧦','👕','👖','🩳','🩲','🦺','👔','👗','👒','🎩','🥼','👜','👝','🛡️']},
-  {label:'🚵', name:'Sport',    keys:['🚵','🚴','🏃','🏋️','🧗','🤸','🏊','🏄','🛶','🚣','🤿','⛷️','🏂','🛷','🎿','🏇','🥊','🥋','🎣','🏹','🧘','⛹️','🤼','🤾','🏌️','🎯','🎱','🛹','🤺','🏆','🥇','🥈','🥉','🏅']},
-  {label:'🩺', name:'Medical',  keys:['🩺','💊','🩹','🩻','🩼','🩸','🧬','🔬','🏥','💉','🧪','🧫','🚑','🧠','🦷','🦴','👁️','🫀','🫁','💪','🤝','🫶','🆘','⚠️','☣️','🛟','⛑️']},
-  {label:'🔧', name:'Tools',    keys:['🔧','🔨','⛏️','🪛','🪚','🔩','🗜️','⚙️','🪝','🧲','🔋','🪫','💡','🔌','📎','🧷','✂️','🪤','🛠️','🧰','🪜','🔑','🗝️','🔐','🔒','🔓','🪓','🗡️','🪃','🪄','🏗️','⚒️','🪬','🛡️','⚔️']},
-  {label:'🗺️', name:'Nav & Tech',keys:['🗺️','🧭','📍','📌','🌐','📻','📡','🛰️','📱','💻','⌚','📷','📸','🔭','📐','📏','🔍','🎥','🔮','🖥️']},
-  {label:'🍎', name:'Food',     keys:['🍎','🍊','🍋','🍇','🍓','🫐','🍒','🥭','🍍','🥥','🥝','🍌','🍏','🍅','🫑','🥦','🥕','🌽','🥜','🫘','🧅','🧄','🥔','🍞','🥐','🫓','🥚','🧇','🥞','🧀','🥩','🍗','🥪','🌮','🌯','🥗','🍜','🍫','🍬','🍭','🍯','🧂','🍄','🌰','🌭','🍔','🍟']},
-  {label:'🏍️', name:'Vehicles', keys:['🏍️','🚗','🛻','🚙','🏎️','🚲','🛵','🛴','🚁','✈️','🛩️','🚀','🛳️','⛵','🚤','🛶','🛸','🚜','🚚','🚛','🚑','🚒','🚓']},
-  {label:'⭐', name:'Symbols',  keys:['⭐','🌟','💫','✨','💎','💰','🎖️','🎗️','🎪','🎨','🎭','🎬','🎤','🎵','🎶','🎸','🥁','🎺','🎻','🎲','🎮','🧩','🎁','🎉','🎊','📢','🔔','🧯','⛽','🚨','🚩','🔴','🟡','🟢','🔺','🔥','🌈']},
-];
 
 let _epActiveCat = 0;
 let _epSearch    = '';
@@ -3639,85 +3193,88 @@ document.addEventListener('touchstart', ()=>{
   }
 }, { passive: true });
 
-// Bind long-press to a slot element for a given item
-function bindLongPress(el, it){
-  el.addEventListener('touchstart', e=> mLongPressStart(e, it), { passive: true });
-  el.addEventListener('touchend',   mLongPressCancel, { passive: true });
-  el.addEventListener('touchmove',  mLongPressCancel, { passive: true });
+// ── Mobile tap + long-press wiring, DELEGATED (AUDIT #3) ─────────
+// One listener per stable container instead of per-node binding with
+// _mTapBound/_mHandler/_lpBound flags. Rendered slots come and go;
+// the containers (#stashGrid, .loadout-body, #mainGrid,
+// #mobileWornList) persist, so this binds exactly once at init.
+// Every handler checks isMobile() live, which also makes
+// desktop→mobile resizes work without re-wiring.
+
+const M_BIG_SLOT_ZONE = {
+  backpackSlot:'backpack', bladderSlot:'bladder',
+  bottleLeft:'bottle-left', bottleRight:'bottle-right',
+};
+
+// Swallow the synthetic click that follows a long-press, and taps
+// that merely dismiss an open long-press tooltip
+function mTapSwallowed(){
+  if(_lpSuppressNext){ _lpSuppressNext = false; return true; }
+  return _lpActive;
 }
 
-function mBindTapListeners(){
-  if(!isMobile()) return;
+function mItemInZone(zone){
+  if(zone==='backpack')     return itemById(S.backpackId);
+  if(zone==='bladder')      return itemById(Array.isArray(S.bladderIds)?S.bladderIds[0]:S.bladderIds);
+  if(zone==='bottle-left')  return itemById(S.bottleLeft);
+  if(zone==='bottle-right') return itemById(S.bottleRight);
+  return null;
+}
 
-  // ── Stash items: tap to select + long-press to preview (new elements each render)
-  document.querySelectorAll('#stashGrid .slot:not(.in-loadout)').forEach(el=>{
-    if(!el._mTapBound){
-      el._mTapBound = true;
-      const it = itemById(el.dataset.id);
-      el.addEventListener('click', ()=>{
-        if(_lpSuppressNext){ _lpSuppressNext = false; return; }
-        if(_lpActive) return; // dismissing tooltip — don't select
-        mTapStashItem(el.dataset.id, el);
-      });
-      if(it) bindLongPress(el, it);
-    }
+function delegateLongPress(container, resolveItem){
+  container.addEventListener('touchstart', e=>{
+    if(!isMobile()) return;
+    const it = resolveItem(e);
+    if(it) mLongPressStart(e, it);
+  }, { passive: true });
+  container.addEventListener('touchend',  mLongPressCancel, { passive: true });
+  container.addEventListener('touchmove', mLongPressCancel, { passive: true });
+}
+
+function initMobileDelegation(){
+  // ── Stash: tap to select, long-press to preview
+  const stashGrid = document.getElementById('stashGrid');
+  stashGrid.addEventListener('click', e=>{
+    if(!isMobile() || mTapSwallowed()) return;
+    const el = e.target.closest('.slot[data-id]:not(.in-loadout)');
+    if(el) mTapStashItem(el.dataset.id, el);
+  });
+  delegateLongPress(stashGrid, e=>{
+    const el = e.target.closest('.slot[data-id]');
+    return el ? itemById(el.dataset.id) : null;
   });
 
-  // ── Big persistent slots: safe re-bind via stored handler reference
-  const bigSlots = [
-    { id:'backpackSlot',  zone:'backpack'      },
-    { id:'bladderSlot',   zone:'bladder'       },
-    { id:'bottleLeft',    zone:'bottle-left'   },
-    { id:'bottleRight',   zone:'bottle-right'  },
-  ];
-  bigSlots.forEach(({id, zone})=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    // Remove old click handler if any
-    if(el._mHandler) el.removeEventListener('click', el._mHandler);
-    el._mHandler = ()=>{
-      if(_lpSuppressNext){ _lpSuppressNext = false; return; }
-      if(_lpActive) return; // dismissing tooltip — don't place
-      if(_mSel) mTapDropZone(zone, null);
-    };
-    el.addEventListener('click', el._mHandler);
-    // Long-press: show tooltip for whatever is in this slot
-    if(el._lpBound) return; // only bind once — these elements persist
-    el._lpBound = true;
-    el.addEventListener('touchstart', e=>{
-      // Resolve the item currently occupying this slot at press time
-      let it = null;
-      if(zone==='backpack')     it = itemById(S.backpackId);
-      else if(zone==='bladder') it = itemById(Array.isArray(S.bladderIds)?S.bladderIds[0]:S.bladderIds);
-      else if(zone==='bottle-left')  it = itemById(S.bottleLeft);
-      else if(zone==='bottle-right') it = itemById(S.bottleRight);
-      if(it) mLongPressStart(e, it);
-    }, { passive: true });
-    el.addEventListener('touchend',  mLongPressCancel, { passive: true });
-    el.addEventListener('touchmove', mLongPressCancel, { passive: true });
+  // ── Big slots (backpack/bladder/bottles): tap to place, long-press
+  // to preview the current occupant. Bound on .loadout-body because
+  // the slot nodes themselves are clone-replaced every render.
+  const loBody = document.querySelector('.loadout-body');
+  loBody.addEventListener('click', e=>{
+    if(!isMobile() || mTapSwallowed() || !_mSel) return;
+    const slotEl = e.target.closest('#backpackSlot,#bladderSlot,#bottleLeft,#bottleRight');
+    if(slotEl) mTapDropZone(M_BIG_SLOT_ZONE[slotEl.id], null);
+  });
+  delegateLongPress(loBody, e=>{
+    const slotEl = e.target.closest('#backpackSlot,#bladderSlot,#bottleLeft,#bottleRight');
+    if(slotEl) return mItemInZone(M_BIG_SLOT_ZONE[slotEl.id]);
+    const mainEl = e.target.closest('#mainGrid .slot[data-id]');
+    return mainEl ? itemById(mainEl.dataset.id) : null;
   });
 
-  // ── Main grid: empty droppable slots (recreated each render)
-  document.querySelectorAll('#mainGrid .empty-slot.droppable').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      if(_mSel) mTapDropZone('main', parseInt(el.dataset.index) || 0);
-    });
+  // ── Main grid: tap an empty slot to place (removal is the ✕ on
+  // each filled slot; long-press handled by the loadout-body binding)
+  document.getElementById('mainGrid').addEventListener('click', e=>{
+    if(!isMobile() || mTapSwallowed() || !_mSel) return;
+    const el = e.target.closest('.empty-slot.droppable');
+    if(el) mTapDropZone('main', parseInt(el.dataset.index) || 0);
   });
 
-  // ── Main grid: filled slots — long-press shows tooltip only.
-  // Removal is via the ✕ button rendered on each slot in mobile (see renderMain).
-  document.querySelectorAll('#mainGrid .slot:not(.empty-slot)').forEach(el=>{
-    const it = itemById(el.dataset.id);
-    if(it) bindLongPress(el, it);
-  });
-
-  // ── Worn add-row: bind the one inside #mobileWornList (recreated each render)
+  // ── Mobile worn list: tap the add-row to place
   const mWornList = document.getElementById('mobileWornList');
   if(mWornList){
-    const wornAdd = mWornList.querySelector('.worn-add-row');
-    if(wornAdd){
-      wornAdd.addEventListener('click', ()=>{ if(_mSel) mTapDropZone('worn', S.wornItems.length); });
-    }
+    mWornList.addEventListener('click', e=>{
+      if(!isMobile() || !_mSel) return;
+      if(e.target.closest('.worn-add-row')) mTapDropZone('worn', S.wornItems.length);
+    });
   }
 }
 
@@ -3774,6 +3331,7 @@ window.addEventListener('resize', ()=>{
   }
 
   renderAll();
+  initMobileDelegation(); // one-time delegated tap/long-press wiring
   initMobile(); // must run after renderAll so DOM is ready
   wireEssentialCounters();
 })();
