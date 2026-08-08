@@ -12,10 +12,16 @@ export const Persistence = {
     this._deserialize = deserializeFn;
   },
 
+  // Returns true on success, false on failure (quota exceeded, storage
+  // disabled). Callers decide whether/how to surface a failure - the
+  // engine stays silent.
   save(state){
-    if(!this._key || !this._serialize) return;
-    try { localStorage.setItem(this._key, JSON.stringify(this._serialize(state))); }
-    catch(e){ /* quota exceeded — silent (see docs/AUDIT.md #9) */ }
+    if(!this._key || !this._serialize) return false;
+    try {
+      localStorage.setItem(this._key, JSON.stringify(this._serialize(state)));
+      return true;
+    }
+    catch(e){ return false; }
   },
 
   load(){

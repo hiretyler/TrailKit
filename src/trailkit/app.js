@@ -156,15 +156,10 @@ const SAMPLE_LOADOUTS = {
   },
 };
 
-// USER GEAR — starts empty, populated by user actions and imports
-let USER_INVENTORY = [];
-
-// Active inventory — points to SAMPLE_INVENTORY or USER_INVENTORY based on toggle
-// useSampleGear = true means SAMPLE_INVENTORY is the active set
-let useSampleGear = true;
-
-// INVENTORY always reflects the active set
-let INVENTORY = SAMPLE_INVENTORY;
+// User gear and the sample/user toggle live IN THE STORE (AUDIT #2) —
+// the active inventory is derived via getInventory(), never aliased.
+// SAMPLE_INVENTORY stays module-level: baked-in demo data, and the
+// dev-only "add to sample" path may push to it (never persisted).
 
 // ── SPORT COLOR MAP ──────────────────────────────────────────────
 const SPORT_COLOR = {all:'var(--sport-all)',hike:'var(--sport-hike)',bike:'var(--sport-bike)',
@@ -185,12 +180,36 @@ function actLabel(a){
 }
 function vc(n){return 'v'+Math.min(n,8);}
 function fkg(v){return v.toFixed(2)+' kg';}
-function itemById(id){return INVENTORY.find(i=>i.id===id)||null;}
-function itemByName(n){return INVENTORY.find(i=>i.name===n)||null;}
+// The active inventory is DERIVED - never hold a reference across a
+// dispatch that could flip the sample toggle or replace user gear
+function getInventory(){ return S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory; }
+function itemById(id){return getInventory().find(i=>i.id===id)||null;}
+function itemByName(n){return getInventory().find(i=>i.name===n)||null;}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  TRAILKIT STORE  — initial state + action reducers
+//  TRAILKIT STORE  — action types, initial state, reducers
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── ACTION TYPES (AUDIT #8) ──────────────────────────────────────
+// A typo'd string action silently no-ops (no reducer registered);
+// a typo'd constant throws at the call site. Always dispatch via A.*.
+const A = {
+  SET_BACKPACK:'SET_BACKPACK', SET_BLADDER:'SET_BLADDER',
+  SET_BOTTLE_LEFT:'SET_BOTTLE_LEFT', SET_BOTTLE_RIGHT:'SET_BOTTLE_RIGHT',
+  ADD_TO_MAIN:'ADD_TO_MAIN', REMOVE_FROM_MAIN:'REMOVE_FROM_MAIN',
+  ADD_TO_WORN:'ADD_TO_WORN', REMOVE_FROM_WORN:'REMOVE_FROM_WORN',
+  CLEAR_LOADOUT:'CLEAR_LOADOUT', LOAD_LOADOUT:'LOAD_LOADOUT',
+  SAVE_LOADOUT:'SAVE_LOADOUT', INSTALL_LOADOUTS:'INSTALL_LOADOUTS',
+  QA_RESTORE:'QA_RESTORE',
+  SET_SPORT:'SET_SPORT', SET_GEAR_FILTER:'SET_GEAR_FILTER',
+  SET_LOADOUT_KEY:'SET_LOADOUT_KEY',
+  SET_SAMPLE_GEAR:'SET_SAMPLE_GEAR',
+  ADD_ITEMS:'ADD_ITEMS', SET_USER_INVENTORY:'SET_USER_INVENTORY',
+  UPDATE_ITEM:'UPDATE_ITEM',
+  ADD_ACTIVITY:'ADD_ACTIVITY', UPDATE_ACTIVITY:'UPDATE_ACTIVITY',
+  REMOVE_ACTIVITY:'REMOVE_ACTIVITY',
+};
+
 const store = new PlannerStore({
   sport:       'hike',
   gearFilter:  'all',
@@ -202,25 +221,28 @@ const store = new PlannerStore({
   mainItems:   [],
   wornItems:   [],
   userLoadouts:{},
+  useSampleGear: true,
+  userInventory: [],
+  customActivities: [],   // [{key,label,emoji,color}] — user-defined sports
 });
 
 // ── TRAILKIT ACTION TYPES (domain vocabulary) ────────────────────
 // Placement
-store.on('SET_BACKPACK',      (s, a) => ({ backpackId: a.id }));
-store.on('SET_BLADDER',       (s, a) => ({ bladderIds: a.id }));
-store.on('SET_BOTTLE_LEFT',   (s, a) => ({ bottleLeft: a.id }));
-store.on('SET_BOTTLE_RIGHT',  (s, a) => ({ bottleRight: a.id }));
-store.on('ADD_TO_MAIN',       (s, a) => ({ mainItems: [...s.mainItems, a.id] }));
-store.on('REMOVE_FROM_MAIN',  (s, a) => ({ mainItems: s.mainItems.filter(id=>id!==a.id) }));
-store.on('ADD_TO_WORN',       (s, a) => ({ wornItems: [...s.wornItems, a.id] }));
-store.on('REMOVE_FROM_WORN',  (s, a) => ({ wornItems: s.wornItems.filter(id=>id!==a.id) }));
+store.on(A.SET_BACKPACK,      (s, a) => ({ backpackId: a.id }));
+store.on(A.SET_BLADDER,       (s, a) => ({ bladderIds: a.id }));
+store.on(A.SET_BOTTLE_LEFT,   (s, a) => ({ bottleLeft: a.id }));
+store.on(A.SET_BOTTLE_RIGHT,  (s, a) => ({ bottleRight: a.id }));
+store.on(A.ADD_TO_MAIN,       (s, a) => ({ mainItems: [...s.mainItems, a.id] }));
+store.on(A.REMOVE_FROM_MAIN,  (s, a) => ({ mainItems: s.mainItems.filter(id=>id!==a.id) }));
+store.on(A.ADD_TO_WORN,       (s, a) => ({ wornItems: [...s.wornItems, a.id] }));
+store.on(A.REMOVE_FROM_WORN,  (s, a) => ({ wornItems: s.wornItems.filter(id=>id!==a.id) }));
 
 // Loadout lifecycle
-store.on('CLEAR_LOADOUT', (s) => ({
+store.on(A.CLEAR_LOADOUT, (s) => ({
   backpackId: null, bladderIds: null, bottleLeft: null, bottleRight: null,
   mainItems: [], wornItems: [],
 }));
-store.on('LOAD_LOADOUT', (s, a) => ({
+store.on(A.LOAD_LOADOUT, (s, a) => ({
   loadoutKey:  a.key,
   backpackId:  a.loadout.backpackId  || null,
   bladderIds:  a.loadout.bladderIds  || null,
@@ -229,7 +251,7 @@ store.on('LOAD_LOADOUT', (s, a) => ({
   mainItems:   [...(a.loadout.mainItems || [])],
   wornItems:   [...(a.loadout.wornItems || [])],
 }));
-store.on('SAVE_LOADOUT', (s, a) => {
+store.on(A.SAVE_LOADOUT, (s, a) => {
   const current  = s.userLoadouts;
   const bySport  = { ...(current[a.sport] || {}), [a.key]: a.snapshot };
   return { userLoadouts: { ...current, [a.sport]: bySport }, loadoutKey: a.key };
@@ -237,7 +259,7 @@ store.on('SAVE_LOADOUT', (s, a) => {
 // Bulk-merge loadouts across sports (starter loadouts from Quick Add).
 // Unlike SAVE_LOADOUT it never touches loadoutKey - installing a
 // loadout for another sport must not hijack the active selection.
-store.on('INSTALL_LOADOUTS', (s, a) => {
+store.on(A.INSTALL_LOADOUTS, (s, a) => {
   const merged = { ...s.userLoadouts };
   for(const sport of Object.keys(a.bySport)){
     merged[sport] = { ...(merged[sport] || {}), ...a.bySport[sport] };
@@ -245,18 +267,63 @@ store.on('INSTALL_LOADOUTS', (s, a) => {
   return { userLoadouts: merged };
 });
 // One-shot restore of a pre-commit snapshot (Quick Add undo)
-store.on('QA_RESTORE', (s, a) => ({ ...a.state }));
+store.on(A.QA_RESTORE, (s, a) => ({ ...a.state }));
 
 // Navigation
-store.on('SET_SPORT',      (s, a) => ({ sport: a.sport }));
-store.on('SET_GEAR_FILTER',(s, a) => ({ gearFilter: a.filter }));
-store.on('SET_LOADOUT_KEY',(s, a) => ({ loadoutKey: a.key }));
+store.on(A.SET_SPORT,      (s, a) => ({ sport: a.sport }));
+store.on(A.SET_GEAR_FILTER,(s, a) => ({ gearFilter: a.filter }));
+store.on(A.SET_LOADOUT_KEY,(s, a) => ({ loadoutKey: a.key }));
 
-// ── S — live proxy so all existing rendering code works unchanged ─
-// S is patched after every dispatch, so renderAll() and all
-// functions that read S continue to work without any changes.
-const S = store.getState();
-store.subscribe((state) => { Object.assign(S, state); });
+// Inventory + sample toggle (AUDIT #2 — formerly module-level globals)
+store.on(A.SET_SAMPLE_GEAR,   (s, a) => ({ useSampleGear: !!a.on }));
+store.on(A.ADD_ITEMS,         (s, a) => ({ userInventory: [...s.userInventory, ...a.items] }));
+store.on(A.SET_USER_INVENTORY,(s, a) => ({ userInventory: a.items.slice() }));
+store.on(A.UPDATE_ITEM,       (s, a) => ({
+  userInventory: s.userInventory.map(i => i.id===a.id ? { ...i, ...a.patch } : i),
+}));
+
+// Custom activities
+store.on(A.ADD_ACTIVITY,   (s, a) => ({ customActivities: [...s.customActivities, a.activity] }));
+store.on(A.UPDATE_ACTIVITY,(s, a) => ({
+  customActivities: s.customActivities.map(c => c.key===a.key ? { ...c, ...a.patch } : c),
+}));
+// Removing an activity also untags items carrying it (falling back to
+// 'all' when it was their only tag). Blocked upstream while the
+// activity still has loadouts - see the Manage Activities modal.
+store.on(A.REMOVE_ACTIVITY,(s, a) => ({
+  customActivities: s.customActivities.filter(c => c.key!==a.key),
+  userInventory: s.userInventory.map(i => {
+    const keys = String(i.activity||'all').split(',').filter(k => k!==a.key);
+    const next = keys.length ? keys.join(',') : 'all';
+    return next===i.activity ? i : { ...i, activity: next };
+  }),
+}));
+
+// ── S — strict read-only live view of store state (AUDIT #1) ─────
+// The old `S` was a mutable alias: `S.mainItems.push(x)` would
+// half-work (in-memory yes, subscribers/persistence no). This deep
+// proxy keeps every existing read working — S.mainItems.map(...),
+// [...S.wornItems], JSON.stringify(S.userLoadouts) — but any write
+// at any depth throws immediately. All mutation goes through
+// store.dispatch; the only sanctioned writers of _S are the store
+// subscriber below and restoreState's rehydration.
+const _S = store.getState();
+store.subscribe((state) => { Object.assign(_S, state); });
+const _roCache = new WeakMap();
+function _ro(v){
+  if(v===null || typeof v!=='object') return v;
+  let p=_roCache.get(v);
+  if(!p){
+    p=new Proxy(v,{
+      get:(t,k)=>_ro(t[k]),
+      set(_t,k){ throw new Error(`TrailKit: state is read-only - dispatch an action instead of writing S…${String(k)}`); },
+      deleteProperty(_t,k){ throw new Error(`TrailKit: state is read-only - dispatch an action instead of deleting S…${String(k)}`); },
+    });
+    _roCache.set(v,p);
+  }
+  return p;
+}
+const S = _ro(_S);
 
 // ── HELPERS ──────────────────────────────────────────────────────
 function allocatedIds(){
@@ -343,7 +410,7 @@ function renderStash(){
   const grid=document.getElementById('stashGrid'); if(!grid)return;
   grid.innerHTML='';
   // ── Empty user inventory: show the Quick Add onboarding card instead
-  if(INVENTORY.length===0 && !useSampleGear){
+  if(getInventory().length===0 && !S.useSampleGear){
     const cnt0=document.getElementById('stashCount');
     if(cnt0) cnt0.textContent='0 available · 0 in Loadout';
     const act0=document.getElementById('stashActivityCount');
@@ -362,13 +429,13 @@ function renderStash(){
   const f=S.gearFilter;
 
   // ── Counts always reflect FULL inventory (not filtered view)
-  const totalAll   = INVENTORY.length;
-  const inLoadout  = INVENTORY.filter(it=>allocated.has(it.id)).length;
+  const totalAll   = getInventory().length;
+  const inLoadout  = getInventory().filter(it=>allocated.has(it.id)).length;
 
   // ── Activity-specific count: items with a non-'all' activity value
   // Only shown when a specific filter is selected
   const activitySpecific = f !== 'all'
-    ? INVENTORY.filter(it=>it.activity!=='all'&&actMatches(it.activity,f)).length
+    ? getInventory().filter(it=>it.activity!=='all'&&actMatches(it.activity,f)).length
     : 0;
 
   // ── Update header counts
@@ -386,7 +453,7 @@ function renderStash(){
   }
 
   // ── Filter and sort visible items for the grid
-  const visible=INVENTORY.filter(it=>actMatches(it.activity,f));
+  const visible=getInventory().filter(it=>actMatches(it.activity,f));
   visible.sort((a,b)=>TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type)||a.name.localeCompare(b.name));
 
   // ── Render with type group labels
@@ -568,7 +635,7 @@ function renderMain(){
     el.addEventListener('dragend',onDragEnd);
     el.querySelector('.slot-rm-btn').addEventListener('click', ev=>{
       ev.stopPropagation();
-      store.dispatch({type:'REMOVE_FROM_MAIN', id}); renderAll();
+      store.dispatch({type:A.REMOVE_FROM_MAIN, id}); renderAll();
     });
     bindDrop(el,'main',i);
     wrap.appendChild(el);
@@ -609,7 +676,8 @@ function renderWorn(){
     row.addEventListener('dragstart',e=>onDragStart(e,id,'worn',i));
     row.addEventListener('dragend',onDragEnd);
     row.querySelector('.worn-rm').addEventListener('click',ev=>{
-      ev.stopPropagation(); S.wornItems.splice(i,1); renderAll();
+      ev.stopPropagation();
+      store.dispatch({type:A.REMOVE_FROM_WORN, id}); renderAll();
     });
     bindDrop(row,'worn',i);
     list.appendChild(row);
@@ -643,7 +711,7 @@ function renderWorn(){
           <div class="worn-rm" title="Remove">✕</div>`;
         row.querySelector('.worn-rm').addEventListener('click', ev=>{
           ev.stopPropagation();
-          store.dispatch({type:'REMOVE_FROM_WORN',id}); renderAll();
+          store.dispatch({type:A.REMOVE_FROM_WORN,id}); renderAll();
         });
         mList.appendChild(row);
       });
@@ -847,27 +915,27 @@ function onDrop(e, toZone, toIdx){
 
 function removeFrom(zone,idx,id){
   if(zone==='stash') return;
-  if(zone==='backpack')      store.dispatch({ type:'SET_BACKPACK',     id: null });
-  else if(zone==='bladder')  store.dispatch({ type:'SET_BLADDER',      id: null });
-  else if(zone==='bottle-left')  store.dispatch({ type:'SET_BOTTLE_LEFT',  id: null });
-  else if(zone==='bottle-right') store.dispatch({ type:'SET_BOTTLE_RIGHT', id: null });
-  else if(zone==='main')     store.dispatch({ type:'REMOVE_FROM_MAIN', id });
-  else if(zone==='worn')     store.dispatch({ type:'REMOVE_FROM_WORN', id });
+  if(zone==='backpack')      store.dispatch({ type:A.SET_BACKPACK,     id: null });
+  else if(zone==='bladder')  store.dispatch({ type:A.SET_BLADDER,      id: null });
+  else if(zone==='bottle-left')  store.dispatch({ type:A.SET_BOTTLE_LEFT,  id: null });
+  else if(zone==='bottle-right') store.dispatch({ type:A.SET_BOTTLE_RIGHT, id: null });
+  else if(zone==='main')     store.dispatch({ type:A.REMOVE_FROM_MAIN, id });
+  else if(zone==='worn')     store.dispatch({ type:A.REMOVE_FROM_WORN, id });
 }
 
 function placeTo(zone,id,it){
   if(zone==='stash') return true;
-  if(zone==='backpack'){   store.dispatch({ type:'SET_BACKPACK',     id }); return true; }
-  if(zone==='bladder'){    store.dispatch({ type:'SET_BLADDER',      id }); return true; }
-  if(zone==='bottle-left'){ store.dispatch({ type:'SET_BOTTLE_LEFT', id }); return true; }
-  if(zone==='bottle-right'){store.dispatch({ type:'SET_BOTTLE_RIGHT',id }); return true; }
-  if(zone==='worn'){       store.dispatch({ type:'ADD_TO_WORN',      id }); return true; }
+  if(zone==='backpack'){   store.dispatch({ type:A.SET_BACKPACK,     id }); return true; }
+  if(zone==='bladder'){    store.dispatch({ type:A.SET_BLADDER,      id }); return true; }
+  if(zone==='bottle-left'){ store.dispatch({ type:A.SET_BOTTLE_LEFT, id }); return true; }
+  if(zone==='bottle-right'){store.dispatch({ type:A.SET_BOTTLE_RIGHT,id }); return true; }
+  if(zone==='worn'){       store.dispatch({ type:A.ADD_TO_WORN,      id }); return true; }
   if(zone==='main'){
     const bp   = itemById(S.backpackId);
     const cap  = bp ? bp.slots : 0;
     const used = StatsEngine.sumBy(S.mainItems.map(id=>itemById(id)).filter(Boolean), 'slots');
     if(used + it.slots > cap) return false;
-    store.dispatch({ type:'ADD_TO_MAIN', id });
+    store.dispatch({ type:A.ADD_TO_MAIN, id });
     return true;
   }
   return false;
@@ -875,17 +943,17 @@ function placeTo(zone,id,it){
 
 function restoreTo(zone,idx,id){
   const it = itemById(id); if(!it) return;
-  if(zone==='backpack')      store.dispatch({ type:'SET_BACKPACK',    id });
-  else if(zone==='bladder')  store.dispatch({ type:'SET_BLADDER',     id });
-  else if(zone==='bottle-left')  store.dispatch({ type:'SET_BOTTLE_LEFT',  id });
-  else if(zone==='bottle-right') store.dispatch({ type:'SET_BOTTLE_RIGHT', id });
+  if(zone==='backpack')      store.dispatch({ type:A.SET_BACKPACK,    id });
+  else if(zone==='bladder')  store.dispatch({ type:A.SET_BLADDER,     id });
+  else if(zone==='bottle-left')  store.dispatch({ type:A.SET_BOTTLE_LEFT,  id });
+  else if(zone==='bottle-right') store.dispatch({ type:A.SET_BOTTLE_RIGHT, id });
   else if(zone==='main'){
     const bp   = itemById(S.backpackId);
     const cap  = bp ? bp.slots : 0;
     const used = StatsEngine.sumBy(S.mainItems.map(id=>itemById(id)).filter(Boolean), 'slots');
-    if(used + it.slots <= cap) store.dispatch({ type:'ADD_TO_MAIN', id });
+    if(used + it.slots <= cap) store.dispatch({ type:A.ADD_TO_MAIN, id });
   }
-  else if(zone==='worn')     store.dispatch({ type:'ADD_TO_WORN', id });
+  else if(zone==='worn')     store.dispatch({ type:A.ADD_TO_WORN, id });
 }
 
 // Stash accepts items back (return from loadout)
@@ -903,7 +971,7 @@ function initStashDrop(){
 
 // ── LOADOUT MANAGEMENT ───────────────────────────────────────────
 function allLoadouts(sport){
-  if(useSampleGear){
+  if(S.useSampleGear){
     // In sample mode: show sample loadouts merged with any user loadouts for that sport
     return {...(SAMPLE_LOADOUTS[sport]||{}), ...(S.userLoadouts[sport]||{})};
   }
@@ -918,27 +986,27 @@ function populateLoadoutSel(){
   const keys=Object.keys(map);
   if(!keys.length){
     const o=document.createElement('option');o.value='__default__';o.textContent='Default Loadout';
-    sel.appendChild(o); store.dispatch({ type:'SET_LOADOUT_KEY', key:'__default__' });
+    sel.appendChild(o); store.dispatch({ type:A.SET_LOADOUT_KEY, key:'__default__' });
   } else {
     keys.forEach(k=>{
       const o=document.createElement('option');o.value=k;o.textContent=map[k].label||k;
       sel.appendChild(o);
     });
-    if(!map[S.loadoutKey]) store.dispatch({ type:'SET_LOADOUT_KEY', key:keys[0] });
+    if(!map[S.loadoutKey]) store.dispatch({ type:A.SET_LOADOUT_KEY, key:keys[0] });
     sel.value=S.loadoutKey;
   }
 }
 
 function loadLoadout(key){
-  store.dispatch({ type: 'CLEAR_LOADOUT' });
-  if(key==='__default__'){ store.dispatch({ type:'SET_LOADOUT_KEY', key:'__default__' }); renderAll(); return; }
+  store.dispatch({ type: A.CLEAR_LOADOUT });
+  if(key==='__default__'){ store.dispatch({ type:A.SET_LOADOUT_KEY, key:'__default__' }); renderAll(); return; }
   const lo = allLoadouts(S.sport)[key]; if(!lo) return;
-  store.dispatch({ type: 'LOAD_LOADOUT', key, loadout: lo });
+  store.dispatch({ type: A.LOAD_LOADOUT, key, loadout: lo });
   renderAll();
 }
 
 function clearState(){
-  store.dispatch({ type: 'CLEAR_LOADOUT' });
+  store.dispatch({ type: A.CLEAR_LOADOUT });
 }
 
 function snapshotLoadout(label){
@@ -955,9 +1023,10 @@ Persistence.init(
   'trailkit_v1',
   // serialize: store state → plain object for JSON
   (state) => ({
-    useSampleGear,
-    userInventory : USER_INVENTORY,
+    useSampleGear : state.useSampleGear,
+    userInventory : state.userInventory,
     userLoadouts  : state.userLoadouts,
+    customActivities: state.customActivities,
     quickAdd      : { seen: _qaSeen, draft: _qaDraft.slice(0, 20000) },
     activeLoadout : {
       sport:       state.sport,
@@ -970,16 +1039,17 @@ Persistence.init(
       wornItems:   state.wornItems,
     },
   }),
-  // deserialize: raw JSON → patched state (side-effects: sets module-level vars)
+  // deserialize: raw JSON → state patch. Quick Add draft state is the
+  // one remaining module-level side effect (it isn't store state).
   (payload) => {
-    if(typeof payload.useSampleGear === 'boolean') useSampleGear = payload.useSampleGear;
-    if(Array.isArray(payload.userInventory)) USER_INVENTORY = payload.userInventory;
-    INVENTORY = useSampleGear ? SAMPLE_INVENTORY : USER_INVENTORY;
     const qa = payload.quickAdd || {}; // older payloads have no quickAdd key
     _qaSeen  = !!qa.seen;
     _qaDraft = typeof qa.draft === 'string' ? qa.draft.slice(0, 20000) : '';
     const a = payload.activeLoadout || {};
     return {
+      useSampleGear: typeof payload.useSampleGear === 'boolean' ? payload.useSampleGear : true,
+      userInventory: Array.isArray(payload.userInventory) ? payload.userInventory : [],
+      customActivities: Array.isArray(payload.customActivities) ? payload.customActivities : [],
       userLoadouts: payload.userLoadouts || {},
       sport:        a.sport       || 'hike',
       loadoutKey:   a.loadoutKey  || '__default__',
@@ -993,15 +1063,22 @@ Persistence.init(
   }
 );
 
+// Surface quota failures once per session (AUDIT #9) - silent loss of
+// persistence is worse than a nag
+let _quotaWarned = false;
 function persistState(){
-  Persistence.save(S);
+  const ok = Persistence.save(S);
+  if(ok === false && !_quotaWarned){
+    _quotaWarned = true;
+    showToast("Couldn't save your changes - browser storage is full", {duration: 8000});
+  }
 }
 
 function restoreState(){
   const restored = Persistence.load();
   if(!restored) return false;
   store._patch(restored);
-  Object.assign(S, restored); // keep live proxy in sync
+  Object.assign(_S, restored); // sanctioned direct write: rehydration only
   return true;
 }
 
@@ -1018,7 +1095,7 @@ function txt(tag,val){ return `<${tag}>${esc(val)}</${tag}>\n`; }
 // ── BUILD XML (new schema) ────────────────────────────────────────
 function buildXML(){
   // Export from the active inventory (sample or user)
-  const sourceInventory = useSampleGear ? SAMPLE_INVENTORY : USER_INVENTORY;
+  const sourceInventory = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n<trailkit>\n';
 
   // <yourgear>
@@ -1100,11 +1177,11 @@ function exportXML(){
 
 function exportPackingLists(){
   const sports = ['hike','bike','run','climb','moto','camp'];
-  const srcInv = useSampleGear ? SAMPLE_INVENTORY : USER_INVENTORY;
+  const srcInv = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
 
   function resolveName(id){
     if(!id) return null;
-    const it = srcInv.find(i=>i.id===id) || INVENTORY.find(i=>i.id===id);
+    const it = srcInv.find(i=>i.id===id) || getInventory().find(i=>i.id===id);
     return it ? it.name : null;
   }
 
@@ -1287,7 +1364,7 @@ html[data-print="1"] .print-btn.active{display:none !important;}
   <!-- PAGE HEADER -->
   <div class="page-header">
     <div class="page-title">Trail<span>Kit</span> — Packing Lists</div>
-    <div class="page-date">Generated ${now}${useSampleGear?' &nbsp;·&nbsp; Sample Gear':''}</div>
+    <div class="page-date">Generated ${now}${S.useSampleGear?' &nbsp;·&nbsp; Sample Gear':''}</div>
   </div>
 
   <!-- PACKING LIST CONTENT -->
@@ -1394,16 +1471,16 @@ document.addEventListener('keydown', function(e){
 </body>
 </html>`;
 
-  const isSample = useSampleGear ? '-sample' : '';
+  const isSample = S.useSampleGear ? '-sample' : '';
   downloadBlob(html, `trailkit-packing-lists${isSample}.html`, 'text/html');
 }
 
 function exportCSV(){
-  const srcInv = useSampleGear ? SAMPLE_INVENTORY : USER_INVENTORY;
+  const srcInv = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
   const sports = ['hike','bike','run','climb','moto','camp'];
 
   // ── Sheet 1: Inventory ─────────────────────────────────────
-  let csv = 'TRAILKIT INVENTORY\r\n';
+  let csv = 'TRAILKIT getInventory()\r\n';
   csv += 'Name,Type,Activity,Slots,Weight (kg),Capacity (L),Max Load (kg),Description\r\n';
   srcInv.forEach(it=>{
     csv += [
@@ -1431,7 +1508,7 @@ function exportCSV(){
       const slots = [];
       const pushSlot = (id, slotLabel)=>{
         if(!id) return;
-        const it = srcInv.find(i=>i.id===id) || INVENTORY.find(i=>i.id===id);
+        const it = srcInv.find(i=>i.id===id) || getInventory().find(i=>i.id===id);
         if(it) slots.push({slot:slotLabel, it});
       };
       pushSlot(lo.backpackId,  'Backpack');
@@ -1464,7 +1541,7 @@ function exportCSV(){
                  ...(lo.mainItems||[]),...(lo.wornItems||[])].filter(Boolean);
       let totalKg=0, count=0;
       ids.forEach(id=>{
-        const it = srcInv.find(i=>i.id===id) || INVENTORY.find(i=>i.id===id);
+        const it = srcInv.find(i=>i.id===id) || getInventory().find(i=>i.id===id);
         if(it){ totalKg+=it.weightKg; count++; }
       });
       if(!count) return;
@@ -1477,14 +1554,14 @@ function exportCSV(){
     });
   });
 
-  const isSample = useSampleGear ? '-sample' : '';
+  const isSample = S.useSampleGear ? '-sample' : '';
   downloadBlob(csv, `trailkit-export${isSample}.csv`, 'text/csv');
 }
 
 // ── QUICK ADD ────────────────────────────────────────────────────
 // One modal, three onboarding paths (type/paste, starter-pack chips,
 // AI photo prompt), one parser (parse.js), one commit into
-// USER_INVENTORY. The draft survives any dismissal via persistence,
+// S.userInventory. The draft survives any dismissal via persistence,
 // so Cancel/backdrop/Escape are deliberately not intercepted.
 
 const QA_SPORTS=['hike','bike','run','climb','moto','camp'];
@@ -1580,7 +1657,7 @@ function showToast(msg,opts){
 function qaParse(){
   const res=parseGearLines(_qaDraft);
   _qaRows=res.rows; _qaIgnored=res.ignored;
-  const seen=new Set(USER_INVENTORY.map(i=>qaNorm(i.name)));
+  const seen=new Set(S.userInventory.map(i=>qaNorm(i.name)));
   _qaRows.forEach(r=>{const k=qaNorm(r.name); r._dup=seen.has(k); seen.add(k);});
 }
 
@@ -1908,17 +1985,11 @@ function openQuickAdd(){
 }
 
 // ── Commit ──
-function qaMintId(){
-  let id;
-  do{id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
-  while(USER_INVENTORY.some(i=>i.id===id));
-  return id;
-}
 
 // ── Starter loadouts ──
 // STARTER_LOADOUTS reference sp_ ids; the committed items carry
 // minted user ids, so resolve each reference through its curated
-// name against USER_INVENTORY. Dedup-suffixed copies ("Bottle (2)")
+// name against S.userInventory. Dedup-suffixed copies ("Bottle (2)")
 // resolve to the user's original - that's the item they own. A sport
 // whose backpack didn't survive the preview (line deleted, row
 // unchecked) installs nothing: a loadout without its pack is noise.
@@ -1927,7 +1998,7 @@ function qaInstallStarterLoadouts(sports){
   const resolve=spId=>{
     if(!spId)return null;
     const sp=STARTER_ITEMS.find(x=>x.id===spId); if(!sp)return null;
-    const it=USER_INVENTORY.find(i=>bare(i.name)===bare(sp.name));
+    const it=S.userInventory.find(i=>bare(i.name)===bare(sp.name));
     return it?it.id:null;
   };
   const bySport={};
@@ -1943,7 +2014,7 @@ function qaInstallStarterLoadouts(sports){
       wornItems:lo.wornItems.map(resolve).filter(Boolean)}};
   }
   const installed=Object.keys(bySport);
-  if(installed.length)store.dispatch({type:'INSTALL_LOADOUTS',bySport});
+  if(installed.length)store.dispatch({type:A.INSTALL_LOADOUTS,bySport});
   return installed;
 }
 
@@ -1955,21 +2026,22 @@ let _qaNudgePacks=[];
 function qaNudgeNext(){
   while(_qaNudgePacks.length){
     const id=_qaNudgePacks.shift();
-    const it=USER_INVENTORY.find(i=>i.id===id);
+    const it=S.userInventory.find(i=>i.id===id);
     if(it){openItemDetail(it);return;}
   }
 }
 
 // ── One-shot undo of the last commit ──
+// The snapshot carries full store slices, so one QA_RESTORE dispatch
+// puts everything back (inventory, sample flag, loadouts, board)
 function qaUndoCommit(u){
   _qaNudgePacks.length=0;
-  USER_INVENTORY.length=0; USER_INVENTORY.push(...u.inv);
   _qaDraft=u.draft;
   _qaPacksOn.clear(); u.packs.forEach(s=>_qaPacksOn.add(s));
   _qaChecks.clear(); u.checks.forEach((v,k)=>_qaChecks.set(k,v));
   const ta=qaTa(); if(ta)ta.value=_qaDraft;
-  if(useSampleGear!==u.sample)setSampleGear(u.sample);
-  store.dispatch({type:'QA_RESTORE',state:u.state});
+  store.dispatch({type:A.QA_RESTORE,state:u.state});
+  syncSampleChrome();
   populateLoadoutSel();
   renderAll();
   showToast('↩ Quick Add undone');
@@ -1979,20 +2051,20 @@ function qaCommit(){
   const inc=_qaRows.filter(qaChecked);
   if(!inc.length)return;
   const bare=n=>n.toLowerCase().replace(/\s+/g,' ').trim();
-  const taken=new Set(USER_INVENTORY.map(i=>bare(i.name)));
+  const taken=new Set(S.userInventory.map(i=>bare(i.name)));
   const tagAs=document.getElementById('qaTagAs')?.value||'all';
 
   // Snapshot everything the commit can touch, for the toast's Undo.
-  // Items are pushed, never mutated, so a shallow inventory copy is
+  // Items are appended, never mutated, so a shallow inventory copy is
   // enough; userLoadouts gets a deep copy because INSTALL_LOADOUTS
-  // merges into it.
+  // merges into it. All slices ride one QA_RESTORE dispatch on undo.
   const undoSnap={
-    inv:USER_INVENTORY.slice(),
     draft:_qaDraft,
     packs:new Set(_qaPacksOn),
     checks:new Map(_qaChecks),
-    sample:useSampleGear,
     state:{
+      userInventory:[...S.userInventory],
+      useSampleGear:S.useSampleGear,
       loadoutKey:S.loadoutKey,
       backpackId:S.backpackId, bladderIds:S.bladderIds,
       bottleLeft:S.bottleLeft, bottleRight:S.bottleRight,
@@ -2001,8 +2073,17 @@ function qaCommit(){
     },
   };
 
+  const usedIds=new Set(S.userInventory.map(i=>i.id));
+  const mintId=()=>{
+    let id;
+    do{id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+    while(usedIds.has(id));
+    usedIds.add(id);
+    return id;
+  };
+
   let added=0;
-  const leftover=[], packIds=[];
+  const minted=[], leftover=[], packIds=[];
   for(const r of _qaRows){
     if(!qaChecked(r))continue;
     let did=0;
@@ -2015,7 +2096,7 @@ function qaCommit(){
         name=`${r.name} (${n})`;
       }
       taken.add(bare(name));
-      const it={id:qaMintId(),icon:r.icon,name,type:r.type,
+      const it={id:mintId(),icon:r.icon,name,type:r.type,
         activity:r.activity==='__default__'?tagAs:r.activity,
         slots:r.slots,weightKg:r.weightKg,
         capacityL:r.capacityL??null,maxKg:r.maxKg??null,desc:r.desc||''};
@@ -2026,7 +2107,7 @@ function qaCommit(){
         it.backpackRightBottle=r.backpackRightBottle!==false;
         packIds.push(it.id);
       }
-      USER_INVENTORY.push(it);
+      minted.push(it);
       added++; did++;
     }
     // A row the 300-cap cut short keeps its source line in the draft
@@ -2034,6 +2115,7 @@ function qaCommit(){
     if(did<r.count)leftover.push(r.raw);
   }
   if(!added)return;
+  store.dispatch({type:A.ADD_ITEMS, items:minted});
   qaCloseActPop(false);
   const loSports=document.getElementById('qaLoadoutsToo')?.checked?[..._qaPacksOn]:[];
   _qaDraft=leftover.join('\n'); _qaPacksOn.clear(); _qaChecks.clear();
@@ -2044,7 +2126,7 @@ function qaCommit(){
   // in-progress user loadout. Loadout install runs after the sample
   // flip so the dropdown refresh sees user mode. renderAll persists -
   // nothing state-changing after it.
-  if(useSampleGear){setSampleGear(false);clearState();populateLoadoutSel();}
+  if(S.useSampleGear){setSampleGear(false);clearState();populateLoadoutSel();}
   const loInstalled=loSports.length?qaInstallStarterLoadouts(loSports):[];
   const loCount=loInstalled.length;
   if(loInstalled.includes(S.sport)){
@@ -2190,19 +2272,24 @@ function importXML(xmlStr){
 
     let newItems = 0, newLoadouts = 0;
 
-    // ── <yourgear> items → always import into USER_INVENTORY
+    // ── <yourgear> items → always import into the user inventory.
+    // Collected first, then landed via one ADD_ITEMS dispatch
+    // (AUDIT #7: no direct state mutation).
+    const importedItems = [];
+    const existingIds = new Set(S.userInventory.map(i=>i.id));
     doc.querySelectorAll('yourgear > item').forEach(el=>{
       const id = el.querySelector('id')?.textContent?.trim();
       if(!id) return;
       // Skip if already exists in user inventory
-      if(USER_INVENTORY.find(i=>i.id===id)) return;
+      if(existingIds.has(id)) return;
+      existingIds.add(id);
 
       const type     = el.querySelector('type')?.textContent?.trim() || 'Item';
       const sp       = el.querySelector('special');
       const capL     = sp?.querySelector('bottle-liters,bladder-liters')?.textContent;
       const maxKgVal = sp?.querySelector('backpack-maxload')?.textContent;
 
-      USER_INVENTORY.push({
+      importedItems.push({
         id,
         name:      el.querySelector('item-name')?.textContent         || id,
         icon:      el.querySelector('item-icon')?.textContent         || '📦',
@@ -2216,17 +2303,20 @@ function importXML(xmlStr){
       });
       newItems++;
     });
+    if(importedItems.length) store.dispatch({type:A.ADD_ITEMS, items:importedItems});
 
-    // ── <loadouts> → user loadouts
+    // ── <loadouts> → user loadouts, merged via INSTALL_LOADOUTS
+    // (AUDIT #7: this used to write S.userLoadouts directly)
+    const bySport = {};
     doc.querySelectorAll('loadouts > loadout').forEach(el=>{
       const sport = el.querySelector('loadout-activity')?.textContent?.trim();
       const label = el.querySelector('loadout-name')?.textContent?.trim();
       if(!sport || !label) return;
       const key = label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') || 'loadout-'+Date.now();
-      if(!S.userLoadouts[sport]) S.userLoadouts[sport] = {};
       const getItemId = sel => el.querySelector(sel+' > item')?.textContent?.trim() || null;
       const getItems  = sel => [...el.querySelectorAll(sel+' > item')].map(e=>e.textContent.trim()).filter(Boolean);
-      S.userLoadouts[sport][key] = {
+      if(!bySport[sport]) bySport[sport] = {};
+      bySport[sport][key] = {
         label,
         backpackId:  getItemId('loadout-backpack'),
         bladderIds:  getItemId('loadout-bladder'),
@@ -2237,12 +2327,13 @@ function importXML(xmlStr){
       };
       newLoadouts++;
     });
+    if(newLoadouts) store.dispatch({type:A.INSTALL_LOADOUTS, bySport});
 
     // Switch to user gear mode after import. Gated like qaCommit:
     // clearState only when leaving sample mode, so importing more
     // items never wipes an in-progress user loadout. renderAll
     // persists - no explicit persistState after it.
-    if(useSampleGear){
+    if(S.useSampleGear){
       setSampleGear(false);
       clearState();
     }
@@ -2786,7 +2877,7 @@ function openAddItemModal(toSample){
 //  ADD ITEM BUTTON → warn if sample gear active
 // ══════════════════════════════════════════════════════════════
 document.getElementById('addItemBtn').addEventListener('click',()=>{
-  if(useSampleGear){ openModal('addToSampleWarnModal'); }
+  if(S.useSampleGear){ openModal('addToSampleWarnModal'); }
   else             { openAddItemModal(false); }
 });
 document.getElementById('addSampleWarnSwitchBtn').addEventListener('click',()=>{
@@ -2805,7 +2896,13 @@ document.getElementById('addSampleWarnSampleBtn').addEventListener('click',()=>{
 document.getElementById('editSaveBtn').addEventListener('click',()=>{
   if(_modalMode==='edit'){
     if(!_editingItem) return;
-    readFormIntoItem(_editingItem);
+    const patch = readFormIntoItem({});
+    if(S.userInventory.some(i=>i.id===_editingItem.id)){
+      store.dispatch({type:A.UPDATE_ITEM, id:_editingItem.id, patch});
+    } else {
+      // Sample items live outside the store (module-level demo data)
+      Object.assign(_editingItem, patch);
+    }
     closeModal('itemDetailModal'); closeEmojiPicker();
     _editingItem=null; renderAll();
 
@@ -2821,7 +2918,7 @@ document.getElementById('editSaveBtn').addEventListener('click',()=>{
       return;
     }
     if(_addToSample) SAMPLE_INVENTORY.push(newIt);
-    else             USER_INVENTORY.push(newIt);
+    else store.dispatch({type:A.ADD_ITEMS, items:[newIt]});
     closeModal('itemDetailModal'); closeEmojiPicker();
     renderAll();
   }
@@ -2889,11 +2986,13 @@ document.addEventListener('keydown', e=>{
 
 // ── SAMPLE GEAR TOGGLE ───────────────────────────────────────────
 function setSampleGear(on){
-  useSampleGear = on;
-  INVENTORY = on ? SAMPLE_INVENTORY : USER_INVENTORY;
-  // Update topbar UI
-  // One condensed control: the button IS the indicator (amber pulse
-  // via .sample-active) and the toggle. Title carries the action.
+  store.dispatch({ type:A.SET_SAMPLE_GEAR, on });
+  syncSampleChrome();
+}
+// One condensed control: the button IS the indicator (amber pulse
+// via .sample-active) and the toggle. Title carries the action.
+function syncSampleChrome(){
+  const on = S.useSampleGear;
   const toggleBtn  = document.getElementById('sampleToggleBtn');
   const panelTitle = document.getElementById('stashPanelTitle');
   if(toggleBtn){
@@ -2906,7 +3005,7 @@ function setSampleGear(on){
 }
 
 document.getElementById('sampleToggleBtn').addEventListener('click', ()=>{
-  setSampleGear(!useSampleGear);
+  setSampleGear(!S.useSampleGear);
   clearState();
   populateLoadoutSel();
   loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
@@ -2923,7 +3022,7 @@ const EXPORT_WARN_MSGS = {
 
 function maybeExport(exportFn, type){
   closeAllPopovers();
-  if(useSampleGear){
+  if(S.useSampleGear){
     pendingExportFn = exportFn;
     const msgEl = document.getElementById('sampleExportWarnMsg');
     if(msgEl) msgEl.textContent = EXPORT_WARN_MSGS[type] || EXPORT_WARN_MSGS.xml;
@@ -2995,7 +3094,7 @@ document.addEventListener('click', e=>{
 
 // ── ACTIVITY / LOADOUT SELECTS ───────────────────────────────────
 document.getElementById('activitySelect').addEventListener('change', function(){
-  store.dispatch({ type: 'SET_SPORT', sport: this.value });
+  store.dispatch({ type: A.SET_SPORT, sport: this.value });
   populateLoadoutSel();
   loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
 });
@@ -3005,7 +3104,7 @@ document.getElementById('loadoutSelect').addEventListener('change', function(){
 
 // ── GEAR FILTER ──────────────────────────────────────────────────
 document.getElementById('gearFilter').addEventListener('change', function(){
-  store.dispatch({ type: 'SET_GEAR_FILTER', filter: this.value });
+  store.dispatch({ type: A.SET_GEAR_FILTER, filter: this.value });
   renderStash();
 });
 
@@ -3019,8 +3118,7 @@ document.getElementById('saveCancelBtn').addEventListener('click', ()=>closeModa
 document.getElementById('saveConfirmBtn').addEventListener('click', ()=>{
   const label = saveInput.value.trim(); if(!label){ saveInput.focus(); return; }
   const key   = label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-  if(!S.userLoadouts[S.sport]) S.userLoadouts[S.sport] = {};
-  store.dispatch({ type:'SAVE_LOADOUT', sport:S.sport, key, snapshot:snapshotLoadout(label) });
+  store.dispatch({ type:A.SAVE_LOADOUT, sport:S.sport, key, snapshot:snapshotLoadout(label) });
   populateLoadoutSel();
   document.getElementById('loadoutSelect').value = key;
   closeModal('saveModal');
@@ -3039,7 +3137,7 @@ document.getElementById('overwriteBtn').addEventListener('click', ()=>{
 document.getElementById('overwriteCancelBtn').addEventListener('click', ()=>closeModal('overwriteModal'));
 document.getElementById('overwriteConfirmBtn').addEventListener('click', ()=>{
   const existing = allLoadouts(S.sport)[S.loadoutKey];
-  store.dispatch({ type:'SAVE_LOADOUT', sport:S.sport, key:S.loadoutKey, snapshot:snapshotLoadout((existing||{}).label || S.loadoutKey) });
+  store.dispatch({ type:A.SAVE_LOADOUT, sport:S.sport, key:S.loadoutKey, snapshot:snapshotLoadout((existing||{}).label || S.loadoutKey) });
   closeModal('overwriteModal');
 });
 
@@ -3431,13 +3529,13 @@ window.addEventListener('resize', ()=>{
 });
 
 (function init(){
-  restoreState(); // rehydrates useSampleGear, USER_INVENTORY, userLoadouts, activeLoadout
+  restoreState(); // rehydrates S.useSampleGear, S.userInventory, userLoadouts, activeLoadout
 
   // Amber dot on Quick Add until its first open
   document.getElementById('quickAddBtn')?.classList.toggle('qa-unseen', !_qaSeen);
 
-  // Sync INVENTORY pointer and all UI chrome for sample/user mode
-  setSampleGear(useSampleGear);
+  // Sync the sample/user chrome (inventory itself is derived state)
+  syncSampleChrome();
 
   // Sync activity dropdown
   const actSel = document.getElementById('activitySelect');
