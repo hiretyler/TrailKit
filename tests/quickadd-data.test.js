@@ -10,7 +10,7 @@ import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from '../src/trailkit/
 const byId = id => STARTER_ITEMS.find(i => i.id === id);
 
 function loadoutRefs(lo){
-  return [lo.backpackId, lo.bladderIds, lo.bottleLeft, lo.bottleRight,
+  return [lo.backpackId, lo.bladderId, lo.bottleLeft, lo.bottleRight,
     ...lo.mainItems, ...lo.wornItems].filter(Boolean);
 }
 
@@ -38,7 +38,7 @@ test('data: starter loadouts only reference items in their sport pack', () => {
 test('data: starter loadout special slots hold matching types', () => {
   for(const [sport, lo] of Object.entries(STARTER_LOADOUTS)){
     assertEqual(byId(lo.backpackId).type, 'Backpack', `${sport}: backpackId`);
-    if(lo.bladderIds)  assertEqual(byId(lo.bladderIds).type,  'Bladder', `${sport}: bladderIds`);
+    if(lo.bladderId)  assertEqual(byId(lo.bladderId).type,  'Bladder', `${sport}: bladderId`);
     if(lo.bottleLeft)  assertEqual(byId(lo.bottleLeft).type,  'Bottle',  `${sport}: bottleLeft`);
     if(lo.bottleRight) assertEqual(byId(lo.bottleRight).type, 'Bottle',  `${sport}: bottleRight`);
   }

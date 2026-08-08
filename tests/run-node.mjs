@@ -7,6 +7,7 @@
 import './engine.test.js';
 import './parse.test.js';
 import './quickadd-data.test.js';
+import './xml.test.js';
 import { tests } from './assert.js';
 
 let pass = 0, fail = 0;

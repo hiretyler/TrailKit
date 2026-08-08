@@ -12,7 +12,7 @@ Format conventions:
 ## Current state
 
 - **Released:** v1.15 — `releases/TrailKit-1.15.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
-- **Working on:** nothing in flight. The roadmap has no scheduled milestones; remaining known work is the tech-debt list in [docs/AUDIT.md](docs/AUDIT.md). Candidates for a v1.2: an audit/maintenance pass, or custom user-defined activities.
+- **Working on:** v1.2 implemented in `src/` (2026-08-07), ready to cut: custom activities + the complete tech-debt pass (all 14 [docs/AUDIT.md](docs/AUDIT.md) items resolved).
 
 ---
 
@@ -29,6 +29,12 @@ Format conventions:
 - [x] Quick Add: slots/capacity editing in the preview — the grammar gained an explicit "N slots" pipe token (bare numbers still land in the name/desc); preview rows show a slots editor (all types - for a Backpack it sizes the main compartment) and a capacity editor (Bottle/Bladder, writes the existing "NL" volume field). CSV template/upload gained slots + capacity columns riding the same tokens
 
 ---
+
+## v1.2 — Custom activities + tech-debt zero (implemented 2026-08-07, release not yet cut)
+
+- [x] **Custom activities** — up to 4 user-defined activities (name, emoji via the shared picker, preset color) managed from a single modal behind the activity dropdown's ⚙ row. Keys re-slug on rename until first referenced, then freeze. Integrated everywhere: all four sport selects populate dynamically, the Quick Add popover and parser accept them (setExtraActivities), exports include their loadouts, tooltips style them from their color. Deleting cascades (loadouts dropped, items untagged to 'all') behind a two-click confirm.
+- [x] **Delete Loadout** — new ✕ button + confirm in the loadout bar; the app previously had no way to delete a saved loadout. Sample loadouts refuse. Also fixed: Save New / Overwrite never persisted (lost on immediate tab close).
+- [x] **Tech-debt: all 14 AUDIT.md items** — store-owned state with a strict read-only S proxy, action constants, delegated mobile taps, emoji data + packing template extracted (build warning-free, script-split hack gone), quota toast, VERSION constant, bladderId rename with migration, $() lookup chokepoint, XML module + tests. Suite: 87 node / 89 browser tests.
 
 ## Backlog (unscheduled)
 

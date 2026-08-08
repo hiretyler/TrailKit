@@ -19,8 +19,17 @@ import { parseGearLines, matchTypeToken, matchActivityToken, matchSlotsToken, ma
 import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
 import PACKING_TEMPLATE from './exports/packing-list.html';
 import { EP_DATA, EP_TABS } from './emoji-data.js';
+import { VERSION } from './version.js';
+import { esc, buildTrailkitXML, parseTrailkitDoc } from './xml.js';
 
 
+
+// ── DOM lookup chokepoint (AUDIT #12) ────────────────────────────
+// Every element access funnels through $() - one place to add
+// caching, missing-id warnings, or a registry later. IDs stay
+// stringly-typed by choice; a full id registry was judged more churn
+// than value for a single-page app (see docs/AUDIT.md #12).
+const $ = id => document.getElementById(id);
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║  TRAILKIT DOMAIN  v0.97                                      ║
@@ -40,7 +49,11 @@ const TYPE_ORDER = ['Backpack','Bladder','Bottle','Safety','Medical','Tools','Wo
 // slots = main-compartment slots consumed (special slots are free)
 // For Backpack: slots = capacity of its main compartment
 
-// SAMPLE GEAR — baked-in demo data, always available, never modified
+// SAMPLE GEAR — baked-in demo data, always available; only the
+// dev-only "Add New Sample Gear" path ever appends (never persisted).
+// AUDIT #14: entry ORDER here is purely cosmetic - renderStash sorts
+// by TYPE_ORDER then name at render time, so grouping below is for
+// human editors only.
 const SAMPLE_INVENTORY = [
   // ── Backpacks
   {id:'bp_talon22',    icon:'🎒', name:'Osprey Talon 22',      type:'Backpack', activity:'hike',  slots:12, weightKg:0.87, capacityL:null, maxKg:15, desc:'Versatile 22L daypack. AirSpeed back panel. 3L bladder-compatible.'},
@@ -118,41 +131,41 @@ const SAMPLE_INVENTORY = [
 const SAMPLE_LOADOUTS = {
   hike:{
     'day-hike':{label:'Day Hike — Light',
-      backpackId:'bp_talon22',bladderIds:'bl_hydrapak2',bottleLeft:'bt_softflask',bottleRight:null,
+      backpackId:'bp_talon22',bladderId:'bl_hydrapak2',bottleLeft:'bt_softflask',bottleRight:null,
       mainItems:['sf_headlamp','it_topomap','md_blister','it_sunscreen','sf_inreach'],
       wornItems:['wn_shoes','wn_socks','wn_glasses','wn_pants']},
     'overnighter':{label:'Overnighter Pack',
-      backpackId:'bp_baltoro65',bladderIds:'bl_osprey3',bottleLeft:'bt_nalgene1',bottleRight:'bt_nalgene1',
+      backpackId:'bp_baltoro65',bladderId:'bl_osprey3',bottleLeft:'bt_nalgene1',bottleRight:'bt_nalgene1',
       mainItems:['it_tent','wn_puffy','md_kit','tl_leatherman','sf_headlamp','sf_beacon'],
       wornItems:['wn_shoes','wn_socks','wn_shell','wn_pants','wn_basetop']},
   },
   climb:{
     'sport-climb':{label:'Sport Climbing',
-      backpackId:'bp_creek50',bladderIds:'bl_hydrapak2',bottleLeft:null,bottleRight:null,
+      backpackId:'bp_creek50',bladderId:'bl_hydrapak2',bottleLeft:null,bottleRight:null,
       mainItems:['it_rope','it_harness','md_kit','sf_headlamp','tl_belay'],
       wornItems:['wn_gloves','wn_shell']},
   },
   run:{
     'trail-run':{label:'Trail Run',
-      backpackId:'bp_momentum26',bladderIds:'bl_hydrapak2',bottleLeft:'bt_softflask',bottleRight:'bt_softflask',
+      backpackId:'bp_momentum26',bladderId:'bl_hydrapak2',bottleLeft:'bt_softflask',bottleRight:'bt_softflask',
       mainItems:['sf_beacon','md_blister','it_sunscreen'],
       wornItems:['wn_hat']},
   },
   bike:{
     'trail-ride':{label:'Trail Ride',
-      backpackId:'bp_mule12',bladderIds:'bl_hydrapak2',bottleLeft:null,bottleRight:null,
+      backpackId:'bp_mule12',bladderId:'bl_hydrapak2',bottleLeft:null,bottleRight:null,
       mainItems:['tl_crankpump','tl_tubekit','tl_bikemulti','sf_bikelights','md_blister','it_helmet'],
       wornItems:['wn_bikegloves','wn_jersey','wn_bikeshorts','wn_glasses']},
   },
   moto:{
     'dual-sport-day':{label:'Dual-Sport Day',
-      backpackId:'bp_kriega25',bladderIds:'bl_hydrapak2',bottleLeft:'bt_klean32',bottleRight:null,
+      backpackId:'bp_kriega25',bladderId:'bl_hydrapak2',bottleLeft:'bt_klean32',bottleRight:null,
       mainItems:['tl_toolroll','sf_earplugs','md_kit','it_powerbank','sf_headlamp','it_towel'],
       wornItems:['wn_motojacket','wn_motogloves','wn_motoboots']},
   },
   camp:{
     'weekend-camp':{label:'Weekend Camp',
-      backpackId:'bp_basecamp',bladderIds:null,bottleLeft:'bt_nalgene1',bottleRight:'bt_klean32',
+      backpackId:'bp_basecamp',bladderId:null,bottleLeft:'bt_nalgene1',bottleRight:'bt_klean32',
       mainItems:['it_tent','it_sleepbag','it_sleeppad','it_stove','tl_spork','sf_headlamp'],
       wornItems:['wn_puffy','wn_basetop']},
   },
@@ -227,7 +240,7 @@ const store = new PlannerStore({
   gearFilter:  'all',
   loadoutKey:  '__default__',
   backpackId:  null,
-  bladderIds:  null,
+  bladderId:  null,
   bottleLeft:  null,
   bottleRight: null,
   mainItems:   [],
@@ -241,7 +254,7 @@ const store = new PlannerStore({
 // ── TRAILKIT ACTION TYPES (domain vocabulary) ────────────────────
 // Placement
 store.on(A.SET_BACKPACK,      (s, a) => ({ backpackId: a.id }));
-store.on(A.SET_BLADDER,       (s, a) => ({ bladderIds: a.id }));
+store.on(A.SET_BLADDER,       (s, a) => ({ bladderId: a.id }));
 store.on(A.SET_BOTTLE_LEFT,   (s, a) => ({ bottleLeft: a.id }));
 store.on(A.SET_BOTTLE_RIGHT,  (s, a) => ({ bottleRight: a.id }));
 store.on(A.ADD_TO_MAIN,       (s, a) => ({ mainItems: [...s.mainItems, a.id] }));
@@ -251,13 +264,13 @@ store.on(A.REMOVE_FROM_WORN,  (s, a) => ({ wornItems: s.wornItems.filter(id=>id!
 
 // Loadout lifecycle
 store.on(A.CLEAR_LOADOUT, (s) => ({
-  backpackId: null, bladderIds: null, bottleLeft: null, bottleRight: null,
+  backpackId: null, bladderId: null, bottleLeft: null, bottleRight: null,
   mainItems: [], wornItems: [],
 }));
 store.on(A.LOAD_LOADOUT, (s, a) => ({
   loadoutKey:  a.key,
   backpackId:  a.loadout.backpackId  || null,
-  bladderIds:  a.loadout.bladderIds  || null,
+  bladderId:  a.loadout.bladderId ?? a.loadout.bladderIds ?? null,
   bottleLeft:  a.loadout.bottleLeft  || null,
   bottleRight: a.loadout.bottleRight || null,
   mainItems:   [...(a.loadout.mainItems || [])],
@@ -355,7 +368,7 @@ const S = _ro(_S);
 // ── HELPERS ──────────────────────────────────────────────────────
 function allocatedIds(){
   return new Set([
-    S.backpackId, S.bladderIds, S.bottleLeft, S.bottleRight,
+    S.backpackId, S.bladderId, S.bottleLeft, S.bottleRight,
     ...S.mainItems, ...S.wornItems
   ].filter(Boolean));
 }
@@ -369,7 +382,7 @@ function freeSlots(){return mainCap()-usedSlots();}
 function hasRoomFor(it){return freeSlots()>=it.slots;}
 
 // ── TOOLTIP ──────────────────────────────────────────────────────
-const TT=document.getElementById('tooltip');
+const TT=$('tooltip');
 function showTip(e,it){
   if(!it){hideTip();return;}
   const capLine = it.capacityL!=null
@@ -441,13 +454,13 @@ document.addEventListener('mousemove',e=>{if(TT.classList.contains('visible'))po
 
 // ── RENDER: YOUR GEAR ────────────────────────────────────────────
 function renderStash(){
-  const grid=document.getElementById('stashGrid'); if(!grid)return;
+  const grid=$('stashGrid'); if(!grid)return;
   grid.innerHTML='';
   // ── Empty user inventory: show the Quick Add onboarding card instead
   if(getInventory().length===0 && !S.useSampleGear){
-    const cnt0=document.getElementById('stashCount');
+    const cnt0=$('stashCount');
     if(cnt0) cnt0.textContent='0 available · 0 in Loadout';
-    const act0=document.getElementById('stashActivityCount');
+    const act0=$('stashActivityCount');
     if(act0) act0.style.display='none';
     const card=document.createElement('div');
     card.className='qa-empty-card';
@@ -473,10 +486,10 @@ function renderStash(){
     : 0;
 
   // ── Update header counts
-  const cnt = document.getElementById('stashCount');
+  const cnt = $('stashCount');
   if(cnt) cnt.textContent = `${totalAll - inLoadout} available · ${inLoadout} in Loadout`;
 
-  const actLine = document.getElementById('stashActivityCount');
+  const actLine = $('stashActivityCount');
   if(actLine){
     if(f !== 'all' && activitySpecific > 0){
       actLine.textContent = `${activitySpecific} activity-specific`;
@@ -532,11 +545,11 @@ function renderStash(){
 
 // ── RENDER: BACKPACK SLOT ────────────────────────────────────────
 function renderBackpackSlot(){
-  const slot=document.getElementById('backpackSlot');
-  const iconEl=document.getElementById('bpSlotIcon');
-  const badge=document.getElementById('bpSlotBadge');
-  const bar=document.getElementById('bpSlotBar');
-  const info=document.getElementById('packInfo');
+  const slot=$('backpackSlot');
+  const iconEl=$('bpSlotIcon');
+  const badge=$('bpSlotBadge');
+  const bar=$('bpSlotBar');
+  const info=$('packInfo');
   const bp=backpackItem();
   // Rebind drop fresh
   const fresh=slot.cloneNode(true);
@@ -571,7 +584,7 @@ function renderBackpackSlot(){
 function renderWater(){
   const hasBp=!!S.backpackId;
   const bp=backpackItem();
-  document.getElementById('waterSection').classList.toggle('locked-section',!hasBp);
+  $('waterSection').classList.toggle('locked-section',!hasBp);
 
   // Determine pocket support from backpack special fields (default true if not set)
   const hasBladderPocket  = !bp || bp.backpackBladder    !== false;
@@ -580,13 +593,13 @@ function renderWater(){
 
   // Bladder
   {
-    const slot=document.getElementById('bladderSlot');
+    const slot=$('bladderSlot');
     const fresh=slot.cloneNode(true);
     slot.parentNode.replaceChild(fresh,slot);
     const iconEl=fresh.querySelector('#bladderIcon');
     const badge=fresh.querySelector('#bladderBadge');
     const bar=fresh.querySelector('#bladderBar');
-    const it=S.bladderIds?itemById(S.bladderIds):null;
+    const it=S.bladderId?itemById(S.bladderId):null;
     if(it){
       fresh.classList.remove('empty-dashed');
       iconEl.textContent=it.icon;
@@ -607,7 +620,7 @@ function renderWater(){
   // Bottle pockets
   [['bottleLeft','bLeftIcon','bLeftBar',S.bottleLeft,'bottle-left', hasLeftBottlePocket],
    ['bottleRight','bRightIcon','bRightBar',S.bottleRight,'bottle-right', hasRightBottlePocket]].forEach(([sid,iid,bid,itemId,zone,hasPocket])=>{
-    const slot=document.getElementById(sid);
+    const slot=$(sid);
     const fresh=slot.cloneNode(true);
     slot.parentNode.replaceChild(fresh,slot);
     const ic=fresh.querySelector('#'+iid);
@@ -633,20 +646,20 @@ function renderWater(){
 
   // Total-L badge
   let totalL = 0;
-  if(S.bladderIds){ const b=itemById(S.bladderIds); if(b?.capacityL) totalL+=b.capacityL; }
+  if(S.bladderId){ const b=itemById(S.bladderId); if(b?.capacityL) totalL+=b.capacityL; }
   if(S.bottleLeft){ const b=itemById(S.bottleLeft);  if(b?.capacityL) totalL+=b.capacityL; }
   if(S.bottleRight){ const b=itemById(S.bottleRight); if(b?.capacityL) totalL+=b.capacityL; }
-  const badge=document.getElementById('waterTotalL');
+  const badge=$('waterTotalL');
   if(badge) badge.textContent = totalL > 0 ? `${parseFloat(totalL.toFixed(2))}L Total` : '';
 }
 
 // ── RENDER: MAIN COMPARTMENT ─────────────────────────────────────
 function renderMain(){
-  const grid=document.getElementById('mainGrid'); if(!grid)return;
+  const grid=$('mainGrid'); if(!grid)return;
   grid.innerHTML='';
   const hasBp=!!S.backpackId;
-  document.getElementById('mainSection').classList.toggle('locked-section',!hasBp);
-  if(!hasBp){document.getElementById('mainCap').textContent='—';return;}
+  $('mainSection').classList.toggle('locked-section',!hasBp);
+  if(!hasBp){$('mainCap').textContent='—';return;}
   // Items
   S.mainItems.forEach((id,i)=>{
     const it=itemById(id); if(!it)return;
@@ -685,12 +698,12 @@ function renderMain(){
     bindDrop(el,'main',S.mainItems.length+i);
     grid.appendChild(el);
   }
-  document.getElementById('mainCap').textContent=`${S.mainItems.length} items · ${free} slots free`;
+  $('mainCap').textContent=`${S.mainItems.length} items · ${free} slots free`;
 }
 
 // ── RENDER: WORN LIST ─────────────────────────────────────────────
 function renderWorn(){
-  const list=document.getElementById('wornList'); if(!list)return;
+  const list=$('wornList'); if(!list)return;
   list.innerHTML='';
   S.wornItems.forEach((id,i)=>{
     const it=itemById(id); if(!it)return;
@@ -724,7 +737,7 @@ function renderWorn(){
   list.appendChild(add);
 
   // ── Mirror worn list into mobile Loadout tab worn section
-  const mList=document.getElementById('mobileWornList');
+  const mList=$('mobileWornList');
   if(mList){
     mList.innerHTML='';
     if(!S.wornItems.length){
@@ -762,7 +775,7 @@ function renderWorn(){
 // ── RENDER: STATS ────────────────────────────────────────────────
 function renderStats(){
   const bp=backpackItem();
-  const ids=[S.backpackId,S.bladderIds,S.bottleLeft,S.bottleRight,...S.mainItems,...S.wornItems].filter(Boolean);
+  const ids=[S.backpackId,S.bladderId,S.bottleLeft,S.bottleRight,...S.mainItems,...S.wornItems].filter(Boolean);
   const items = ids.map(id=>itemById(id)).filter(Boolean);
   const kg      = StatsEngine.sumBy(items, 'weightKg');
   const safety  = StatsEngine.countBy(items, it=>it.type==='Safety');
@@ -772,28 +785,28 @@ function renderStats(){
   const pct=maxKg?Math.min(100,(kg/maxKg)*100):0;
   // ── Desktop
   // totalWeight/totalWeightMax elements removed from footer (weight shown in Pack Weight panel)
-  const _tw=document.getElementById('totalWeight');
-  const _twm=document.getElementById('totalWeightMax');
+  const _tw=$('totalWeight');
+  const _twm=$('totalWeightMax');
   if(_tw)  _tw.textContent=fkg(kg);
   if(_twm) _twm.textContent=maxKg?`/ ${maxKg} kg max`:'';
-  document.getElementById('sideWeight').textContent=maxKg?`${fkg(kg)} / ${maxKg} kg`:`${fkg(kg)}`;
-  document.getElementById('weightFill').style.width=pct+'%';
+  $('sideWeight').textContent=maxKg?`${fkg(kg)} / ${maxKg} kg`:`${fkg(kg)}`;
+  $('weightFill').style.width=pct+'%';
   updCtr('ctr-Safety', safety, safety>0?'ok':'warn');
   updCtr('ctr-Medical', medical, medical>0?'ok':'warn');
   updCtr('ctr-Tools',   tools,   'neutral');
   // ── Mobile stats panel (always in sync)
-  const mw=document.getElementById('mTotalWeight');
+  const mw=$('mTotalWeight');
   if(mw) mw.textContent=fkg(kg);
-  const mwm=document.getElementById('mTotalWeightMax');
+  const mwm=$('mTotalWeightMax');
   if(mwm) mwm.textContent=maxKg?`/ ${maxKg} kg max`:'';
-  const mwf=document.getElementById('mWeightFill');
+  const mwf=$('mWeightFill');
   if(mwf) mwf.style.width=pct+'%';
   updCtr('mCtr-Safety',  safety,  safety>0?'ok':'warn');
   updCtr('mCtr-Medical', medical, medical>0?'ok':'warn');
   updCtr('mCtr-Tools',   tools,   'neutral');
 }
 function updCtr(id,n,state){
-  const el=document.getElementById(id); if(!el)return;
+  const el=$(id); if(!el)return;
   el.className='item-counter '+state;
   const v=el.querySelector('.item-counter-value');
   if(v) v.innerHTML=`${n} <span>packed</span>`;
@@ -991,7 +1004,7 @@ function restoreTo(zone,idx,id){
 
 // Stash accepts items back (return from loadout)
 function initStashDrop(){
-  const grid=document.getElementById('stashGrid');
+  const grid=$('stashGrid');
   grid.addEventListener('dragover',e=>{e.preventDefault();grid.classList.add('stash-drop-active');});
   grid.addEventListener('dragleave',()=>grid.classList.remove('stash-drop-active'));
   grid.addEventListener('drop',e=>{
@@ -1013,7 +1026,7 @@ function allLoadouts(sport){
 }
 
 function populateLoadoutSel(){
-  const sel=document.getElementById('loadoutSelect'); if(!sel)return;
+  const sel=$('loadoutSelect'); if(!sel)return;
   sel.innerHTML='';
   const map=allLoadouts(S.sport);
   const keys=Object.keys(map);
@@ -1044,7 +1057,7 @@ function clearState(){
 
 function snapshotLoadout(label){
   return {label,
-    backpackId:S.backpackId, bladderIds:S.bladderIds,
+    backpackId:S.backpackId, bladderId:S.bladderId,
     bottleLeft:S.bottleLeft, bottleRight:S.bottleRight,
     mainItems:[...S.mainItems], wornItems:[...S.wornItems]};
 }
@@ -1065,7 +1078,7 @@ Persistence.init(
       sport:       state.sport,
       loadoutKey:  state.loadoutKey,
       backpackId:  state.backpackId,
-      bladderIds:  state.bladderIds,
+      bladderId:  state.bladderId,
       bottleLeft:  state.bottleLeft,
       bottleRight: state.bottleRight,
       mainItems:   state.mainItems,
@@ -1079,15 +1092,28 @@ Persistence.init(
     _qaSeen  = !!qa.seen;
     _qaDraft = typeof qa.draft === 'string' ? qa.draft.slice(0, 20000) : '';
     const a = payload.activeLoadout || {};
+    // AUDIT #11 migration: stored loadouts from before the
+    // bladderIds->bladderId rename normalize on load
+    const migrateLoadouts = (all) => {
+      const out = {};
+      for(const sport of Object.keys(all || {})){
+        out[sport] = {};
+        for(const [k, lo] of Object.entries(all[sport])){
+          const { bladderIds, ...rest } = lo;
+          out[sport][k] = { ...rest, bladderId: lo.bladderId ?? bladderIds ?? null };
+        }
+      }
+      return out;
+    };
     return {
       useSampleGear: typeof payload.useSampleGear === 'boolean' ? payload.useSampleGear : true,
       userInventory: Array.isArray(payload.userInventory) ? payload.userInventory : [],
       customActivities: Array.isArray(payload.customActivities) ? payload.customActivities : [],
-      userLoadouts: payload.userLoadouts || {},
+      userLoadouts: migrateLoadouts(payload.userLoadouts),
       sport:        a.sport       || 'hike',
       loadoutKey:   a.loadoutKey  || '__default__',
       backpackId:   a.backpackId  || null,
-      bladderIds:   a.bladderIds  || null,
+      bladderId:   a.bladderId ?? a.bladderIds ?? null,  // bladderIds = pre-rename payloads
       bottleLeft:   a.bottleLeft  || null,
       bottleRight:  a.bottleRight || null,
       mainItems:    a.mainItems   || [],
@@ -1115,77 +1141,20 @@ function restoreState(){
   return true;
 }
 
-// ── XML HELPERS ──────────────────────────────────────────────────
-function esc(s){ return String(s==null?'':s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// ── XML / CSV HELPERS ────────────────────────────────────────────
+// esc + XML building live in xml.js (AUDIT #4); csvQ stays local.
 
 // CSV field quoting — wraps in quotes, escapes internal quotes
 function csvQ(s){ const v=String(s==null?'':s); return '"'+v.replace(/"/g,'""')+'"'; }
 
-function txt(tag,val){ return `<${tag}>${esc(val)}</${tag}>\n`; }
-
-// ── BUILD XML (new schema) ────────────────────────────────────────
+// ── BUILD XML ────────────────────────────────────────────────────
 function buildXML(){
-  // Export from the active inventory (sample or user)
-  const sourceInventory = S.useSampleGear ? SAMPLE_INVENTORY : S.userInventory;
-  let x = '<?xml version="1.0" encoding="UTF-8"?>\n<trailkit>\n';
-
-  // <yourgear>
-  x += '  <yourgear>\n';
-  sourceInventory.forEach(it=>{
-    x += '    <item>\n';
-    x += '      ' + txt('id',            it.id);
-    x += '      ' + txt('item-name',     it.name);
-    x += '      ' + txt('item-icon',     it.icon);
-    x += '      ' + txt('type',          it.type);
-    x += '      ' + txt('activity',      it.activity);
-    x += '      ' + txt('slots',         it.slots);
-    x += '      ' + txt('weight',        it.weightKg);
-    x += '      ' + txt('item-description', it.desc);
-    // <special> block — only include fields relevant to the item type
-    const hasSpecial = it.type==='Backpack' || it.type==='Bottle' || it.type==='Bladder';
-    if(hasSpecial){
-      x += '      <special>\n';
-      if(it.type==='Backpack'){
-        x += '        ' + txt('backpack-maxload',     it.maxKg    ?? '');
-        x += '        ' + txt('backpack-slots',       it.slots);
-      }
-      if(it.type==='Bottle'){
-        x += '        ' + txt('bottle-liters',        it.capacityL ?? '');
-      }
-      if(it.type==='Bladder'){
-        x += '        ' + txt('bladder-liters',       it.capacityL ?? '');
-      }
-      x += '      </special>\n';
-    }
-    x += '    </item>\n';
+  return buildTrailkitXML({
+    version: VERSION,
+    inventory: getInventory(),
+    userLoadouts: S.userLoadouts,
+    sports: allSports(),
   });
-  x += '  </yourgear>\n';
-
-  // <loadouts> — all user-saved loadouts across all sports
-  x += '  <loadouts>\n';
-  allSports().forEach(sport=>{
-    const map = S.userLoadouts[sport] || {};
-    Object.entries(map).forEach(([,lo])=>{
-      x += '    <loadout>\n';
-      x += '      ' + txt('loadout-activity', sport);
-      x += '      ' + txt('loadout-name',     lo.label || '');
-      x += '      <loadout-backpack>'     + (lo.backpackId  ? `<item>${esc(lo.backpackId)}</item>`  : '') + '</loadout-backpack>\n';
-      x += '      <loadout-bladder>'      + (lo.bladderIds  ? `<item>${esc(lo.bladderIds)}</item>`  : '') + '</loadout-bladder>\n';
-      x += '      <loadout-leftbottle>'   + (lo.bottleLeft  ? `<item>${esc(lo.bottleLeft)}</item>`  : '') + '</loadout-leftbottle>\n';
-      x += '      <loadout-rightbottle>'  + (lo.bottleRight ? `<item>${esc(lo.bottleRight)}</item>` : '') + '</loadout-rightbottle>\n';
-      x += '      <loadout-worn>\n';
-      (lo.wornItems||[]).forEach(id=>{ x += `        <item>${esc(id)}</item>\n`; });
-      x += '      </loadout-worn>\n';
-      x += '      <loadout-main>\n';
-      (lo.mainItems||[]).forEach(id=>{ x += `        <item>${esc(id)}</item>\n`; });
-      x += '      </loadout-main>\n';
-      x += '    </loadout>\n';
-    });
-  });
-  x += '  </loadouts>\n</trailkit>';
-  return x;
 }
 
 // ── DOWNLOAD BLOB ─────────────────────────────────────────────────
@@ -1223,7 +1192,7 @@ function exportPackingLists(){
     const map = allLoadouts(sport);
     Object.entries(map).forEach(([,lo])=>{
       const ids = [
-        lo.backpackId, lo.bladderIds, lo.bottleLeft, lo.bottleRight,
+        lo.backpackId, lo.bladderId, lo.bottleLeft, lo.bottleRight,
         ...(lo.mainItems||[]), ...(lo.wornItems||[])
       ].filter(Boolean);
       const names = ids.map(id=>resolveName(id)).filter(Boolean);
@@ -1271,7 +1240,7 @@ function exportPackingLists(){
   const html = PACKING_TEMPLATE
     .replace(/{{NOW}}/g, () => now)
     .replace('{{SAMPLE_NOTE}}', () => S.useSampleGear ? ' &nbsp;·&nbsp; Sample Gear' : '')
-    .replace('{{VERSION}}', () => '1.15')
+    .replace('{{VERSION}}', () => VERSION)
     .replace('{{CONTENT}}', () => content);
 
   const isSample = S.useSampleGear ? '-sample' : '';
@@ -1315,7 +1284,7 @@ function exportCSV(){
         if(it) slots.push({slot:slotLabel, it});
       };
       pushSlot(lo.backpackId,  'Backpack');
-      pushSlot(lo.bladderIds,  'Bladder');
+      pushSlot(lo.bladderId,  'Bladder');
       pushSlot(lo.bottleLeft,  'Left Bottle');
       pushSlot(lo.bottleRight, 'Right Bottle');
       (lo.mainItems||[]).forEach((id,i)=>pushSlot(id, `Main ${i+1}`));
@@ -1340,7 +1309,7 @@ function exportCSV(){
   sports.forEach(sport=>{
     const map = allLoadouts(sport);
     Object.entries(map).forEach(([,lo])=>{
-      const ids=[lo.backpackId,lo.bladderIds,lo.bottleLeft,lo.bottleRight,
+      const ids=[lo.backpackId,lo.bladderId,lo.bottleLeft,lo.bottleRight,
                  ...(lo.mainItems||[]),...(lo.wornItems||[])].filter(Boolean);
       let totalKg=0, count=0;
       ids.forEach(id=>{
@@ -1422,7 +1391,7 @@ function qaShiftChecks(mapFn){
   _qaChecks.clear();
   next.forEach(([k,v])=>_qaChecks.set(k,v));
 }
-function qaTa(){return document.getElementById('qaText');}
+function qaTa(){return $('qaText');}
 
 function qaPersistSoon(){clearTimeout(_qaSaveTimer);_qaSaveTimer=setTimeout(persistState,800);}
 function qaPersistNow(){clearTimeout(_qaSaveTimer);persistState();}
@@ -1433,12 +1402,12 @@ function qaPersistNow(){clearTimeout(_qaSaveTimer);persistState();}
 // the undo/nudge snapshots live in the action closures and die with
 // the toast.
 function hideToast(){
-  const t=document.getElementById('tkToast'); if(!t)return;
+  const t=$('tkToast'); if(!t)return;
   clearTimeout(_toastTimer);
   t.classList.remove('show');
 }
 function showToast(msg,opts){
-  const t=document.getElementById('tkToast'); if(!t)return;
+  const t=$('tkToast'); if(!t)return;
   const acts=(opts&&opts.actions)||[];
   t.textContent='';
   const m=document.createElement('span');
@@ -1512,7 +1481,7 @@ function qaOpenActPop(btn,r,eff){
   document.body.appendChild(pop);
   syncAll();
   _qaActPop={el:pop,btn,row:r,orig:eff};
-  document.getElementById('qaPreview')?.addEventListener('scroll',()=>qaCloseActPop(true),{once:true});
+  $('qaPreview')?.addEventListener('scroll',()=>qaCloseActPop(true),{once:true});
 }
 document.addEventListener('click',e=>{
   if(_qaActPop&&!_qaActPop.el.contains(e.target))qaCloseActPop(true);
@@ -1521,7 +1490,7 @@ document.addEventListener('click',e=>{
 // ── Preview rendering ──
 function qaRenderPreview(){
   qaCloseActPop(false);
-  const box=document.getElementById('qaPreview'); if(!box)return;
+  const box=$('qaPreview'); if(!box)return;
   const scroll=box.scrollTop;
   box.innerHTML='';
   if(!_qaRows.length && !_qaIgnored.length){
@@ -1556,7 +1525,7 @@ function qaRenderPreview(){
     tsel.value=r.type;
     tsel.addEventListener('change',()=>qaSetLineField(r.lineIndex,'type',tsel.value));
     const abtn=row.querySelector('.qa-act-btn');
-    const eff=r.activity==='__default__'?(document.getElementById('qaTagAs')?.value||'all'):r.activity;
+    const eff=r.activity==='__default__'?($('qaTagAs')?.value||'all'):r.activity;
     abtn.textContent=eff==='all'?'All':actLabel(eff);
     abtn.addEventListener('click',e=>{e.stopPropagation();qaOpenActPop(abtn,r,eff);});
     const iconEl=row.querySelector('.qa-row-icon');
@@ -1615,15 +1584,15 @@ function qaUpdateTally(){
   const n=Math.min(total,QA_COMMIT_CAP);
   const guessed=_qaRows.filter(r=>r.conf.type!=='given').length;
   const dups=_qaRows.filter(r=>r._dup).length;
-  const t=document.getElementById('qaTally');
+  const t=$('qaTally');
   if(t) t.innerHTML=`${n} item${n!==1?'s':''} · ${guessed} guessed · ${dups} duplicate${dups!==1?'s':''}`
     +(total>QA_COMMIT_CAP?` <span class="qa-cap-note">· capped at ${QA_COMMIT_CAP}</span>`:'');
-  const btn=document.getElementById('qaCommitBtn');
+  const btn=$('qaCommitBtn');
   if(btn){
     btn.textContent=n>0?`Add ${n} Item${n!==1?'s':''}`:'Add Items';
     btn.disabled=n===0;
   }
-  const seg=document.getElementById('qaSegPreview');
+  const seg=$('qaSegPreview');
   if(seg) seg.textContent=`Preview (${_qaRows.length})`;
 }
 
@@ -1687,7 +1656,7 @@ function qaPackLines(sport){
 }
 
 function qaRenderChips(){
-  const box=document.getElementById('qaChips'); if(!box)return;
+  const box=$('qaChips'); if(!box)return;
   box.innerHTML='';
   QA_SPORTS.forEach(sport=>{
     const b=document.createElement('button');
@@ -1698,7 +1667,7 @@ function qaRenderChips(){
     box.appendChild(b);
   });
   // Starter-loadout opt-in only matters while a pack chip is on
-  const opt=document.getElementById('qaLoadoutOpt');
+  const opt=$('qaLoadoutOpt');
   if(opt)opt.style.display=_qaPacksOn.size?'':'none';
 }
 
@@ -1746,12 +1715,12 @@ function qaCopyLegacySilent(){
 }
 
 function qaOpenPhotoModal(copied){
-  const okLine=document.getElementById('qaPhotoCopied');
-  const manual=document.getElementById('qaPhotoManual');
+  const okLine=$('qaPhotoCopied');
+  const manual=$('qaPhotoManual');
   if(okLine)okLine.style.display=copied?'':'none';
   if(manual)manual.style.display=copied?'none':'';
   if(!copied){
-    const ta=document.getElementById('qaPhotoPromptText');
+    const ta=$('qaPhotoPromptText');
     if(ta){ta.value=QA_AI_PROMPT;setTimeout(()=>{ta.focus();ta.select();},120);}
   }
   openModal('qaPhotoModal');
@@ -1769,7 +1738,7 @@ function qaPhotoClick(){
 function qaSetPane(which){
   const modal=document.querySelector('#quickAddModal .qa-modal');
   if(modal)modal.classList.toggle('qa-show-preview',which==='preview');
-  const w=document.getElementById('qaSegWrite'), p=document.getElementById('qaSegPreview');
+  const w=$('qaSegWrite'), p=$('qaSegPreview');
   if(w)w.classList.toggle('active',which==='write');
   if(p)p.classList.toggle('active',which==='preview');
 }
@@ -1777,7 +1746,7 @@ function qaSetPane(which){
 // ── Open ──
 function openQuickAdd(){
   _qaSeen=true;
-  document.getElementById('quickAddBtn')?.classList.remove('qa-unseen');
+  $('quickAddBtn')?.classList.remove('qa-unseen');
   const ta=qaTa();
   if(ta)ta.value=_qaDraft;
   qaSetPane('write');
@@ -1810,7 +1779,7 @@ function qaInstallStarterLoadouts(sports){
     const backpackId=resolve(lo.backpackId);
     if(!backpackId)continue;
     bySport[sport]={[lo.key]:{label:lo.label,backpackId,
-      bladderIds:resolve(lo.bladderIds),
+      bladderId:resolve(lo.bladderId),
       bottleLeft:resolve(lo.bottleLeft),
       bottleRight:resolve(lo.bottleRight),
       mainItems:lo.mainItems.map(resolve).filter(Boolean),
@@ -1855,7 +1824,7 @@ function qaCommit(){
   if(!inc.length)return;
   const bare=n=>n.toLowerCase().replace(/\s+/g,' ').trim();
   const taken=new Set(S.userInventory.map(i=>bare(i.name)));
-  const tagAs=document.getElementById('qaTagAs')?.value||'all';
+  const tagAs=$('qaTagAs')?.value||'all';
 
   // Snapshot everything the commit can touch, for the toast's Undo.
   // Items are appended, never mutated, so a shallow inventory copy is
@@ -1869,7 +1838,7 @@ function qaCommit(){
       userInventory:[...S.userInventory],
       useSampleGear:S.useSampleGear,
       loadoutKey:S.loadoutKey,
-      backpackId:S.backpackId, bladderIds:S.bladderIds,
+      backpackId:S.backpackId, bladderId:S.bladderId,
       bottleLeft:S.bottleLeft, bottleRight:S.bottleRight,
       mainItems:[...S.mainItems], wornItems:[...S.wornItems],
       userLoadouts:JSON.parse(JSON.stringify(S.userLoadouts)),
@@ -1920,7 +1889,7 @@ function qaCommit(){
   if(!added)return;
   store.dispatch({type:A.ADD_ITEMS, items:minted});
   qaCloseActPop(false);
-  const loSports=document.getElementById('qaLoadoutsToo')?.checked?[..._qaPacksOn]:[];
+  const loSports=$('qaLoadoutsToo')?.checked?[..._qaPacksOn]:[];
   _qaDraft=leftover.join('\n'); _qaPacksOn.clear(); _qaChecks.clear();
   const ta=qaTa(); if(ta)ta.value=_qaDraft;
   closeModal('quickAddModal');
@@ -1966,22 +1935,22 @@ qaTa().addEventListener('paste',function(){
   setTimeout(()=>{_qaDraft=this.value.slice(0,QA_DRAFT_MAX);qaRefresh();qaPersistSoon();},0);
 });
 
-document.getElementById('quickAddBtn').addEventListener('click',openQuickAdd);
-document.getElementById('addSampleWarnBulkBtn').addEventListener('click',()=>{
+$('quickAddBtn').addEventListener('click',openQuickAdd);
+$('addSampleWarnBulkBtn').addEventListener('click',()=>{
   closeModal('addToSampleWarnModal'); openQuickAdd();
 });
-document.getElementById('popQuickAddBtn').addEventListener('click',()=>{
+$('popQuickAddBtn').addEventListener('click',()=>{
   closeAllPopovers(); openQuickAdd();
 });
 
-document.getElementById('qaPhotoBtn').addEventListener('click',qaPhotoClick);
-document.getElementById('qaPhotoOkBtn').addEventListener('click',()=>closeModal('qaPhotoModal'));
+$('qaPhotoBtn').addEventListener('click',qaPhotoClick);
+$('qaPhotoOkBtn').addEventListener('click',()=>closeModal('qaPhotoModal'));
 
 // ── CSV template + upload ──
 // Same pipeline as typing: uploaded rows become grammar lines in the
 // draft, so the preview, dedup, and commit path treat them like any
 // other text. Junk rows fall into the parser's ignored bucket.
-document.getElementById('qaCsvTemplateBtn').addEventListener('click',()=>{
+$('qaCsvTemplateBtn').addEventListener('click',()=>{
   downloadBlob([
     'name,count,type,activity,weight,slots,capacity',
     'Wool Socks,3,Worn,hike,80g,,',
@@ -1992,10 +1961,10 @@ document.getElementById('qaCsvTemplateBtn').addEventListener('click',()=>{
     'Multi-Tool,1,,,,,',
   ].join('\n'),'TrailKit-gear-template.csv','text/csv');
 });
-document.getElementById('qaCsvUploadBtn').addEventListener('click',()=>{
-  document.getElementById('qaCsvFile').click();
+$('qaCsvUploadBtn').addEventListener('click',()=>{
+  $('qaCsvFile').click();
 });
-document.getElementById('qaCsvFile').addEventListener('change',function(){
+$('qaCsvFile').addEventListener('change',function(){
   const f=this.files&&this.files[0];
   this.value=''; // same file re-selectable after an edit
   if(!f)return;
@@ -2020,48 +1989,48 @@ document.getElementById('qaCsvFile').addEventListener('change',function(){
 // After the Edit Item save handler settles, open the next added pack.
 // The check is deferred: if the modal is still open the save was
 // rejected (add-mode validation), so don't stack another one.
-document.getElementById('editSaveBtn').addEventListener('click',()=>{
+$('editSaveBtn').addEventListener('click',()=>{
   if(!_qaNudgePacks.length)return;
   setTimeout(()=>{
-    if(!document.getElementById('itemDetailModal').classList.contains('open'))qaNudgeNext();
+    if(!$('itemDetailModal').classList.contains('open'))qaNudgeNext();
   },150);
 });
 // Closing the modal any way other than Save abandons the chain
-document.getElementById('itemDetailCloseBtn').addEventListener('click',()=>{_qaNudgePacks.length=0;});
+$('itemDetailCloseBtn').addEventListener('click',()=>{_qaNudgePacks.length=0;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')_qaNudgePacks.length=0;});
-document.getElementById('qaTagAs').addEventListener('change',()=>{qaRenderPreview();qaUpdateTally();});
-document.getElementById('qaSegWrite').addEventListener('click',()=>qaSetPane('write'));
-document.getElementById('qaSegPreview').addEventListener('click',()=>qaSetPane('preview'));
-document.getElementById('qaCommitBtn').addEventListener('click',qaCommit);
-document.getElementById('qaClearBtn').addEventListener('click',()=>{
+$('qaTagAs').addEventListener('change',()=>{qaRenderPreview();qaUpdateTally();});
+$('qaSegWrite').addEventListener('click',()=>qaSetPane('write'));
+$('qaSegPreview').addEventListener('click',()=>qaSetPane('preview'));
+$('qaCommitBtn').addEventListener('click',qaCommit);
+$('qaClearBtn').addEventListener('click',()=>{
   _qaDraft=''; _qaPacksOn.clear(); _qaChecks.clear();
   const ta=qaTa(); if(ta)ta.value='';
   qaRenderChips(); qaRefresh(); qaPersistNow();
 });
-document.getElementById('qaCancelBtn').addEventListener('click',()=>{
+$('qaCancelBtn').addEventListener('click',()=>{
   qaCloseActPop(false);
   closeModal('quickAddModal'); qaPersistNow();
 });
 // Backdrop and Escape dismissals are handled by the shared modal
 // plumbing; these only flush the draft so dismissal stays lossless.
-document.getElementById('quickAddModal').addEventListener('click',function(e){
+$('quickAddModal').addEventListener('click',function(e){
   if(e.target===this)qaPersistNow();
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&document.getElementById('quickAddModal').classList.contains('open')){
+  if(e.key==='Escape'&&$('quickAddModal').classList.contains('open')){
     qaCloseActPop(false); qaPersistNow();
   }
 });
 
 // Empty-stash CTA (delegated - the card is re-created every render)
-document.getElementById('stashGrid').addEventListener('click',e=>{
+$('stashGrid').addEventListener('click',e=>{
   const t=e.target.closest('[data-qa]'); if(!t)return;
   if(t.dataset.qa==='open')openQuickAdd();
   else if(t.dataset.qa==='sample'){
     // Mirror sampleToggleBtn: loadLoadout keeps the dropdown and the
     // board in sync (renderAll alone leaves a phantom selection)
     setSampleGear(true);clearState();populateLoadoutSel();
-    loadLoadout(document.getElementById('loadoutSelect')?.value||'__default__');
+    loadLoadout($('loadoutSelect')?.value||'__default__');
   }
 });
 
@@ -2073,64 +2042,14 @@ function importXML(xmlStr){
     if(doc.querySelector('parsererror'))
       throw new Error('Malformed XML — check the file and try again.');
 
-    let newItems = 0, newLoadouts = 0;
+    const parsed = parseTrailkitDoc(doc);
 
-    // ── <yourgear> items → always import into the user inventory.
-    // Collected first, then landed via one ADD_ITEMS dispatch
-    // (AUDIT #7: no direct state mutation).
-    const importedItems = [];
+    // Items already owned (by id) are skipped, not overwritten
     const existingIds = new Set(S.userInventory.map(i=>i.id));
-    doc.querySelectorAll('yourgear > item').forEach(el=>{
-      const id = el.querySelector('id')?.textContent?.trim();
-      if(!id) return;
-      // Skip if already exists in user inventory
-      if(existingIds.has(id)) return;
-      existingIds.add(id);
-
-      const type     = el.querySelector('type')?.textContent?.trim() || 'Item';
-      const sp       = el.querySelector('special');
-      const capL     = sp?.querySelector('bottle-liters,bladder-liters')?.textContent;
-      const maxKgVal = sp?.querySelector('backpack-maxload')?.textContent;
-
-      importedItems.push({
-        id,
-        name:      el.querySelector('item-name')?.textContent         || id,
-        icon:      el.querySelector('item-icon')?.textContent         || '📦',
-        type,
-        activity:  el.querySelector('activity')?.textContent?.trim()  || 'all',
-        slots:     parseInt(el.querySelector('slots')?.textContent)   || 1,
-        weightKg:  parseFloat(el.querySelector('weight')?.textContent)|| 0,
-        capacityL: capL     != null && capL     !== '' ? parseFloat(capL)     : null,
-        maxKg:     maxKgVal != null && maxKgVal !== '' ? parseFloat(maxKgVal) : null,
-        desc:      el.querySelector('item-description')?.textContent  || '',
-      });
-      newItems++;
-    });
+    const importedItems = parsed.items.filter(it=>!existingIds.has(it.id));
+    const newItems = importedItems.length, newLoadouts = parsed.loadoutCount;
     if(importedItems.length) store.dispatch({type:A.ADD_ITEMS, items:importedItems});
-
-    // ── <loadouts> → user loadouts, merged via INSTALL_LOADOUTS
-    // (AUDIT #7: this used to write S.userLoadouts directly)
-    const bySport = {};
-    doc.querySelectorAll('loadouts > loadout').forEach(el=>{
-      const sport = el.querySelector('loadout-activity')?.textContent?.trim();
-      const label = el.querySelector('loadout-name')?.textContent?.trim();
-      if(!sport || !label) return;
-      const key = label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') || 'loadout-'+Date.now();
-      const getItemId = sel => el.querySelector(sel+' > item')?.textContent?.trim() || null;
-      const getItems  = sel => [...el.querySelectorAll(sel+' > item')].map(e=>e.textContent.trim()).filter(Boolean);
-      if(!bySport[sport]) bySport[sport] = {};
-      bySport[sport][key] = {
-        label,
-        backpackId:  getItemId('loadout-backpack'),
-        bladderIds:  getItemId('loadout-bladder'),
-        bottleLeft:  getItemId('loadout-leftbottle'),
-        bottleRight: getItemId('loadout-rightbottle'),
-        wornItems:   getItems('loadout-worn'),
-        mainItems:   getItems('loadout-main'),
-      };
-      newLoadouts++;
-    });
-    if(newLoadouts) store.dispatch({type:A.INSTALL_LOADOUTS, bySport});
+    if(newLoadouts) store.dispatch({type:A.INSTALL_LOADOUTS, bySport: parsed.loadoutsBySport});
 
     // Switch to user gear mode after import. Gated like qaCommit:
     // clearState only when leaving sample mode, so importing more
@@ -2207,19 +2126,19 @@ function _epPool(){
 
 function buildEmojiPicker(){
   _epActiveCat = 0; _epSearch = '';
-  const cats = document.getElementById('emojiCats');
+  const cats = $('emojiCats');
   cats.innerHTML = '';
   EP_TABS.forEach((t,i)=>{
     const b = document.createElement('button');
     b.className = 'emoji-cat-btn' + (i===0?' active':'');
     b.title = t.name; b.textContent = t.label;
     b.addEventListener('click',()=>{ _epActiveCat=i; _epSearch='';
-      document.getElementById('emojiSearch').value='';
+      $('emojiSearch').value='';
       renderEmojiGrid(); _epUpdateCats(); });
     cats.appendChild(b);
   });
   // Re-clone search to remove stale listeners
-  const old = document.getElementById('emojiSearch');
+  const old = $('emojiSearch');
   const ns  = old.cloneNode(true); ns.value='';
   old.parentNode.replaceChild(ns, old);
   ns.addEventListener('input', function(){
@@ -2235,7 +2154,7 @@ function _epUpdateCats(){
 }
 
 function renderEmojiGrid(){
-  const grid = document.getElementById('emojiGrid');
+  const grid = $('emojiGrid');
   grid.innerHTML = '';
   const pool = _epPool();
   if(!pool.length){
@@ -2259,15 +2178,15 @@ function selectEmoji(em){
   const t = _epTarget;
   closeEmojiPicker();
   if(t){ t.onPick(em); return; }
-  document.getElementById('detailIcon').textContent = em;
+  $('detailIcon').textContent = em;
 }
 
 function openEmojiPicker(target){
   _epTarget = target || null;
-  const overlay = document.getElementById('emojiPickerOverlay');
-  const picker  = document.getElementById('emojiPicker');
+  const overlay = $('emojiPickerOverlay');
+  const picker  = $('emojiPicker');
   overlay.classList.add('open');
-  const r = (target ? target.anchor : document.getElementById('editIconBtn')).getBoundingClientRect();
+  const r = (target ? target.anchor : $('editIconBtn')).getBoundingClientRect();
   let left = Math.max(8, r.left - 40);
   let top  = r.bottom + 8;
   if(left + 328 > window.innerWidth) left = window.innerWidth - 336;
@@ -2278,13 +2197,13 @@ function openEmojiPicker(target){
 
 function closeEmojiPicker(){
   _epTarget = null;
-  document.getElementById('emojiPickerOverlay').classList.remove('open');
+  $('emojiPickerOverlay').classList.remove('open');
 }
 
-document.getElementById('emojiPickerOverlay').addEventListener('click', function(e){
+$('emojiPickerOverlay').addEventListener('click', function(e){
   if(e.target===this) closeEmojiPicker();
 });
-document.getElementById('editIconBtn').addEventListener('click', e=>{
+$('editIconBtn').addEventListener('click', e=>{
   e.stopPropagation(); openEmojiPicker();
 });
 
@@ -2303,21 +2222,21 @@ const TYPE_TEXT = {
 };
 
 function refreshTagPreview(){
-  const type=document.getElementById('editType').value;
-  const act =document.getElementById('editActivity').value;
+  const type=$('editType').value;
+  const act =$('editActivity').value;
   const c=TYPE_COLORS[type]||TYPE_COLORS.Item, tc=TYPE_TEXT[type]||TYPE_TEXT.Item;
   const sc=act==='all'?'tt-sport':`tt-sport-${actList(act)[0]}`;
   let html=`<span class="edit-tag" style="background:${c};color:${tc};border:1px solid rgba(255,255,255,0.1);">${type.toUpperCase()}</span>`;
   if(act!=='all') html+=`<span class="edit-tag ${sc}">${actLabel(act)}</span>`;
-  document.getElementById('editTagsPreview').innerHTML=html;
+  $('editTagsPreview').innerHTML=html;
 }
 
 function refreshSpecialSections(){
-  const type=document.getElementById('editType').value;
-  document.getElementById('editSpecialBackpack').style.display=type==='Backpack'?'':'none';
-  document.getElementById('editSpecialBottle').style.display  =type==='Bottle'  ?'':'none';
-  document.getElementById('editSpecialBladder').style.display =type==='Bladder' ?'':'none';
-  document.getElementById('editSlotsLabel').textContent=type==='Backpack'
+  const type=$('editType').value;
+  $('editSpecialBackpack').style.display=type==='Backpack'?'':'none';
+  $('editSpecialBottle').style.display  =type==='Bottle'  ?'':'none';
+  $('editSpecialBladder').style.display =type==='Bladder' ?'':'none';
+  $('editSlotsLabel').textContent=type==='Backpack'
     ?'Slots This Empty Backpack Takes Up':'Slots Used';
 }
 
@@ -2325,66 +2244,66 @@ function refreshSpecialSections(){
 function applyTypeDefaults(type){
   if(_modalMode!=='add') return;
   if(type==='Backpack'){
-    document.getElementById('editSlots').value   =7;
-    document.getElementById('editWeight').value  =0.45;
-    document.getElementById('editBpSlots').value =15;
-    document.getElementById('editBpMaxload').value=10;
-    document.getElementById('editBpBladder').checked    =true;
-    document.getElementById('editBpLeftBottle').checked =false;
-    document.getElementById('editBpRightBottle').checked=false;
+    $('editSlots').value   =7;
+    $('editWeight').value  =0.45;
+    $('editBpSlots').value =15;
+    $('editBpMaxload').value=10;
+    $('editBpBladder').checked    =true;
+    $('editBpLeftBottle').checked =false;
+    $('editBpRightBottle').checked=false;
   } else if(type==='Bladder'){
-    document.getElementById('editSlots').value  =1;
-    document.getElementById('editWeight').value =0.1;
-    document.getElementById('editBladderL').value=2;
+    $('editSlots').value  =1;
+    $('editWeight').value =0.1;
+    $('editBladderL').value=2;
   } else if(type==='Bottle'){
-    document.getElementById('editSlots').value  =1;
-    document.getElementById('editWeight').value =0.1;
-    document.getElementById('editBottleL').value=1;
+    $('editSlots').value  =1;
+    $('editWeight').value =0.1;
+    $('editBottleL').value=1;
   } else {
-    document.getElementById('editSlots').value  =1;
-    document.getElementById('editWeight').value =0.1;
+    $('editSlots').value  =1;
+    $('editWeight').value =0.1;
   }
 }
 
-document.getElementById('editType').addEventListener('change',()=>{
+$('editType').addEventListener('change',()=>{
   refreshTagPreview(); refreshSpecialSections();
-  applyTypeDefaults(document.getElementById('editType').value);
+  applyTypeDefaults($('editType').value);
 });
-document.getElementById('editActivity').addEventListener('change', refreshTagPreview);
+$('editActivity').addEventListener('change', refreshTagPreview);
 
 // ══════════════════════════════════════════════════════════════
 //  SHARED: read form → item object
 // ══════════════════════════════════════════════════════════════
 function readFormIntoItem(it){
-  const type=document.getElementById('editType').value;
-  it.icon    =document.getElementById('detailIcon').textContent.trim()||'📦';
-  it.name    =document.getElementById('editName').value.trim();
+  const type=$('editType').value;
+  it.icon    =$('detailIcon').textContent.trim()||'📦';
+  it.name    =$('editName').value.trim();
   it.type    =type;
-  it.activity=document.getElementById('editActivity').value;
-  it.weightKg=parseFloat(document.getElementById('editWeight').value)||0;
-  it.desc    =document.getElementById('editDesc').value.trim();
+  it.activity=$('editActivity').value;
+  it.weightKg=parseFloat($('editWeight').value)||0;
+  it.desc    =$('editDesc').value.trim();
   if(type==='Backpack'){
-    it.slots              =Math.max(1,parseInt(document.getElementById('editSlots').value)||1);
+    it.slots              =Math.max(1,parseInt($('editSlots').value)||1);
     // For backpack the displayed "slots used" field is editSlots; main compartment is editBpSlots
     // We intentionally store mainSlots separately when displaying backpack in loadout
     // But in the data model, 'slots' = main compartment capacity for backpacks
-    it.slots              =Math.max(1,parseInt(document.getElementById('editBpSlots').value)||1);
-    it.packSlots          =Math.max(1,parseInt(document.getElementById('editSlots').value)||1);
-    it.maxKg              =parseFloat(document.getElementById('editBpMaxload').value)||null;
-    it.backpackBladder    =document.getElementById('editBpBladder').checked;
-    it.backpackLeftBottle =document.getElementById('editBpLeftBottle').checked;
-    it.backpackRightBottle=document.getElementById('editBpRightBottle').checked;
+    it.slots              =Math.max(1,parseInt($('editBpSlots').value)||1);
+    it.packSlots          =Math.max(1,parseInt($('editSlots').value)||1);
+    it.maxKg              =parseFloat($('editBpMaxload').value)||null;
+    it.backpackBladder    =$('editBpBladder').checked;
+    it.backpackLeftBottle =$('editBpLeftBottle').checked;
+    it.backpackRightBottle=$('editBpRightBottle').checked;
     it.capacityL=null;
   } else if(type==='Bottle'){
-    it.slots    =Math.max(1,parseInt(document.getElementById('editSlots').value)||1);
-    it.capacityL=parseFloat(document.getElementById('editBottleL').value)||null;
+    it.slots    =Math.max(1,parseInt($('editSlots').value)||1);
+    it.capacityL=parseFloat($('editBottleL').value)||null;
     it.maxKg=null;
   } else if(type==='Bladder'){
-    it.slots    =Math.max(1,parseInt(document.getElementById('editSlots').value)||1);
-    it.capacityL=parseFloat(document.getElementById('editBladderL').value)||null;
+    it.slots    =Math.max(1,parseInt($('editSlots').value)||1);
+    it.capacityL=parseFloat($('editBladderL').value)||null;
     it.maxKg=null;
   } else {
-    it.slots    =Math.max(1,parseInt(document.getElementById('editSlots').value)||1);
+    it.slots    =Math.max(1,parseInt($('editSlots').value)||1);
     it.capacityL=null; it.maxKg=null;
   }
   return it;
@@ -2396,15 +2315,15 @@ function readFormIntoItem(it){
 function openItemDetail(it){
   if(!it) return;
   _editingItem=it; _modalMode='edit';
-  document.getElementById('editModalModeLabel').textContent='Edit Item';
-  document.getElementById('editSaveBtn').textContent='Save Changes';
+  $('editModalModeLabel').textContent='Edit Item';
+  $('editSaveBtn').textContent='Save Changes';
 
-  document.getElementById('detailIcon').textContent =it.icon||'📦';
-  document.getElementById('editName').value         =it.name||'';
-  document.getElementById('editType').value         =it.type||'Item';
+  $('detailIcon').textContent =it.icon||'📦';
+  $('editName').value         =it.name||'';
+  $('editType').value         =it.type||'Item';
   // Multi-activity items (comma lists from Quick Add) need a dynamic
   // option or the single-select silently reverts them on save
-  const actSel=document.getElementById('editActivity');
+  const actSel=$('editActivity');
   actSel.querySelectorAll('option[data-multi]').forEach(o=>o.remove());
   const av=it.activity||'all';
   if(av.includes(',')){
@@ -2414,16 +2333,16 @@ function openItemDetail(it){
   }
   actSel.value=av;
   // For backpacks "Slots This Empty Backpack Takes Up" = packSlots; "Main Compartment Slots" = slots
-  document.getElementById('editSlots').value        =it.type==='Backpack'?(it.packSlots??it.slots??7):it.slots??1;
-  document.getElementById('editWeight').value       =it.weightKg??0;
-  document.getElementById('editDesc').value         =it.desc||'';
-  document.getElementById('editBpSlots').value      =it.type==='Backpack'?(it.slots??15):15;
-  document.getElementById('editBpMaxload').value    =it.maxKg??'';
-  document.getElementById('editBpBladder').checked    =it.backpackBladder    !==false;
-  document.getElementById('editBpLeftBottle').checked =it.backpackLeftBottle !==false;
-  document.getElementById('editBpRightBottle').checked=it.backpackRightBottle!==false;
-  document.getElementById('editBottleL').value      =it.type==='Bottle' ?(it.capacityL??1):'';
-  document.getElementById('editBladderL').value     =it.type==='Bladder'?(it.capacityL??2):'';
+  $('editSlots').value        =it.type==='Backpack'?(it.packSlots??it.slots??7):it.slots??1;
+  $('editWeight').value       =it.weightKg??0;
+  $('editDesc').value         =it.desc||'';
+  $('editBpSlots').value      =it.type==='Backpack'?(it.slots??15):15;
+  $('editBpMaxload').value    =it.maxKg??'';
+  $('editBpBladder').checked    =it.backpackBladder    !==false;
+  $('editBpLeftBottle').checked =it.backpackLeftBottle !==false;
+  $('editBpRightBottle').checked=it.backpackRightBottle!==false;
+  $('editBottleL').value      =it.type==='Bottle' ?(it.capacityL??1):'';
+  $('editBladderL').value     =it.type==='Bladder'?(it.capacityL??2):'';
 
   refreshTagPreview(); refreshSpecialSections();
   openModal('itemDetailModal');
@@ -2434,44 +2353,44 @@ function openItemDetail(it){
 // ══════════════════════════════════════════════════════════════
 function openAddItemModal(toSample){
   _editingItem=null; _modalMode='add'; _addToSample=!!toSample;
-  document.getElementById('editModalModeLabel').textContent=toSample?'Add New Sample Gear':'Add New Item';
-  document.getElementById('editSaveBtn').textContent=toSample?'Save New Sample Gear':'Save Item';
+  $('editModalModeLabel').textContent=toSample?'Add New Sample Gear':'Add New Item';
+  $('editSaveBtn').textContent=toSample?'Save New Sample Gear':'Save Item';
 
-  document.getElementById('detailIcon').textContent='📦';
-  document.getElementById('editName').value    ='';
-  document.getElementById('editType').value    ='Item';
-  document.getElementById('editActivity').value='all';
-  document.getElementById('editSlots').value   =1;
-  document.getElementById('editWeight').value  =0.1;
-  document.getElementById('editDesc').value    ='';
+  $('detailIcon').textContent='📦';
+  $('editName').value    ='';
+  $('editType').value    ='Item';
+  $('editActivity').value='all';
+  $('editSlots').value   =1;
+  $('editWeight').value  =0.1;
+  $('editDesc').value    ='';
   // Backpack defaults
-  document.getElementById('editBpSlots').value =15;
-  document.getElementById('editBpMaxload').value=10;
-  document.getElementById('editBpBladder').checked    =true;
-  document.getElementById('editBpLeftBottle').checked =false;
-  document.getElementById('editBpRightBottle').checked=false;
+  $('editBpSlots').value =15;
+  $('editBpMaxload').value=10;
+  $('editBpBladder').checked    =true;
+  $('editBpLeftBottle').checked =false;
+  $('editBpRightBottle').checked=false;
   // Bottle/Bladder defaults
-  document.getElementById('editBottleL').value =1;
-  document.getElementById('editBladderL').value=2;
+  $('editBottleL').value =1;
+  $('editBladderL').value=2;
 
   refreshTagPreview(); refreshSpecialSections();
   openModal('itemDetailModal');
-  setTimeout(()=>document.getElementById('editName').focus(), 120);
+  setTimeout(()=>$('editName').focus(), 120);
 }
 
 // ══════════════════════════════════════════════════════════════
 //  ADD ITEM BUTTON → warn if sample gear active
 // ══════════════════════════════════════════════════════════════
-document.getElementById('addItemBtn').addEventListener('click',()=>{
+$('addItemBtn').addEventListener('click',()=>{
   if(S.useSampleGear){ openModal('addToSampleWarnModal'); }
   else             { openAddItemModal(false); }
 });
-document.getElementById('addSampleWarnSwitchBtn').addEventListener('click',()=>{
+$('addSampleWarnSwitchBtn').addEventListener('click',()=>{
   closeModal('addToSampleWarnModal');
   setSampleGear(false); clearState(); populateLoadoutSel(); renderAll();
   openAddItemModal(false);
 });
-document.getElementById('addSampleWarnSampleBtn').addEventListener('click',()=>{
+$('addSampleWarnSampleBtn').addEventListener('click',()=>{
   closeModal('addToSampleWarnModal');
   openAddItemModal(true);
 });
@@ -2479,7 +2398,7 @@ document.getElementById('addSampleWarnSampleBtn').addEventListener('click',()=>{
 // ══════════════════════════════════════════════════════════════
 //  SAVE — handles both edit and add modes
 // ══════════════════════════════════════════════════════════════
-document.getElementById('editSaveBtn').addEventListener('click',()=>{
+$('editSaveBtn').addEventListener('click',()=>{
   if(_modalMode==='edit'){
     if(!_editingItem) return;
     const patch = readFormIntoItem({});
@@ -2498,7 +2417,7 @@ document.getElementById('editSaveBtn').addEventListener('click',()=>{
       id:'user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)
     });
     if(!newIt.name){
-      const el=document.getElementById('editName');
+      const el=$('editName');
       el.focus(); el.style.borderColor='var(--accent-red)';
       setTimeout(()=>el.style.borderColor='',1800);
       return;
@@ -2510,7 +2429,7 @@ document.getElementById('editSaveBtn').addEventListener('click',()=>{
   }
 });
 
-document.getElementById('itemDetailCloseBtn').addEventListener('click',()=>{
+$('itemDetailCloseBtn').addEventListener('click',()=>{
   closeModal('itemDetailModal'); closeEmojiPicker();
 });
 
@@ -2521,19 +2440,19 @@ let editHoverEl = null;
 function setEditMode(on){
   editModeActive = on;
   document.body.classList.toggle('edit-mode', on);
-  document.getElementById('editItemBtn').classList.toggle('active', on);
+  $('editItemBtn').classList.toggle('active', on);
   if(!on && editHoverEl){
     editHoverEl.classList.remove('edit-hover');
     editHoverEl = null;
   }
 }
 
-document.getElementById('editItemBtn').addEventListener('click', ()=>{
+$('editItemBtn').addEventListener('click', ()=>{
   setEditMode(!editModeActive);
 });
 
 // Highlight slot under cursor when edit mode is on
-document.getElementById('stashGrid').addEventListener('mouseover', e=>{
+$('stashGrid').addEventListener('mouseover', e=>{
   if(!editModeActive) return;
   const slot = e.target.closest('.slot[data-id]');
   if(editHoverEl && editHoverEl !== slot) {
@@ -2543,7 +2462,7 @@ document.getElementById('stashGrid').addEventListener('mouseover', e=>{
   if(slot){ slot.classList.add('edit-hover'); editHoverEl = slot; }
 });
 
-document.getElementById('stashGrid').addEventListener('mouseout', e=>{
+$('stashGrid').addEventListener('mouseout', e=>{
   if(!editModeActive) return;
   const slot = e.target.closest('.slot[data-id]');
   if(slot && !slot.contains(e.relatedTarget)){
@@ -2552,7 +2471,7 @@ document.getElementById('stashGrid').addEventListener('mouseout', e=>{
   }
 });
 
-document.getElementById('stashGrid').addEventListener('click', e=>{
+$('stashGrid').addEventListener('click', e=>{
   if(!editModeActive) return;
   const slot = e.target.closest('.slot[data-id]');
   if(!slot) return;
@@ -2579,8 +2498,8 @@ function setSampleGear(on){
 // via .sample-active) and the toggle. Title carries the action.
 function syncSampleChrome(){
   const on = S.useSampleGear;
-  const toggleBtn  = document.getElementById('sampleToggleBtn');
-  const panelTitle = document.getElementById('stashPanelTitle');
+  const toggleBtn  = $('sampleToggleBtn');
+  const panelTitle = $('stashPanelTitle');
   if(toggleBtn){
     toggleBtn.textContent = on ? '⬡ Sample Gear' : 'Use Sample Gear';
     toggleBtn.title = on ? 'Sample gear is in use - click to switch back to Your Gear'
@@ -2590,11 +2509,11 @@ function syncSampleChrome(){
   if(panelTitle) panelTitle.textContent = 'Inventory';
 }
 
-document.getElementById('sampleToggleBtn').addEventListener('click', ()=>{
+$('sampleToggleBtn').addEventListener('click', ()=>{
   setSampleGear(!S.useSampleGear);
   clearState();
   populateLoadoutSel();
-  loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
+  loadLoadout($('loadoutSelect')?.value || '__default__');
 });
 
 // ── EXPORT MODAL + SAMPLE GEAR WARNING ───────────────────────────
@@ -2610,7 +2529,7 @@ function maybeExport(exportFn, type){
   closeAllPopovers();
   if(S.useSampleGear){
     pendingExportFn = exportFn;
-    const msgEl = document.getElementById('sampleExportWarnMsg');
+    const msgEl = $('sampleExportWarnMsg');
     if(msgEl) msgEl.textContent = EXPORT_WARN_MSGS[type] || EXPORT_WARN_MSGS.xml;
     openModal('sampleExportWarnModal');
   } else {
@@ -2619,21 +2538,21 @@ function maybeExport(exportFn, type){
 }
 
 // ── ABOUT / HELP MODAL ───────────────────────────────────────────
-document.getElementById('fmAboutBtn').addEventListener('click', ()=>{
+$('fmAboutBtn').addEventListener('click', ()=>{
   closeAllPopovers(); openModal('aboutModal');
 });
-document.getElementById('aboutCloseBtn').addEventListener('click', ()=>closeModal('aboutModal'));
+$('aboutCloseBtn').addEventListener('click', ()=>closeModal('aboutModal'));
 
-document.getElementById('dlTrailkitBtn').addEventListener('click',  ()=>maybeExport(exportXML,           'xml'));
-document.getElementById('dlPackingBtn').addEventListener('click',   ()=>maybeExport(exportPackingLists,   'packing'));
-document.getElementById('dlCsvBtn').addEventListener('click',       ()=>maybeExport(exportCSV,            'csv'));
+$('dlTrailkitBtn').addEventListener('click',  ()=>maybeExport(exportXML,           'xml'));
+$('dlPackingBtn').addEventListener('click',   ()=>maybeExport(exportPackingLists,   'packing'));
+$('dlCsvBtn').addEventListener('click',       ()=>maybeExport(exportCSV,            'csv'));
 
 // Sample gear export warning modal
-document.getElementById('sampleWarnCancelBtn').addEventListener('click', ()=>{
+$('sampleWarnCancelBtn').addEventListener('click', ()=>{
   pendingExportFn = null;
   closeModal('sampleExportWarnModal');
 });
-document.getElementById('sampleWarnExportBtn').addEventListener('click', ()=>{
+$('sampleWarnExportBtn').addEventListener('click', ()=>{
   closeModal('sampleExportWarnModal');
   if(pendingExportFn){ pendingExportFn(); pendingExportFn = null; }
 });
@@ -2641,22 +2560,22 @@ document.getElementById('sampleWarnExportBtn').addEventListener('click', ()=>{
 // ── FILE MENU ────────────────────────────────────────────────────
 // One popover consolidating Import / Export / About (v1.15). Also the
 // anchor the mobile Etc-tab import/export buttons delegate to.
-document.getElementById('fileMenuBtn').addEventListener('click', function(e){
+$('fileMenuBtn').addEventListener('click', function(e){
   e.stopPropagation();
-  const overlay = document.getElementById('fileOverlay');
-  const pop     = document.getElementById('fileMenu');
+  const overlay = $('fileOverlay');
+  const pop     = $('fileMenu');
   const rect    = this.getBoundingClientRect();
   pop.style.right = (window.innerWidth - rect.right) + 'px';
   pop.style.top   = (rect.bottom + 6) + 'px';
   pop.style.left  = 'auto';
   overlay.classList.toggle('open');
 });
-document.getElementById('uploadTrailkitBtn').addEventListener('click', ()=>{
+$('uploadTrailkitBtn').addEventListener('click', ()=>{
   // Mode flips inside importXML on success - flipping here would
   // strand the user in an empty inventory if they cancel the dialog
-  document.getElementById('importFileInput').click();
+  $('importFileInput').click();
 });
-document.getElementById('importFileInput').addEventListener('change', function(){
+$('importFileInput').addEventListener('change', function(){
   const file = this.files[0]; if(!file) return;
   handleImportFile(file);
   closeAllPopovers();
@@ -2665,11 +2584,11 @@ document.getElementById('importFileInput').addEventListener('change', function()
 
 // Mobile tab bar, Etc-tab export, essential-modal close - wired
 // here because inline onclick is dead inside the bundled IIFE
-document.getElementById('mTabGear').addEventListener('click', ()=>mSetTab('gear'));
-document.getElementById('mTabPack').addEventListener('click', ()=>mSetTab('pack'));
-document.getElementById('mTabStats').addEventListener('click', ()=>mSetTab('stats'));
-document.getElementById('mExportBtn').addEventListener('click', ()=>document.getElementById('fileMenuBtn').click());
-document.getElementById('essModalCloseBtn').addEventListener('click', ()=>closeModal('essentialModal'));
+$('mTabGear').addEventListener('click', ()=>mSetTab('gear'));
+$('mTabPack').addEventListener('click', ()=>mSetTab('pack'));
+$('mTabStats').addEventListener('click', ()=>mSetTab('stats'));
+$('mExportBtn').addEventListener('click', ()=>$('fileMenuBtn').click());
+$('essModalCloseBtn').addEventListener('click', ()=>closeModal('essentialModal'));
 
 // Close popovers when clicking outside
 document.addEventListener('click', e=>{
@@ -2706,14 +2625,14 @@ function refreshActivities(){
 
 function populateSportSelects(){
   const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;return o;};
-  const as=document.getElementById('activitySelect');
+  const as=$('activitySelect');
   if(as){
     as.innerHTML='';
     allSports().forEach(k=>as.appendChild(opt(k,`${sportEmoji(k)} ${sportLabel(k)}`)));
     as.appendChild(opt('__manage__','⚙ Manage Activities…'));
     as.value=allSports().includes(S.sport)?S.sport:'hike';
   }
-  const gf=document.getElementById('gearFilter');
+  const gf=$('gearFilter');
   if(gf){
     const cur=gf.value||S.gearFilter||'all';
     gf.innerHTML='';
@@ -2721,7 +2640,7 @@ function populateSportSelects(){
     allSports().forEach(k=>gf.appendChild(opt(k,`${sportEmoji(k)} ${sportLabel(k)}`)));
     gf.value=['all',...allSports()].includes(cur)?cur:'all';
   }
-  const qt=document.getElementById('qaTagAs');
+  const qt=$('qaTagAs');
   if(qt){
     const cur=qt.value||'all';
     qt.innerHTML='';
@@ -2729,7 +2648,7 @@ function populateSportSelects(){
     allSports().forEach(k=>qt.appendChild(opt(k,sportLabel(k))));
     qt.value=['all',...allSports()].includes(cur)?cur:'all';
   }
-  const ea=document.getElementById('editActivity');
+  const ea=$('editActivity');
   if(ea){
     const cur=ea.value||'all';
     ea.innerHTML='';
@@ -2740,7 +2659,7 @@ function populateSportSelects(){
 }
 
 function renderActivitiesModal(){
-  const bl=document.getElementById('actBuiltinList');
+  const bl=$('actBuiltinList');
   bl.innerHTML='';
   SPORT_KEYS.forEach(k=>{
     const row=document.createElement('div');
@@ -2750,7 +2669,7 @@ function renderActivitiesModal(){
       <span class="act-builtin-tag">built-in</span>`;
     bl.appendChild(row);
   });
-  const cl=document.getElementById('actCustomList');
+  const cl=$('actCustomList');
   cl.innerHTML='';
   S.customActivities.forEach(c=>{
     const row=document.createElement('div');
@@ -2815,7 +2734,7 @@ function renderActivitiesModal(){
     });
     cl.appendChild(row);
   });
-  document.getElementById('actAddBtn').style.display =
+  $('actAddBtn').style.display =
     S.customActivities.length>=ACT_CUSTOM_CAP ? 'none' : '';
 }
 
@@ -2824,7 +2743,7 @@ function openActivitiesModal(){
   openModal('activitiesModal');
 }
 
-document.getElementById('actAddBtn').addEventListener('click',()=>{
+$('actAddBtn').addEventListener('click',()=>{
   if(S.customActivities.length>=ACT_CUSTOM_CAP) return;
   const label=`New Activity ${S.customActivities.length+1}`;
   const used=new Set(S.customActivities.map(c=>c.color));
@@ -2835,10 +2754,10 @@ document.getElementById('actAddBtn').addEventListener('click',()=>{
   const last=ins[ins.length-1];
   if(last){ last.focus(); last.select(); }
 });
-document.getElementById('actCloseBtn').addEventListener('click',()=>closeModal('activitiesModal'));
+$('actCloseBtn').addEventListener('click',()=>closeModal('activitiesModal'));
 
 // ── ACTIVITY / LOADOUT SELECTS ───────────────────────────────────
-document.getElementById('activitySelect').addEventListener('change', function(){
+$('activitySelect').addEventListener('change', function(){
   if(this.value==='__manage__'){
     this.value=S.sport;             // never leave ⚙ selected
     openActivitiesModal();
@@ -2849,47 +2768,47 @@ document.getElementById('activitySelect').addEventListener('change', function(){
   if(!allSports().includes(this.value)){ this.value=S.sport; return; }
   store.dispatch({ type: A.SET_SPORT, sport: this.value });
   populateLoadoutSel();
-  loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
+  loadLoadout($('loadoutSelect')?.value || '__default__');
 });
-document.getElementById('loadoutSelect').addEventListener('change', function(){
+$('loadoutSelect').addEventListener('change', function(){
   loadLoadout(this.value);
 });
 
 // ── GEAR FILTER ──────────────────────────────────────────────────
-document.getElementById('gearFilter').addEventListener('change', function(){
+$('gearFilter').addEventListener('change', function(){
   store.dispatch({ type: A.SET_GEAR_FILTER, filter: this.value });
   renderStash();
 });
 
 // ── SAVE NEW ─────────────────────────────────────────────────────
-const saveModal  = document.getElementById('saveModal');
-const saveInput  = document.getElementById('saveInput');
-document.getElementById('saveNewBtn').addEventListener('click', ()=>{
+const saveModal  = $('saveModal');
+const saveInput  = $('saveInput');
+$('saveNewBtn').addEventListener('click', ()=>{
   saveInput.value = ''; openModal('saveModal'); setTimeout(()=>saveInput.focus(), 150);
 });
-document.getElementById('saveCancelBtn').addEventListener('click', ()=>closeModal('saveModal'));
-document.getElementById('saveConfirmBtn').addEventListener('click', ()=>{
+$('saveCancelBtn').addEventListener('click', ()=>closeModal('saveModal'));
+$('saveConfirmBtn').addEventListener('click', ()=>{
   const label = saveInput.value.trim(); if(!label){ saveInput.focus(); return; }
   const key   = label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   store.dispatch({ type:A.SAVE_LOADOUT, sport:S.sport, key, snapshot:snapshotLoadout(label) });
   populateLoadoutSel();
-  document.getElementById('loadoutSelect').value = key;
+  $('loadoutSelect').value = key;
   closeModal('saveModal');
   persistState(); // the save must survive an immediate tab close
 });
 saveInput.addEventListener('keydown', e=>{
-  if(e.key==='Enter') document.getElementById('saveConfirmBtn').click();
+  if(e.key==='Enter') $('saveConfirmBtn').click();
 });
 
 // ── OVERWRITE ────────────────────────────────────────────────────
-document.getElementById('overwriteBtn').addEventListener('click', ()=>{
+$('overwriteBtn').addEventListener('click', ()=>{
   const lo = allLoadouts(S.sport)[S.loadoutKey];
-  document.getElementById('overwriteMsg').textContent =
+  $('overwriteMsg').textContent =
     lo ? `Overwrite "${lo.label}" with your current loadout?` : 'Overwrite selected loadout?';
   openModal('overwriteModal');
 });
-document.getElementById('overwriteCancelBtn').addEventListener('click', ()=>closeModal('overwriteModal'));
-document.getElementById('overwriteConfirmBtn').addEventListener('click', ()=>{
+$('overwriteCancelBtn').addEventListener('click', ()=>closeModal('overwriteModal'));
+$('overwriteConfirmBtn').addEventListener('click', ()=>{
   const existing = allLoadouts(S.sport)[S.loadoutKey];
   store.dispatch({ type:A.SAVE_LOADOUT, sport:S.sport, key:S.loadoutKey, snapshot:snapshotLoadout((existing||{}).label || S.loadoutKey) });
   closeModal('overwriteModal');
@@ -2900,34 +2819,34 @@ document.getElementById('overwriteConfirmBtn').addEventListener('click', ()=>{
 // Deletes the selected SAVED user loadout (the board is untouched
 // until reload; gear items always stay in the inventory). Sample
 // loadouts are baked in and refuse.
-document.getElementById('deleteLoadoutBtn').addEventListener('click', ()=>{
+$('deleteLoadoutBtn').addEventListener('click', ()=>{
   const key=S.loadoutKey;
   if(key==='__default__'){ showToast('No saved loadout selected'); return; }
   const userLo=S.userLoadouts[S.sport]?.[key];
   if(!userLo){ showToast('Sample loadouts are built in and can\'t be deleted'); return; }
-  document.getElementById('deleteLoMsg').textContent=
+  $('deleteLoMsg').textContent=
     `Delete "${userLo.label||key}"? Your gear items stay in the inventory.`;
   openModal('deleteLoModal');
 });
-document.getElementById('deleteLoCancelBtn').addEventListener('click', ()=>closeModal('deleteLoModal'));
-document.getElementById('deleteLoConfirmBtn').addEventListener('click', ()=>{
+$('deleteLoCancelBtn').addEventListener('click', ()=>closeModal('deleteLoModal'));
+$('deleteLoConfirmBtn').addEventListener('click', ()=>{
   store.dispatch({ type:A.DELETE_LOADOUT, sport:S.sport, key:S.loadoutKey });
   closeModal('deleteLoModal');
   clearState();
   populateLoadoutSel();
-  loadLoadout(document.getElementById('loadoutSelect')?.value || '__default__');
+  loadLoadout($('loadoutSelect')?.value || '__default__');
 });
 
 // ── CLEAR ────────────────────────────────────────────────────────
-document.getElementById('clearBtn').addEventListener('click', ()=>openModal('clearModal'));
-document.getElementById('clearCancelBtn').addEventListener('click', ()=>closeModal('clearModal'));
-document.getElementById('clearConfirmBtn').addEventListener('click', ()=>{
+$('clearBtn').addEventListener('click', ()=>openModal('clearModal'));
+$('clearCancelBtn').addEventListener('click', ()=>closeModal('clearModal'));
+$('clearConfirmBtn').addEventListener('click', ()=>{
   clearState(); closeModal('clearModal'); renderAll();
 });
 
 // ── THEME ────────────────────────────────────────────────────────
 let isLight = false;
-document.getElementById('themeToggle').addEventListener('click', ()=>{
+$('themeToggle').addEventListener('click', ()=>{
   isLight = !isLight;
   document.body.classList.toggle('light', isLight);
 });
@@ -2944,17 +2863,17 @@ const ESS_META = {
 function openEssentialPopup(type){
   const meta = ESS_META[type]; if(!meta) return;
   // Collect all loadout item IDs
-  const ids = [S.backpackId, ...(Array.isArray(S.bladderIds)?S.bladderIds:[S.bladderIds].filter(Boolean)), S.bottleLeft, S.bottleRight,
+  const ids = [S.backpackId, ...(Array.isArray(S.bladderId)?S.bladderId:[S.bladderId].filter(Boolean)), S.bottleLeft, S.bottleRight,
                ...S.mainItems, ...S.wornItems].filter(Boolean);
   const items = ids.map(id=>itemById(id)).filter(it=>it && it.type===type);
 
-  document.getElementById('essModalIcon').textContent  = meta.icon;
-  document.getElementById('essModalTitle').textContent = meta.label;
-  document.getElementById('essModalSub').textContent   =
+  $('essModalIcon').textContent  = meta.icon;
+  $('essModalTitle').textContent = meta.label;
+  $('essModalSub').textContent   =
     items.length ? `${items.length} item${items.length!==1?'s':''} packed` : 'None packed';
 
-  const list  = document.getElementById('essModalList');
-  const empty = document.getElementById('essModalEmpty');
+  const list  = $('essModalList');
+  const empty = $('essModalEmpty');
   list.innerHTML = '';
 
   if(!items.length){
@@ -2987,7 +2906,7 @@ function openEssentialPopup(type){
 function wireEssentialCounters(){
   ['ctr-Safety','ctr-Medical','ctr-Tools',
    'mCtr-Safety','mCtr-Medical','mCtr-Tools'].forEach(id=>{
-    const el = document.getElementById(id);
+    const el = $(id);
     if(!el) return;
     const type = id.replace(/^m?[Cc]tr-/,'');
     // Remove any previous listener before re-adding (safe re-wire)
@@ -3023,7 +2942,7 @@ function mSetTab(tab){
   // Panel visibility
   const stash  = document.querySelector('.stash-panel');
   const right  = document.querySelector('.right-panel');
-  const stats  = document.getElementById('mStatsPanel');
+  const stats  = $('mStatsPanel');
 
   stash.classList.toggle('m-active',  tab === 'gear');
   right.classList.toggle('m-active',  tab === 'pack');
@@ -3031,7 +2950,7 @@ function mSetTab(tab){
 
   // Tab button highlights
   ['gear','pack','stats'].forEach(t=>{
-    const btn = document.getElementById(`mTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    const btn = $(`mTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
     if(btn) btn.classList.toggle('m-tab-active', t === tab);
   });
 
@@ -3049,7 +2968,7 @@ function mSetTab(tab){
 
 // ── Update hint banner text based on current state ───────────
 function mUpdateHint(){
-  const hint = document.getElementById('mTapHint');
+  const hint = $('mTapHint');
   if(!hint) return;
   if(!isMobile()){ hint.style.display='none'; return; }
   if(!_mSel){ hint.style.display='none'; return; }
@@ -3073,7 +2992,7 @@ function mClearSel(){
   }
   _mSel = null;
   // Hide hint banner
-  const hint = document.getElementById('mTapHint');
+  const hint = $('mTapHint');
   if(hint) hint.style.display = 'none';
   // Remove drop-ready highlights from all slots
   document.querySelectorAll('.m-drop-ready').forEach(el=>el.classList.remove('m-drop-ready'));
@@ -3131,7 +3050,7 @@ function mTapDropZone(zone, idx){
   const check = RulesEngine.validate(it, zone, S);
   if(!check.valid){
     // Flash hint with reason
-    const hint = document.getElementById('mTapHint');
+    const hint = $('mTapHint');
     if(hint){
       hint.textContent = `⚠ ${check.reason}`;
       hint.style.display = 'block';
@@ -3215,7 +3134,7 @@ function mTapSwallowed(){
 
 function mItemInZone(zone){
   if(zone==='backpack')     return itemById(S.backpackId);
-  if(zone==='bladder')      return itemById(Array.isArray(S.bladderIds)?S.bladderIds[0]:S.bladderIds);
+  if(zone==='bladder')      return itemById(Array.isArray(S.bladderId)?S.bladderId[0]:S.bladderId);
   if(zone==='bottle-left')  return itemById(S.bottleLeft);
   if(zone==='bottle-right') return itemById(S.bottleRight);
   return null;
@@ -3233,7 +3152,7 @@ function delegateLongPress(container, resolveItem){
 
 function initMobileDelegation(){
   // ── Stash: tap to select, long-press to preview
-  const stashGrid = document.getElementById('stashGrid');
+  const stashGrid = $('stashGrid');
   stashGrid.addEventListener('click', e=>{
     if(!isMobile() || mTapSwallowed()) return;
     const el = e.target.closest('.slot[data-id]:not(.in-loadout)');
@@ -3262,14 +3181,14 @@ function initMobileDelegation(){
 
   // ── Main grid: tap an empty slot to place (removal is the ✕ on
   // each filled slot; long-press handled by the loadout-body binding)
-  document.getElementById('mainGrid').addEventListener('click', e=>{
+  $('mainGrid').addEventListener('click', e=>{
     if(!isMobile() || mTapSwallowed() || !_mSel) return;
     const el = e.target.closest('.empty-slot.droppable');
     if(el) mTapDropZone('main', parseInt(el.dataset.index) || 0);
   });
 
   // ── Mobile worn list: tap the add-row to place
-  const mWornList = document.getElementById('mobileWornList');
+  const mWornList = $('mobileWornList');
   if(mWornList){
     mWornList.addEventListener('click', e=>{
       if(!isMobile() || !_mSel) return;
@@ -3289,10 +3208,10 @@ function initMobile(){
   mSetTab('gear');
   initMobileThemeToggle();
   // Wire Etc-tab Import button to same handler as desktop Import btn
-  const mImp = document.getElementById('mImportBtn');
+  const mImp = $('mImportBtn');
   if(mImp && !mImp._wired){
     mImp._wired = true;
-    mImp.addEventListener('click', ()=> document.getElementById('fileMenuBtn').click());
+    mImp.addEventListener('click', ()=> $('fileMenuBtn').click());
   }
 }
 
@@ -3312,7 +3231,10 @@ window.addEventListener('resize', ()=>{
   restoreState(); // rehydrates S.useSampleGear, S.userInventory, userLoadouts, activeLoadout
 
   // Amber dot on Quick Add until its first open
-  document.getElementById('quickAddBtn')?.classList.toggle('qa-unseen', !_qaSeen);
+  $('quickAddBtn')?.classList.toggle('qa-unseen', !_qaSeen);
+
+  // Version strings render from the VERSION constant (AUDIT #10)
+  document.querySelectorAll('[data-version]').forEach(el=>{ el.textContent='v'+VERSION; });
 
   // Sync the sample/user chrome (inventory itself is derived state)
   syncSampleChrome();
@@ -3325,7 +3247,7 @@ window.addEventListener('resize', ()=>{
   initStashDrop();
   populateLoadoutSel();
 
-  const loSel = document.getElementById('loadoutSelect');
+  const loSel = $('loadoutSelect');
   if(loSel && loSel.querySelector(`option[value="${CSS.escape(S.loadoutKey)}"]`)){
     loSel.value = S.loadoutKey;
   }
