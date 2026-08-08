@@ -92,6 +92,39 @@ export const STARTER_ITEMS = [
   {id:'sp_cooler', icon:'🧊', name:'Cooler', type:'Item', activity:'camp', slots:5, weightKg:1.60, capacityL:null, maxKg:null, desc:'Soft-sided cooler. Holds ice through a long weekend.'},
   {id:'sp_lantern', icon:'🏮', name:'Camp Lantern', type:'Item', activity:'camp', slots:2, weightKg:0.30, capacityL:null, maxKg:null, desc:'Rechargeable lantern. Dimmable, doubles as a power bank.'},
   {id:'sp_water_jug', icon:'🪣', name:'Water Jug', type:'Bottle', activity:'camp', slots:3, weightKg:0.30, capacityL:10, maxKg:null, desc:'Collapsible 10L jug with a spigot for camp water.'},
+
+  // ── Ski / snowboard ───────────────────────────────────────────
+  {id:'sp_ski_pack', icon:'🎿', name:'Ski Touring Pack', type:'Backpack', activity:'ski', slots:12, weightKg:1.10, capacityL:null, maxKg:15, desc:'30L winter pack. Avy-tool pocket, ski and board carry.'},
+  {id:'sp_thermos', icon:'☕', name:'Insulated Thermos', type:'Bottle', activity:'ski', slots:2, weightKg:0.40, capacityL:1, maxKg:null, desc:'1L vacuum flask. Hot drinks on cold summits.'},
+  {id:'sp_avy_beacon', icon:'📡', name:'Avalanche Beacon', type:'Safety', activity:'ski', slots:1, weightKg:0.21, capacityL:null, maxKg:null, desc:'Three-antenna transceiver. Wear it, check it, practice.'},
+  {id:'sp_avy_shovel', icon:'⛏️', name:'Avalanche Shovel', type:'Tools', activity:'ski', slots:2, weightKg:0.65, capacityL:null, maxKg:null, desc:'Packable metal-blade shovel. Rides in the avy pocket.'},
+  {id:'sp_avy_probe', icon:'📏', name:'Avalanche Probe', type:'Tools', activity:'ski', slots:1, weightKg:0.30, capacityL:null, maxKg:null, desc:'240cm+ quick-deploy probe with depth markings.'},
+  {id:'sp_ski_helmet', icon:'⛑️', name:'Snow Helmet', type:'Safety', activity:'ski', slots:4, weightKg:0.45, capacityL:null, maxKg:null, desc:'Insulated snow-sport helmet. Goggle-compatible.'},
+  {id:'sp_ski_goggles', icon:'🥽', name:'Snow Goggles', type:'Worn', activity:'ski', slots:1, weightKg:0.18, capacityL:null, maxKg:null, desc:'Anti-fog snow goggles. Bring a spare low-light lens.'},
+  {id:'sp_ski_gloves', icon:'🧤', name:'Insulated Gloves', type:'Worn', activity:'ski', slots:1, weightKg:0.25, capacityL:null, maxKg:null, desc:'Waterproof insulated gloves. Liner-compatible.'},
+  {id:'sp_snow_pants', icon:'👖', name:'Snow Shell Pants', type:'Worn', activity:'ski', slots:2, weightKg:0.60, capacityL:null, maxKg:null, desc:'Waterproof shell pants. Side vents dump heat on the climb.'},
+  {id:'sp_climbing_skins', icon:'🎿', name:'Climbing Skins', type:'Item', activity:'ski', slots:2, weightKg:0.55, capacityL:null, maxKg:null, desc:'Glue-back skins trimmed to your skis or splitboard.'},
+
+  // ── Paddle ────────────────────────────────────────────────────
+  {id:'sp_dry_pack', icon:'🛶', name:'Dry Bag Pack', type:'Backpack', activity:'paddle', slots:14, weightKg:0.95, capacityL:null, maxKg:18, desc:'Roll-top 30L dry bag with shoulder straps.'},
+  {id:'sp_pfd', icon:'🦺', name:'PFD', type:'Safety', activity:'paddle', slots:3, weightKg:0.70, capacityL:null, maxKg:null, desc:'Type III paddling life vest. Wear it on the water.'},
+  {id:'sp_paddle', icon:'🛶', name:'Paddle', type:'Item', activity:'paddle', slots:4, weightKg:0.90, capacityL:null, maxKg:null, desc:'Two-piece paddle sized to your boat and reach.'},
+  {id:'sp_throw_rope', icon:'🪢', name:'Throw Rope', type:'Safety', activity:'paddle', slots:2, weightKg:0.60, capacityL:null, maxKg:null, desc:'Floating rescue line in a throw bag.'},
+  {id:'sp_bilge_pump', icon:'💨', name:'Bilge Pump', type:'Tools', activity:'paddle', slots:2, weightKg:0.30, capacityL:null, maxKg:null, desc:'Hand pump. Clears a swamped cockpit in minutes.'},
+  {id:'sp_dry_case', icon:'📦', name:'Waterproof Case', type:'Item', activity:'paddle', slots:1, weightKg:0.15, capacityL:null, maxKg:null, desc:'Sealed hard case for phone and keys.'},
+  {id:'sp_water_shoes', icon:'👟', name:'Water Shoes', type:'Worn', activity:'paddle', slots:1, weightKg:0.45, capacityL:null, maxKg:null, desc:'Quick-drain water shoes with grippy soles.'},
+  {id:'sp_rash_guard', icon:'👕', name:'Rash Guard', type:'Worn', activity:'paddle', slots:1, weightKg:0.20, capacityL:null, maxKg:null, desc:'UPF long-sleeve rash guard. Dries on your back.'},
+
+  // ── Fishing ───────────────────────────────────────────────────
+  {id:'sp_fishing_sling', icon:'🎣', name:'Fishing Sling Pack', type:'Backpack', activity:'fish', slots:8, weightKg:0.55, capacityL:null, maxKg:8, desc:'Sling pack that swings around front for rigging.'},
+  {id:'sp_rod_reel', icon:'🎣', name:'Rod + Reel', type:'Item', activity:'fish', slots:3, weightKg:0.40, capacityL:null, maxKg:null, desc:'Your rod and reel, rigged and ready.'},
+  {id:'sp_tackle_box', icon:'🧰', name:'Tackle Box', type:'Item', activity:'fish', slots:2, weightKg:0.50, capacityL:null, maxKg:null, desc:'Flies, lures, hooks and weights, organized.'},
+  {id:'sp_line_spools', icon:'🧵', name:'Leader + Tippet', type:'Item', activity:'fish', slots:1, weightKg:0.08, capacityL:null, maxKg:null, desc:'Spare leaders and tippet spools.'},
+  {id:'sp_fishing_pliers', icon:'🗜️', name:'Fishing Pliers', type:'Tools', activity:'fish', slots:1, weightKg:0.15, capacityL:null, maxKg:null, desc:'Hook removal, split shot, barb crimping.'},
+  {id:'sp_landing_net', icon:'🥅', name:'Landing Net', type:'Item', activity:'fish', slots:3, weightKg:0.45, capacityL:null, maxKg:null, desc:'Rubber-bag net. Easy on fish you release.'},
+  {id:'sp_waders', icon:'🩱', name:'Chest Waders', type:'Worn', activity:'fish', slots:4, weightKg:1.40, capacityL:null, maxKg:null, desc:'Breathable stocking-foot chest waders.'},
+  {id:'sp_wading_boots', icon:'🥾', name:'Wading Boots', type:'Worn', activity:'fish', slots:3, weightKg:1.20, capacityL:null, maxKg:null, desc:'Sticky-sole wading boots over the stocking foot.'},
+  {id:'sp_fishing_license', icon:'🪪', name:'Fishing License', type:'Item', activity:'fish', slots:1, weightKg:0.01, capacityL:null, maxKg:null, desc:'Current license. The one thing you cannot forget.'},
 ];
 
 export const STARTER_PACKS = {
@@ -101,6 +134,9 @@ export const STARTER_PACKS = {
   climb: ['sp_crag_pack','sp_water_bottle','sp_climbing_rope','sp_harness','sp_climbing_shoes','sp_chalk_bag','sp_belay_device','sp_carabiners','sp_quickdraws','sp_climbing_helmet','sp_approach_shoes','sp_puffy','sp_rain_shell','sp_headlamp','sp_first_aid','sp_sunscreen','sp_snacks','sp_phone'],
   moto:  ['sp_moto_tail_bag','sp_hydration_bladder','sp_water_bottle','sp_moto_helmet','sp_moto_jacket','sp_moto_pants','sp_moto_boots','sp_moto_gloves','sp_goggles','sp_body_armor','sp_earplugs','sp_tool_roll','sp_tire_repair_kit','sp_bungee_cords','sp_rain_shell','sp_headlamp','sp_first_aid','sp_snacks'],
   camp:  ['sp_camp_duffel','sp_water_jug','sp_water_bottle','sp_tent2p','sp_sleeping_bag','sp_sleeping_pad','sp_camp_stove','sp_stove_fuel','sp_cook_set','sp_camp_chair','sp_cooler','sp_lantern','sp_headlamp','sp_first_aid','sp_multitool','sp_towel','sp_bug_spray','sp_puffy'],
+  ski:   ['sp_ski_pack','sp_thermos','sp_avy_beacon','sp_avy_shovel','sp_avy_probe','sp_ski_helmet','sp_ski_goggles','sp_ski_gloves','sp_snow_pants','sp_climbing_skins','sp_puffy','sp_rain_shell','sp_wool_socks','sp_headlamp','sp_first_aid','sp_multitool','sp_snacks','sp_emergency_blanket'],
+  paddle:['sp_dry_pack','sp_water_bottle','sp_pfd','sp_paddle','sp_throw_rope','sp_bilge_pump','sp_dry_case','sp_water_shoes','sp_rash_guard','sp_sun_hat','sp_sunglasses','sp_sunscreen','sp_first_aid','sp_whistle','sp_headlamp','sp_snacks','sp_towel','sp_phone'],
+  fish:  ['sp_fishing_sling','sp_water_bottle','sp_rod_reel','sp_tackle_box','sp_line_spools','sp_fishing_pliers','sp_landing_net','sp_waders','sp_wading_boots','sp_fishing_license','sp_sun_hat','sp_sunglasses','sp_sunscreen','sp_bug_spray','sp_first_aid','sp_snacks','sp_phone','sp_rain_shell'],
 };
 
 // ── STARTER LOADOUTS ── one ready-made loadout per sport, installed
@@ -135,6 +171,18 @@ export const STARTER_LOADOUTS = {
     backpackId:'sp_camp_duffel', bladderId:null, bottleLeft:'sp_water_bottle', bottleRight:'sp_water_jug',
     mainItems:['sp_tent2p','sp_sleeping_bag','sp_sleeping_pad','sp_camp_stove','sp_stove_fuel','sp_cook_set'],
     wornItems:['sp_puffy']},
+  ski:   {key:'starter-ski', label:'Starter Ski Tour',
+    backpackId:'sp_ski_pack', bladderId:null, bottleLeft:'sp_thermos', bottleRight:null,
+    mainItems:['sp_avy_beacon','sp_avy_shovel','sp_avy_probe','sp_climbing_skins','sp_ski_helmet','sp_first_aid'],
+    wornItems:['sp_ski_goggles','sp_ski_gloves','sp_snow_pants','sp_puffy','sp_wool_socks']},
+  paddle:{key:'starter-paddle', label:'Starter Day Paddle',
+    backpackId:'sp_dry_pack', bladderId:null, bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_pfd','sp_paddle','sp_throw_rope','sp_bilge_pump','sp_dry_case','sp_first_aid'],
+    wornItems:['sp_water_shoes','sp_rash_guard','sp_sun_hat','sp_sunglasses']},
+  fish:  {key:'starter-fish', label:'Starter River Day',
+    backpackId:'sp_fishing_sling', bladderId:null, bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_rod_reel','sp_tackle_box','sp_line_spools','sp_fishing_pliers','sp_fishing_license'],
+    wornItems:['sp_waders','sp_wading_boots','sp_sun_hat','sp_sunglasses']},
 };
 
 // ── KEYWORD TABLE ── longest-match-first guessing for quick entry
@@ -255,6 +303,30 @@ export const GEAR_KEYWORDS = [
   {k:'motorcycle boot',   type:'Worn',    icon:'🥾', weightKg:2.40},
   {k:'shoe',              type:'Worn',    icon:'👟', weightKg:0.60},
   {k:'trail runner',      type:'Worn',    icon:'👟', weightKg:0.55},
+  // ski and snow
+  {k:'skis',              type:'Item',    icon:'🎿', weightKg:3.00},
+  {k:'ski boot',          type:'Worn',    icon:'🎿', weightKg:1.80},
+  {k:'snowboard',         type:'Item',    icon:'🏂', weightKg:3.20},
+  {k:'skins',             type:'Item',    icon:'🎿', weightKg:0.55},
+  {k:'probe',             type:'Tools',   icon:'📏', weightKg:0.30},
+  {k:'shovel',            type:'Tools',   icon:'⛏️', weightKg:0.65},
+  // paddle
+  {k:'paddle',            type:'Item',    icon:'🛶', weightKg:0.90},
+  {k:'pfd',               type:'Safety',  icon:'🦺', weightKg:0.70},
+  {k:'life vest',         type:'Safety',  icon:'🦺', weightKg:0.70},
+  {k:'life jacket',       type:'Safety',  icon:'🦺', weightKg:0.70},
+  {k:'throw rope',        type:'Safety',  icon:'🪢', weightKg:0.60},
+  {k:'bilge',             type:'Tools',   icon:'💨', weightKg:0.30},
+  {k:'wetsuit',           type:'Worn',    icon:'🤿', weightKg:1.20},
+  // fishing
+  {k:'fishing rod',       type:'Item',    icon:'🎣', weightKg:0.40},
+  {k:'fly rod',           type:'Item',    icon:'🎣', weightKg:0.35},
+  {k:'reel',              type:'Item',    icon:'🎣', weightKg:0.25},
+  {k:'tackle',            type:'Item',    icon:'🧰', weightKg:0.50},
+  {k:'fly box',           type:'Item',    icon:'🪰', weightKg:0.15},
+  {k:'tippet',            type:'Item',    icon:'🧵', weightKg:0.08},
+  {k:'waders',            type:'Worn',    icon:'🩱', weightKg:1.40},
+  {k:'landing net',       type:'Item',    icon:'🥅', weightKg:0.45},
   // navigation, electronics, misc
   {k:'map',               type:'Item',    icon:'🗺️', weightKg:0.04},
   {k:'compass',           type:'Item',    icon:'🧭', weightKg:0.04},

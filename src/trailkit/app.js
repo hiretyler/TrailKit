@@ -125,6 +125,39 @@ const SAMPLE_INVENTORY = [
   {id:'it_sleepbag',   icon:'🛌', name:'Kelty Cosmic 20',      type:'Item',     activity:'camp',  slots:5,  weightKg:1.13, capacityL:null, maxKg:null, desc:'20°F down bag. Packs small for the price.'},
   {id:'it_sleeppad',   icon:'🛏️', name:'Therm-a-Rest ProLite', type:'Item',     activity:'camp',  slots:3,  weightKg:0.51, capacityL:null, maxKg:null, desc:'Self-inflating 3-season pad. R-value 3.2.'},
   {id:'it_stove',      icon:'🔥', name:'Jetboil Flash',        type:'Item',     activity:'camp',  slots:2,  weightKg:0.37, capacityL:null, maxKg:null, desc:'Integrated canister stove. Boils in about 100 seconds.'},
+
+  // ── Ski / snowboard (added in the v1.25 sport expansion)
+  {id:'bp_dawnpatrol', icon:'🎿', name:'BD Dawn Patrol 32',    type:'Backpack', activity:'ski',   slots:13, weightKg:1.25, capacityL:null, maxKg:16, desc:'32L ski touring pack. Avy-tool pocket, A-frame ski carry.'},
+  {id:'sf_avybeacon',  icon:'📡', name:'BCA Tracker4 Beacon',  type:'Safety',   activity:'ski',   slots:1,  weightKg:0.22, capacityL:null, maxKg:null, desc:'Three-antenna avalanche transceiver. 55m search strip.'},
+  {id:'tl_avyshovel',  icon:'⛏️', name:'BCA Dozer 2H Shovel',  type:'Tools',    activity:'ski',   slots:2,  weightKg:0.66, capacityL:null, maxKg:null, desc:'Aluminum avalanche shovel. Hoe mode, extendable shaft.'},
+  {id:'tl_avyprobe',   icon:'📏', name:'BCA Stealth 270 Probe',type:'Tools',    activity:'ski',   slots:1,  weightKg:0.31, capacityL:null, maxKg:null, desc:'270cm quick-deploy avalanche probe. Depth markings.'},
+  {id:'sf_skihelmet',  icon:'⛑️', name:'Smith Vantage Helmet', type:'Safety',   activity:'ski',   slots:4,  weightKg:0.45, capacityL:null, maxKg:null, desc:'MIPS snow helmet. Adjustable venting, goggle-compatible.'},
+  {id:'wn_goggles',    icon:'🥽', name:'Smith 4D MAG Goggles', type:'Worn',     activity:'ski',   slots:1,  weightKg:0.19, capacityL:null, maxKg:null, desc:'Low-light and bright lenses included. Anti-fog coating.'},
+  {id:'wn_skigloves',  icon:'🧤', name:'Hestra Fall Line',     type:'Worn',     activity:'ski',   slots:1,  weightKg:0.20, capacityL:null, maxKg:null, desc:'Leather ski gloves. Removable liner, wrist leash.'},
+  {id:'wn_bibs',       icon:'🩱', name:'Flylow Baker Bibs',    type:'Worn',     activity:'ski',   slots:3,  weightKg:0.95, capacityL:null, maxKg:null, desc:'3-layer waterproof bibs. Thigh vents, beacon pocket.'},
+  {id:'it_skins',      icon:'🎿', name:'Pomoca Climb Pro S',   type:'Item',     activity:'ski',   slots:2,  weightKg:0.55, capacityL:null, maxKg:null, desc:'Mohair-mix climbing skins. Trimmed to ski.'},
+  {id:'bt_thermos',    icon:'☕', name:'Stanley Classic 1L',   type:'Bottle',   activity:'ski',   slots:2,  weightKg:0.42, capacityL:1,    maxKg:null, desc:'Vacuum-insulated flask. Keeps drinks hot all day.'},
+
+  // ── Paddle (added in the v1.25 sport expansion)
+  {id:'bp_billsbag',   icon:'🛶', name:"NRS Bill's Bag 65L",   type:'Backpack', activity:'paddle',slots:14, weightKg:1.05, capacityL:null, maxKg:18, desc:'Waterproof 65L dry bag with backpack straps.'},
+  {id:'sf_pfd',        icon:'🦺', name:'NRS Ninja PFD',        type:'Safety',   activity:'paddle',slots:3,  weightKg:0.75, capacityL:null, maxKg:null, desc:'Low-profile Type III PFD. Full range of motion.'},
+  {id:'sf_throwrope',  icon:'🪢', name:'NRS Throw Rope',       type:'Safety',   activity:'paddle',slots:2,  weightKg:0.65, capacityL:null, maxKg:null, desc:'70ft rescue throw bag. Floating polypro line.'},
+  {id:'tl_bilgepump',  icon:'💨', name:'Seattle Sports Bilge', type:'Tools',    activity:'paddle',slots:2,  weightKg:0.30, capacityL:null, maxKg:null, desc:'Hand bilge pump. Empties a swamped cockpit fast.'},
+  {id:'it_paddle',     icon:'🛶', name:'Werner Camano Paddle', type:'Item',     activity:'paddle',slots:4,  weightKg:0.79, capacityL:null, maxKg:null, desc:'Fiberglass touring paddle. Two-piece, adjustable feather.'},
+  {id:'it_drycase',    icon:'📦', name:'Pelican Micro Case',   type:'Item',     activity:'paddle',slots:1,  weightKg:0.25, capacityL:null, maxKg:null, desc:'Crushproof waterproof case. Phone, keys, wallet.'},
+  {id:'wn_hydroskin',  icon:'👕', name:'NRS HydroSkin 0.5',    type:'Worn',     activity:'paddle',slots:2,  weightKg:0.35, capacityL:null, maxKg:null, desc:'0.5mm neoprene top. Core warmth in splash and wind.'},
+  {id:'wn_watershoes', icon:'👟', name:'Astral Loyak Shoes',   type:'Worn',     activity:'paddle',slots:1,  weightKg:0.45, capacityL:null, maxKg:null, desc:'Grippy water shoes. Drain fast, pack flat.'},
+
+  // ── Fishing (added in the v1.25 sport expansion)
+  {id:'bp_guidesling', icon:'🎣', name:'Orvis Guide Sling',    type:'Backpack', activity:'fish',  slots:8,  weightKg:0.70, capacityL:null, maxKg:9,  desc:'Fly fishing sling pack. Swings around front for rigging.'},
+  {id:'it_flyrod',     icon:'🎣', name:'Orvis Clearwater 9ft', type:'Item',     activity:'fish',  slots:3,  weightKg:0.35, capacityL:null, maxKg:null, desc:'4-piece 5wt fly rod with reel. Travel tube.'},
+  {id:'it_flybox',     icon:'🪰', name:'Tacky Original Box',   type:'Item',     activity:'fish',  slots:1,  weightKg:0.15, capacityL:null, maxKg:null, desc:'Silicone-slot fly box. Dries fast, holds 168 flies.'},
+  {id:'it_tippet',     icon:'🧵', name:'Tippet + Leader Set',  type:'Item',     activity:'fish',  slots:1,  weightKg:0.08, capacityL:null, maxKg:null, desc:'Leaders and tippet spools, 3X through 6X.'},
+  {id:'tl_nippers',    icon:'✂️', name:'Orvis Nippers',        type:'Tools',    activity:'fish',  slots:1,  weightKg:0.03, capacityL:null, maxKg:null, desc:'Line nippers with hook-eye cleaner.'},
+  {id:'tl_forceps',    icon:'🗜️', name:'Fishpond Forceps',     type:'Tools',    activity:'fish',  slots:1,  weightKg:0.06, capacityL:null, maxKg:null, desc:'Scissor-clamp forceps. Barb crimping, hook removal.'},
+  {id:'it_landingnet', icon:'🥅', name:'Fishpond Nomad Net',   type:'Item',     activity:'fish',  slots:3,  weightKg:0.50, capacityL:null, maxKg:null, desc:'Carbon-fiber landing net. Fish-friendly rubber bag.'},
+  {id:'wn_waders',     icon:'🩱', name:'Simms Freestone',      type:'Worn',     activity:'fish',  slots:4,  weightKg:1.50, capacityL:null, maxKg:null, desc:'4-layer breathable chest waders. Stocking foot.'},
+  {id:'wn_wadingboots',icon:'🥾', name:'Simms Tributary Boots',type:'Worn',     activity:'fish',  slots:3,  weightKg:1.30, capacityL:null, maxKg:null, desc:'Rubber-sole wading boots. Stud-compatible.'},
 ];
 
 // SAMPLE LOADOUTS — paired with SAMPLE_INVENTORY
@@ -169,6 +202,24 @@ const SAMPLE_LOADOUTS = {
       mainItems:['it_tent','it_sleepbag','it_sleeppad','it_stove','tl_spork','sf_headlamp'],
       wornItems:['wn_puffy','wn_basetop']},
   },
+  ski:{
+    'ski-tour':{label:'Ski Tour',
+      backpackId:'bp_dawnpatrol',bladderId:null,bottleLeft:'bt_thermos',bottleRight:null,
+      mainItems:['sf_avybeacon','tl_avyshovel','tl_avyprobe','it_skins','sf_skihelmet','md_blister','sf_headlamp','sf_inreach'],
+      wornItems:['wn_bibs','wn_skigloves','wn_goggles','wn_puffy']},
+  },
+  paddle:{
+    'day-paddle':{label:'Day Paddle',
+      backpackId:'bp_billsbag',bladderId:null,bottleLeft:'bt_nalgene1',bottleRight:null,
+      mainItems:['sf_pfd','sf_throwrope','tl_bilgepump','it_paddle','it_drycase','it_sunscreen','sf_headlamp'],
+      wornItems:['wn_hydroskin','wn_watershoes','wn_hat']},
+  },
+  fish:{
+    'river-day':{label:'River Day',
+      backpackId:'bp_guidesling',bladderId:null,bottleLeft:'bt_nalgene1',bottleRight:null,
+      mainItems:['it_flyrod','it_flybox','it_tippet','tl_nippers','tl_forceps','it_sunscreen'],
+      wornItems:['wn_waders','wn_wadingboots','wn_hat','wn_glasses']},
+  },
 };
 
 // User gear and the sample/user toggle live IN THE STORE (AUDIT #2) —
@@ -178,10 +229,11 @@ const SAMPLE_LOADOUTS = {
 
 // ── SPORT COLOR MAP ──────────────────────────────────────────────
 const SPORT_COLOR = {all:'var(--sport-all)',hike:'var(--sport-hike)',bike:'var(--sport-bike)',
-  run:'var(--sport-run)',climb:'var(--sport-climb)',moto:'var(--sport-moto)',camp:'var(--sport-camp)'};
+  run:'var(--sport-run)',climb:'var(--sport-climb)',moto:'var(--sport-moto)',camp:'var(--sport-camp)',
+  ski:'var(--sport-ski)',paddle:'var(--sport-paddle)',fish:'var(--sport-fish)'};
 const SPORT_LABEL = {all:'All Activities',hike:'Hiking',bike:'MTB',run:'Running',
-  climb:'Climbing',moto:'Moto',camp:'Camping'};
-const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
+  climb:'Climbing',moto:'Moto',camp:'Camping',ski:'Ski',paddle:'Paddle',fish:'Fishing'};
+const SPORT_KEYS = ['hike','bike','run','climb','moto','camp','ski','paddle','fish'];
 
 // ── ACTIVITIES — six built-ins plus user-defined customs ─────────
 // Custom activities live in S.customActivities [{key,label,emoji,color}].
@@ -467,7 +519,7 @@ function renderStash(){
     card.innerHTML=`
       <div class="qa-empty-title">Your locker is empty.</div>
       <div class="qa-empty-sub">Type or paste your gear - one line per item.</div>
-      <button class="qa-empty-btn" data-qa="open">Quick Add Gear</button>
+      <button class="qa-empty-btn" data-qa="open">Bulk Add Gear</button>
       <span class="qa-empty-link" data-qa="sample">Browse sample gear instead</span>`;
     grid.appendChild(card);
     return;
@@ -681,6 +733,7 @@ function renderMain(){
     el.addEventListener('dragstart',e=>onDragStart(e,id,'main',i));
     el.addEventListener('dragend',onDragEnd);
     el.querySelector('.slot-rm-btn').addEventListener('click', ev=>{
+      if(editModeActive) return; // bubble to the edit-mode click handler
       ev.stopPropagation();
       store.dispatch({type:A.REMOVE_FROM_MAIN, id}); renderAll();
     });
@@ -723,6 +776,7 @@ function renderWorn(){
     row.addEventListener('dragstart',e=>onDragStart(e,id,'worn',i));
     row.addEventListener('dragend',onDragEnd);
     row.querySelector('.worn-rm').addEventListener('click',ev=>{
+      if(editModeActive) return; // bubble to the edit-mode click handler
       ev.stopPropagation();
       store.dispatch({type:A.REMOVE_FROM_WORN, id}); renderAll();
     });
@@ -757,6 +811,7 @@ function renderWorn(){
           </div>
           <div class="worn-rm" title="Remove">✕</div>`;
         row.querySelector('.worn-rm').addEventListener('click', ev=>{
+          if(editModeActive) return; // bubble to the edit-mode click handler
           ev.stopPropagation();
           store.dispatch({type:A.REMOVE_FROM_WORN,id}); renderAll();
         });
@@ -1336,8 +1391,8 @@ function exportCSV(){
 // S.userInventory. The draft survives any dismissal via persistence,
 // so Cancel/backdrop/Escape are deliberately not intercepted.
 
-const QA_SPORTS=['hike','bike','run','climb','moto','camp'];
-const QA_SPORT_EMOJI={hike:'🥾',bike:'🚵',run:'🏃',climb:'🧗',moto:'🏍️',camp:'⛺'};
+const QA_SPORTS=['hike','bike','run','climb','moto','camp','ski','paddle','fish'];
+const QA_SPORT_EMOJI={hike:'🥾',bike:'🚵',run:'🏃',climb:'🧗',moto:'🏍️',camp:'⛺',ski:'⛷️',paddle:'🛶',fish:'🎣'};
 const QA_TYPES=TYPE_ORDER;
 const QA_DRAFT_MAX=20000;
 const QA_COMMIT_CAP=300;
@@ -1361,7 +1416,7 @@ count x name | type | activity
     Tools - multi-tools, pumps, knives, repair kits
     Worn - clothing, footwear, gloves, hats, anything worn on the body
     Item - anything else
-- activity must be exactly one of: hike, bike, run, climb, moto, camp, all
+- activity must be exactly one of: hike, bike, run, climb, moto, camp, ski, paddle, fish, all
   Use "all" if the item suits more than one.
 - optionally add a weight as a fourth field if you can judge it: 80g or 0.08kg
 
@@ -1816,7 +1871,7 @@ function qaUndoCommit(u){
   syncSampleChrome();
   populateLoadoutSel();
   renderAll();
-  showToast('↩ Quick Add undone');
+  showToast('↩ Bulk Add undone');
 }
 
 function qaCommit(){
@@ -2451,33 +2506,35 @@ $('editItemBtn').addEventListener('click', ()=>{
   setEditMode(!editModeActive);
 });
 
-// Highlight slot under cursor when edit mode is on
-$('stashGrid').addEventListener('mouseover', e=>{
+// Edit mode covers the inventory AND the current loadout (backpack,
+// water slots, main compartment, worn). Delegated at the document
+// level because the loadout renderers rebuild their nodes every
+// render (cloneNode/replaceChild), so direct bindings go stale.
+const EDIT_TARGET_SEL = '.slot[data-id],.worn-row[data-id],#backpackSlot,#bladderSlot,#bottleLeft,#bottleRight';
+function editTargetItem(el){
+  if(el.id==='backpackSlot') return backpackItem();
+  if(el.id==='bladderSlot')  return S.bladderId  ? itemById(S.bladderId)  : null;
+  if(el.id==='bottleLeft')   return S.bottleLeft  ? itemById(S.bottleLeft)  : null;
+  if(el.id==='bottleRight')  return S.bottleRight ? itemById(S.bottleRight) : null;
+  return itemById(el.dataset.id);
+}
+
+document.addEventListener('mouseover', e=>{
   if(!editModeActive) return;
-  const slot = e.target.closest('.slot[data-id]');
-  if(editHoverEl && editHoverEl !== slot) {
+  const el = e.target.closest(EDIT_TARGET_SEL);
+  if(editHoverEl && editHoverEl !== el){
     editHoverEl.classList.remove('edit-hover');
     editHoverEl = null;
   }
-  if(slot){ slot.classList.add('edit-hover'); editHoverEl = slot; }
+  if(el && editTargetItem(el)){ el.classList.add('edit-hover'); editHoverEl = el; }
 });
 
-$('stashGrid').addEventListener('mouseout', e=>{
+document.addEventListener('click', e=>{
   if(!editModeActive) return;
-  const slot = e.target.closest('.slot[data-id]');
-  if(slot && !slot.contains(e.relatedTarget)){
-    slot.classList.remove('edit-hover');
-    if(editHoverEl === slot) editHoverEl = null;
-  }
-});
-
-$('stashGrid').addEventListener('click', e=>{
-  if(!editModeActive) return;
-  const slot = e.target.closest('.slot[data-id]');
-  if(!slot) return;
-  e.stopPropagation();
-  const it = itemById(slot.dataset.id);
-  if(it){ openItemDetail(it); setEditMode(false); }
+  const el = e.target.closest(EDIT_TARGET_SEL);
+  if(!el) return;
+  const it = editTargetItem(el);
+  if(it){ e.stopPropagation(); openItemDetail(it); setEditMode(false); }
 });
 
 // Press Escape to exit edit mode
@@ -2501,20 +2558,27 @@ function syncSampleChrome(){
   const toggleBtn  = $('sampleToggleBtn');
   const panelTitle = $('stashPanelTitle');
   if(toggleBtn){
-    toggleBtn.textContent = on ? '⬡ Sample Gear' : 'Use Sample Gear';
+    toggleBtn.textContent = on ? '⬡ Sample Gear in Use' : 'Use Sample Gear';
     toggleBtn.title = on ? 'Sample gear is in use - click to switch back to Your Gear'
                          : 'Load the demo inventory and loadouts';
     toggleBtn.classList.toggle('sample-active', on);
   }
-  if(panelTitle) panelTitle.textContent = 'Inventory';
+  if(panelTitle){
+    panelTitle.textContent = on ? 'Sample Inventory' : 'Inventory';
+    panelTitle.classList.toggle('sample-inv', on);
+    if(on) panelTitle.title = 'Browsing Sample Gear - click to switch to Your Gear';
+    else panelTitle.removeAttribute('title');
+  }
 }
 
-$('sampleToggleBtn').addEventListener('click', ()=>{
+function toggleSampleGear(){
   setSampleGear(!S.useSampleGear);
   clearState();
   populateLoadoutSel();
   loadLoadout($('loadoutSelect')?.value || '__default__');
-});
+}
+$('sampleToggleBtn').addEventListener('click', toggleSampleGear);
+$('stashPanelTitle').addEventListener('click', ()=>{ if(S.useSampleGear) toggleSampleGear(); });
 
 // ── EXPORT MODAL + SAMPLE GEAR WARNING ───────────────────────────
 let pendingExportFn = null;

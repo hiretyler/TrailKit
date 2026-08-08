@@ -14,7 +14,7 @@
   <div class="topbar-logo">Trail<span>Kit</span></div>
   <div class="topbar-spacer"></div>
   <div class="sample-gear-center" id="sampleGearCenter">
-    <button class="sample-toggle-btn" id="sampleToggleBtn">⬡ Sample Gear</button>
+    <button class="sample-toggle-btn" id="sampleToggleBtn">⬡ Sample Gear in Use</button>
   </div>
   <div class="topbar-spacer"></div>
   <div class="theme-toggle" id="themeToggle" title="Toggle dark / light" style="flex-shrink:0;">
@@ -35,7 +35,7 @@
       <div class="stash-header-btns">
         <button class="add-items-btn" id="addItemBtn">Add Item</button>
         <button class="edit-items-btn" id="editItemBtn">Edit Item</button>
-        <button class="add-items-btn" id="quickAddBtn">Quick Add</button>
+        <button class="add-items-btn" id="quickAddBtn">Bulk Add</button>
       </div>
     </div>
     <div class="filter-bar">
@@ -336,7 +336,7 @@
     </div>
 
     <div class="about-desc">
-      TrailKit helps you organize your outdoor gear into named <strong>Loadouts</strong> for any activity — hiking, mountain biking, trail running, climbing, moto, and camping. Drag items from your <strong>Inventory</strong> into the pack, water slots, and worn section to build a loadout, then save it. Export your packing lists as a printable HTML checklist or your full inventory as a CSV.
+      TrailKit helps you organize your outdoor gear into named <strong>Loadouts</strong> for any activity — hiking, mountain biking, trail running, climbing, moto, camping, skiing, paddling, and fishing. Drag items from your <strong>Inventory</strong> into the pack, water slots, and worn section to build a loadout, then save it. Export your packing lists as a printable HTML checklist or your full inventory as a CSV.
     </div>
 
     <div class="about-section-title">Getting Started</div>
@@ -359,7 +359,7 @@
       </div>
       <div class="about-step">
         <span class="about-step-num">05</span>
-        <div class="about-step-text"><strong>Edit items.</strong> Click <strong>Edit Item</strong> in the Inventory panel to enter Edit Mode, then click any item to open its editor. Change its name, icon (choose from 600+ emoji), type, weight, and special properties like backpack capacity and water pocket support.</div>
+        <div class="about-step-text"><strong>Edit items.</strong> Click <strong>Edit Item</strong> in the Inventory panel to enter Edit Mode, then click any item — in the Inventory or in the current Loadout — to open its editor. Change its name, icon (choose from 600+ emoji), type, weight, and special properties like backpack capacity and water pocket support.</div>
       </div>
       <div class="about-step">
         <span class="about-step-num">06</span>
@@ -533,7 +533,7 @@
     <div class="modal-title" style="color:var(--accent-amber);">⬡ Trying to add an item to your own gear?</div>
     <div class="modal-sub">You're currently browsing Sample Gear. Switch to Your Gear to build your own inventory — or add this item to the sample collection.</div>
     <div class="modal-actions" style="flex-direction:column;gap:8px;align-items:stretch;">
-      <button class="modal-btn confirm" id="addSampleWarnBulkBtn" style="width:100%;">Quick Add My Gear</button>
+      <button class="modal-btn confirm" id="addSampleWarnBulkBtn" style="width:100%;">Bulk Add My Gear</button>
       <button class="modal-btn confirm" id="addSampleWarnSwitchBtn" style="width:100%;">Switch to Your Gear</button>
       <button class="modal-btn cancel" id="addSampleWarnSampleBtn" style="width:100%;">No, Add Item to Sample Gear</button>
     </div>
@@ -628,7 +628,7 @@
 <!-- QUICK ADD MODAL -->
 <div class="modal-overlay" id="quickAddModal">
   <div class="modal qa-modal">
-    <div class="modal-title">Quick Add</div>
+    <div class="modal-title">Bulk Add</div>
     <div class="modal-sub" style="margin-bottom:12px;">Type or paste your gear - one item per line. Use 2x for duplicates.</div>
 
     <div class="qa-chips-row">
@@ -702,7 +702,7 @@
       </div>
       <div class="qa-photo-step">
         <span class="qa-photo-num">03</span>
-        <div><b>Paste the reply here.</b> Copy the gear list the AI sends back and paste it into the Quick Add box. Fix anything in the preview before adding.</div>
+        <div><b>Paste the reply here.</b> Copy the gear list the AI sends back and paste it into the Bulk Add box. Fix anything in the preview before adding.</div>
       </div>
     </div>
     <div class="modal-actions">

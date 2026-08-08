@@ -262,8 +262,15 @@ test('parse: comma list normalizes synonyms, spaces, and order', () => {
   assertEqual(row1('headlamp | camping, hiking').activity, 'hike,camp');
 });
 
-test('parse: comma list of all six sports collapses to all', () => {
-  assertEqual(row1('headlamp | hike,bike,run,climb,moto,camp').activity, 'all');
+test('parse: comma list of every sport collapses to all', () => {
+  assertEqual(row1('headlamp | hike,bike,run,climb,moto,camp,ski,paddle,fish').activity, 'all');
+});
+
+test('parse: new sport synonyms resolve to their keys', () => {
+  assertEqual(row1('goggles | skiing').activity, 'ski');
+  assertEqual(row1('goggles | snowboarding').activity, 'ski');
+  assertEqual(row1('spray skirt | kayaking').activity, 'paddle');
+  assertEqual(row1('waders | fly fishing').activity, 'fish');
 });
 
 test('parse: comma list containing all collapses to all', () => {

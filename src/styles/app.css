@@ -7,6 +7,7 @@
   --text-primary:#d4dfe9; --text-secondary:#6a8aa0; --text-dim:#3d5468;
   --sport-hike:#2a7a4b; --sport-bike:#1a5c8a; --sport-climb:#7a3a8a;
   --sport-run:#8a4a1a; --sport-moto:#5a3a1a; --sport-camp:#1a3a5c; --sport-all:#2a3a4a;
+  --sport-ski:#1a7a8a; --sport-paddle:#178a68; --sport-fish:#6a7a1a;
   --slot-size:72px; --slot-gap:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -16,7 +17,7 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 /* ── TOP BAR ── */
 .topbar{display:flex;align-items:center;padding:0 16px;height:48px;background:var(--bg-panel);
   border-bottom:1px solid var(--border);flex-shrink:0;gap:12px;}
-.topbar-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:31px;letter-spacing:3px;
+.topbar-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:37px;letter-spacing:3px;
   color:var(--accent-teal);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
 .topbar-logo span{color:var(--text-secondary);font-weight:400;}
 .topbar-spacer{flex:1;}
@@ -50,6 +51,8 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
   display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--bg-card);}
 .panel-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
   letter-spacing:2px;text-transform:uppercase;color:var(--text-primary);}
+.panel-title.sample-inv{color:var(--accent-amber);cursor:pointer;}
+.panel-title.sample-inv:hover{text-decoration:underline;text-underline-offset:3px;}
 .panel-subtitle{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-secondary);}
 .filter-bar{padding:7px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .gear-filter-wrap{position:relative;width:100%;}
@@ -148,6 +151,9 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg-deep);color:var(--
 .tt-sport-run{background:var(--sport-run);color:#ffb47d;}
 .tt-sport-moto{background:var(--sport-moto);color:#ffcc7d;}
 .tt-sport-camp{background:var(--sport-camp);color:#aae8ff;}
+.tt-sport-ski{background:var(--sport-ski);color:#7de8ff;}
+.tt-sport-paddle{background:var(--sport-paddle);color:#7dffd4;}
+.tt-sport-fish{background:var(--sport-fish);color:#e8ff7d;}
 .tt-name{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;letter-spacing:1px;
   margin-bottom:4px;color:#fff;}
 .tt-desc{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;
@@ -371,11 +377,12 @@ body.light .toggle-thumb{transform:translateX(16px);background:var(--accent-teal
   color:var(--accent-amber);box-shadow:0 0 10px rgba(245,166,35,0.2);}
 
 /* ── EDIT MODE HIGHLIGHT ── */
-.slot.edit-hover{
+.slot.edit-hover,.worn-row.edit-hover,.big-slot.edit-hover,.bottle-slot-single.edit-hover{
   border:2px solid var(--accent-amber)!important;border-style:solid!important;
   box-shadow:0 0 14px rgba(245,166,35,0.55),inset 0 0 8px rgba(245,166,35,0.08)!important;
   cursor:pointer!important;}
-body.edit-mode .stash-grid-wrap{cursor:crosshair;}
+body.edit-mode .stash-grid-wrap,body.edit-mode .loadout-body,
+body.edit-mode .worn-list{cursor:crosshair;}
 
 /* ── EXPORT MODAL BUTTONS ── */
 .export-modal-btn{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;
@@ -730,10 +737,12 @@ body.light{
   border-radius:2px;padding:4px 10px;cursor:pointer;flex-shrink:0;transition:filter 0.12s;}
 .tk-toast-btn:hover{filter:brightness(1.12);}
 
-/* Amber dot on the Quick Add button until its first open */
-#quickAddBtn{position:relative;}
+/* Bulk Add rides the Save New amber (Add Item stays teal) */
+#quickAddBtn{position:relative;background:var(--accent-amber);}
+#quickAddBtn:hover{background:#ffbb44;box-shadow:0 0 14px rgba(245,166,35,0.4);}
+/* Dot on the Bulk Add button until its first open - dark on amber */
 #quickAddBtn.qa-unseen::after{content:'';position:absolute;top:4px;right:5px;
-  width:6px;height:6px;border-radius:50%;background:var(--accent-amber);}
+  width:6px;height:6px;border-radius:50%;background:var(--bg-deep);}
 
 /* ══════════════════════════════════════════════════════════════════
    MOBILE LAYOUT  ≤ 720px
@@ -807,7 +816,7 @@ body.light{
 
   /* Compact top bar */
   .topbar{padding:0 10px;height:44px;gap:6px;}
-  .topbar-logo{font-size:24px;letter-spacing:2px;}
+  .topbar-logo{font-size:29px;letter-spacing:2px;}
   .sample-toggle-btn{font-size:10px;padding:4px 9px;letter-spacing:1px;}
   .topbar-btn{font-size:11px;padding:5px 10px;letter-spacing:1px;}
 
@@ -951,5 +960,5 @@ body.light{
 
 @media(max-width:380px){
   :root{--slot-size:56px;--slot-gap:4px;}
-  .topbar-logo{font-size:21px;}
+  .topbar-logo{font-size:25px;}
 }

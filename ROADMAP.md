@@ -11,8 +11,17 @@ Format conventions:
 
 ## Current state
 
-- **Released:** v1.2 — `releases/TrailKit-1.2.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
-- **Working on:** nothing in flight. The audit list is fully resolved; the backlog holds only the two long-superseded onboarding ideas. Next milestone is open.
+- **Released:** v1.25 — `releases/TrailKit-1.25.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-08).
+- **Working on:** nothing in flight. Next milestone is open.
+
+---
+
+## v1.25 — Three new sports + loadout editing (shipped 2026-08-08)
+
+- [x] **Ski, Paddle, Fishing** — three new built-in activities (⛷️ 🛶 🎣) with full parity: sample gear (27 new branded items incl. avy kit, PFD/throw rope, fly-fishing kit), one slot-budget-exact sample loadout each (Ski Tour, Day Paddle, River Day), brand-free starter packs (18 items each) + starter loadouts, parser synonyms (skiing/snowboard→ski, kayak/canoe/sup→paddle, fly fishing→fish), ~20 new gear keywords, sport colors + tooltip classes, AI-prompt activity list updated
+- [x] **Edit Item works on the current loadout** — edit mode now covers backpack, water slots, main compartment, and worn items (document-level delegation since renderers rebuild nodes); remove-✕ buttons defer to the editor while edit mode is on
+- [x] **Bulk Add** — renamed from Quick Add everywhere user-facing; button recolored to the Save New amber (Add Item stays teal), unseen-dot flipped dark for contrast
+- [x] Logo +20% (37px / 29px / 25px tiers)
 
 ---
 

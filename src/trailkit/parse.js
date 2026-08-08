@@ -29,6 +29,10 @@ const ACT_SYNONYM = {
   climb:'climb', climbing:'climb',
   moto:'moto', motorcycle:'moto', motorbike:'moto',
   camp:'camp', camping:'camp',
+  ski:'ski', skiing:'ski', snowboard:'ski', snowboarding:'ski', splitboard:'ski',
+  paddle:'paddle', paddling:'paddle', kayak:'paddle', kayaking:'paddle',
+  canoe:'paddle', canoeing:'paddle', sup:'paddle', rafting:'paddle',
+  fish:'fish', fishing:'fish', 'fly fishing':'fish', angling:'fish',
 };
 
 // Per-type fallbacks when nothing better is known
@@ -75,7 +79,7 @@ export function matchVolToken(s){
   return r2(m[2].toLowerCase()==='ml' ? parseFloat(m[1])/1000 : parseFloat(m[1]));
 }
 
-const SPORT_KEYS = ['hike','bike','run','climb','moto','camp'];
+const SPORT_KEYS = ['hike','bike','run','climb','moto','camp','ski','paddle','fish'];
 
 // User-defined activities (custom sports) register here so typed and
 // pasted lines can name them. Maps lowercase label AND key → key.
