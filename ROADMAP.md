@@ -11,17 +11,10 @@ Format conventions:
 
 ## Current state
 
-- **Released:** v1.05 — `releases/TrailKit-1.05.html`. First release cut from the `src/` build pipeline.
-- **Working on:** v1.1 onboarding follow-ups implemented in `src/` (2026-08-07); next step is cutting the v1.1 release (copy `dist/TrailKit.html` → `releases/TrailKit-1.1.html`, bump the Pages redirect, redeploy tgeddes.dev).
+- **Released:** v1.1 — `releases/TrailKit-1.1.html`, live on GitHub Pages and tgeddes.dev/trailkit (2026-08-07).
+- **Working on:** nothing in flight; v1.15 UI polish is next.
 
 ---
-
-## v1.1 — Onboarding follow-ups (implemented 2026-08-07, release not yet cut)
-
-- [x] **Post-commit backpack nudge** — the commit toast now carries a "Set Pack Size(s)" action that deep-links into the Edit Item modal and chains through each added pack on save (close/Escape abandons the chain)
-- [x] **Starter loadouts** — STARTER_LOADOUTS in quickadd-data.js (one per sport, referencing starter item ids); committing with a pack chip on installs them via the new INSTALL_LOADOUTS action, resolving references to the user's minted item ids by name. Opt-in checkbox appears while a chip is active. If the active sport got a loadout and the board is empty, it auto-loads so the user lands on a packed board
-- [x] **Bulk-add undo** — commit snapshots inventory, draft, checks, pack chips, sample flag, and store state; the toast's one-shot Undo (new QA_RESTORE action) restores all of it
-- [x] **CSV template fill-and-upload** — CSV Template / Upload CSV buttons in the Quick Add modal; parseCSV + csvToGearLines in parse.js convert rows to grammar lines feeding the existing preview/commit pipeline (decided 2026-08-07: keep - spreadsheets are how people already inventory gear)
 
 ## v1.15 — UI polish (moved from the old v1.05)
 
@@ -46,6 +39,7 @@ Dropped 2026-08-07: **Hosted photo-scan (v2 of the AI flow)** — the out-of-app
 
 ## Done
 
+- [x] **v1.1 — Onboarding follow-ups** (2026-08-07) — starter loadouts (STARTER_LOADOUTS per sport installed on commit via INSTALL_LOADOUTS, references resolved to minted item ids by name, opt-in checkbox, auto-load onto an empty board for the active sport); bulk-add undo (full pre-commit snapshot in the toast's one-shot Undo via QA_RESTORE); post-commit backpack nudge (toast's "Set Pack Size(s)" chains the Edit Item modal through each added pack); CSV template fill-and-upload (parseCSV + csvToGearLines transcode rows into the line grammar, same preview/commit pipeline). New curated-data invariant tests + 11 CSV parser tests (75 total). Deployed to GitHub Pages and tgeddes.dev/trailkit.
 - [x] **v1.05 — Quick Add onboarding + build fixes** (2026-08-02) — one modal covering three onboarding paths sharing a single parser, preview, and commit: free-text quick entry ("3x wool socks", pipe fields, weights), per-sport starter packs (74 curated brand-free items including new bike/moto/camp data), and a paste-from-AI photo flow (Copy AI Prompt + permissive parser). Empty-locker CTA, dedup with suffix numbering, persisted draft, toast, mobile bottom-sheet mode, 28 parser tests. Also fixed four latent bugs: dead inline onclick handlers in the bundled build (mobile tab bar, Etc-tab export, essential-modal close), missing #mTapHint element (mobile had no selection/rejection feedback), importXML wiping an in-progress loadout on every import, and the upload button stranding users who cancel the file dialog.
 - [x] **Foundation: git + roadmap + audit** (2026-05-15) — initialized git repo, drafted ROADMAP.md from Google Doc, drafted docs/AUDIT.md with concrete simplification items
 
