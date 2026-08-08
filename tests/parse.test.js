@@ -1,8 +1,8 @@
 // Tests for the Quick Add parser (src/trailkit/parse.js).
 // Pure and DOM-free, so these run in both the node and browser runners.
 
-import { test, assert, assertEqual } from './assert.js';
-import { parseGearLines, matchTypeToken, matchActivityToken, toKg } from '../src/trailkit/parse.js';
+import { test, assert, assertEqual, assertDeepEqual } from './assert.js';
+import { parseGearLines, matchTypeToken, matchActivityToken, toKg, csvToGearLines } from '../src/trailkit/parse.js';
 
 function row1(line){
   const { rows } = parseGearLines(line);
@@ -274,4 +274,64 @@ test('parse: comma list with an unknown part is not an activity field', () => {
   const r = row1('headlamp | hike,xyz');
   assertEqual(r.activity, '__default__');
   assertEqual(r.desc.includes('hike,xyz') || r.desc.includes('hike, xyz') ? true : false, true);
+});
+
+// ── CSV → grammar lines ─────────────────────────────────────────
+test('csv: template round-trips through the line grammar', () => {
+  const csv = 'name,count,type,activity,weight\nWool Socks,3,Worn,hike,80g\nHeadlamp,1,Safety,all,90g';
+  const { lines, skipped } = csvToGearLines(csv);
+  assertEqual(skipped, 0);
+  assertDeepEqual(lines, ['3 x Wool Socks | Worn | hike | 80g', 'Headlamp | Safety | all | 90g']);
+  const { rows } = parseGearLines(lines.join('\n'));
+  assertEqual(rows.length, 2);
+  assertEqual(rows[0].count, 3);
+  assertEqual(rows[0].type, 'Worn');
+  assertEqual(rows[0].activity, 'hike');
+  assertEqual(rows[1].name, 'Headlamp');
+});
+
+test('csv: header columns map by label in any order', () => {
+  const { lines } = csvToGearLines('type,name,count\nWorn,Wool Socks,2');
+  assertDeepEqual(lines, ['2 x Wool Socks | Worn']);
+});
+
+test('csv: headerless files read as positional columns', () => {
+  const { lines } = csvToGearLines('Wool Socks,2,Worn');
+  assertDeepEqual(lines, ['2 x Wool Socks | Worn']);
+});
+
+test('csv: quoted fields keep commas and escaped quotes', () => {
+  const { lines } = csvToGearLines('name,count\n"Socks, wool ""thick""",2');
+  assertDeepEqual(lines, ['2 x Socks, wool "thick"']);
+});
+
+test('csv: bare-number weight reads as kg', () => {
+  const { lines } = csvToGearLines('name,weight\nTent,2.2');
+  assertDeepEqual(lines, ['Tent | 2.2kg']);
+});
+
+test('csv: rows without a name are skipped and counted', () => {
+  const { lines, skipped } = csvToGearLines('name,count\n,3\nHeadlamp,1');
+  assertEqual(skipped, 1);
+  assertEqual(lines.length, 1);
+});
+
+test('csv: blank rows and blank input produce nothing', () => {
+  assertDeepEqual(csvToGearLines('name,count\n\n\n'), { lines: [], skipped: 0 });
+  assertDeepEqual(csvToGearLines(''), { lines: [], skipped: 0 });
+});
+
+test('csv: semicolon-delimited exports are detected', () => {
+  const { lines } = csvToGearLines('name;count;type\nWool Socks;2;Worn');
+  assertDeepEqual(lines, ['2 x Wool Socks | Worn']);
+});
+
+test('csv: pipes in fields are neutralized to slashes', () => {
+  const { lines } = csvToGearLines('name,count\nweird|name,1');
+  assertDeepEqual(lines, ['weird/name']);
+});
+
+test('csv: crlf line endings and count 1 omit the count prefix', () => {
+  const { lines } = csvToGearLines('name,count\r\nHeadlamp,1\r\n');
+  assertDeepEqual(lines, ['Headlamp']);
 });

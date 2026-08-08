@@ -15,8 +15,8 @@ import {
   UIUtils,
 } from '../engine/index.js';
 
-import { parseGearLines, matchTypeToken, matchActivityToken } from './parse.js';
-import { STARTER_ITEMS, STARTER_PACKS } from './quickadd-data.js';
+import { parseGearLines, matchTypeToken, matchActivityToken, csvToGearLines } from './parse.js';
+import { STARTER_ITEMS, STARTER_PACKS, STARTER_LOADOUTS } from './quickadd-data.js';
 
 
 
@@ -192,6 +192,18 @@ store.on('SAVE_LOADOUT', (s, a) => {
   const bySport  = { ...(current[a.sport] || {}), [a.key]: a.snapshot };
   return { userLoadouts: { ...current, [a.sport]: bySport }, loadoutKey: a.key };
 });
+// Bulk-merge loadouts across sports (starter loadouts from Quick Add).
+// Unlike SAVE_LOADOUT it never touches loadoutKey - installing a
+// loadout for another sport must not hijack the active selection.
+store.on('INSTALL_LOADOUTS', (s, a) => {
+  const merged = { ...s.userLoadouts };
+  for(const sport of Object.keys(a.bySport)){
+    merged[sport] = { ...(merged[sport] || {}), ...a.bySport[sport] };
+  }
+  return { userLoadouts: merged };
+});
+// One-shot restore of a pre-commit snapshot (Quick Add undo)
+store.on('QA_RESTORE', (s, a) => ({ ...a.state }));
 
 // Navigation
 store.on('SET_SPORT',      (s, a) => ({ sport: a.sport }));
@@ -1485,11 +1497,32 @@ function qaPersistSoon(){clearTimeout(_qaSaveTimer);_qaSaveTimer=setTimeout(pers
 function qaPersistNow(){clearTimeout(_qaSaveTimer);persistState();}
 
 // ── Toast (no alert()) ──
-function showToast(msg){
+// opts.actions: [{label, fn}] renders buttons after the message.
+// Clicking one hides the toast first, so every action is one-shot -
+// the undo/nudge snapshots live in the action closures and die with
+// the toast.
+function hideToast(){
   const t=document.getElementById('tkToast'); if(!t)return;
-  t.textContent=msg; t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+  t.classList.remove('show');
+}
+function showToast(msg,opts){
+  const t=document.getElementById('tkToast'); if(!t)return;
+  const acts=(opts&&opts.actions)||[];
+  t.textContent='';
+  const m=document.createElement('span');
+  m.className='tk-toast-msg'; m.textContent=msg;
+  t.appendChild(m);
+  acts.forEach(a=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='tk-toast-btn'; b.textContent=a.label;
+    b.addEventListener('click',()=>{hideToast();a.fn();});
+    t.appendChild(b);
+  });
+  t.classList.toggle('tk-toast-actions',acts.length>0);
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(hideToast,(opts&&opts.duration)||(acts.length?9000:2500));
 }
 
 // ── Parse + dedup ──
@@ -1680,6 +1713,9 @@ function qaRenderChips(){
     b.addEventListener('click',()=>qaTogglePack(sport));
     box.appendChild(b);
   });
+  // Starter-loadout opt-in only matters while a pack chip is on
+  const opt=document.getElementById('qaLoadoutOpt');
+  if(opt)opt.style.display=_qaPacksOn.size?'':'none';
 }
 
 function qaTogglePack(sport){
@@ -1775,14 +1811,94 @@ function qaMintId(){
   return id;
 }
 
+// ── Starter loadouts ──
+// STARTER_LOADOUTS reference sp_ ids; the committed items carry
+// minted user ids, so resolve each reference through its curated
+// name against USER_INVENTORY. Dedup-suffixed copies ("Bottle (2)")
+// resolve to the user's original - that's the item they own. A sport
+// whose backpack didn't survive the preview (line deleted, row
+// unchecked) installs nothing: a loadout without its pack is noise.
+function qaInstallStarterLoadouts(sports){
+  const bare=n=>n.toLowerCase().replace(/\s+/g,' ').trim();
+  const resolve=spId=>{
+    if(!spId)return null;
+    const sp=STARTER_ITEMS.find(x=>x.id===spId); if(!sp)return null;
+    const it=USER_INVENTORY.find(i=>bare(i.name)===bare(sp.name));
+    return it?it.id:null;
+  };
+  const bySport={};
+  for(const sport of sports){
+    const lo=STARTER_LOADOUTS[sport]; if(!lo)continue;
+    const backpackId=resolve(lo.backpackId);
+    if(!backpackId)continue;
+    bySport[sport]={[lo.key]:{label:lo.label,backpackId,
+      bladderIds:resolve(lo.bladderIds),
+      bottleLeft:resolve(lo.bottleLeft),
+      bottleRight:resolve(lo.bottleRight),
+      mainItems:lo.mainItems.map(resolve).filter(Boolean),
+      wornItems:lo.wornItems.map(resolve).filter(Boolean)}};
+  }
+  const installed=Object.keys(bySport);
+  if(installed.length)store.dispatch({type:'INSTALL_LOADOUTS',bySport});
+  return installed;
+}
+
+// ── Post-commit backpack nudge ──
+// Packs are the one type a text line under-specifies (main slots,
+// max load, pocket flags), so the commit toast offers a deep link
+// into the Edit Item modal, chaining through each added pack.
+let _qaNudgePacks=[];
+function qaNudgeNext(){
+  while(_qaNudgePacks.length){
+    const id=_qaNudgePacks.shift();
+    const it=USER_INVENTORY.find(i=>i.id===id);
+    if(it){openItemDetail(it);return;}
+  }
+}
+
+// ── One-shot undo of the last commit ──
+function qaUndoCommit(u){
+  _qaNudgePacks.length=0;
+  USER_INVENTORY.length=0; USER_INVENTORY.push(...u.inv);
+  _qaDraft=u.draft;
+  _qaPacksOn.clear(); u.packs.forEach(s=>_qaPacksOn.add(s));
+  _qaChecks.clear(); u.checks.forEach((v,k)=>_qaChecks.set(k,v));
+  const ta=qaTa(); if(ta)ta.value=_qaDraft;
+  if(useSampleGear!==u.sample)setSampleGear(u.sample);
+  store.dispatch({type:'QA_RESTORE',state:u.state});
+  populateLoadoutSel();
+  renderAll();
+  showToast('↩ Quick Add undone');
+}
+
 function qaCommit(){
   const inc=_qaRows.filter(qaChecked);
   if(!inc.length)return;
   const bare=n=>n.toLowerCase().replace(/\s+/g,' ').trim();
   const taken=new Set(USER_INVENTORY.map(i=>bare(i.name)));
   const tagAs=document.getElementById('qaTagAs')?.value||'all';
+
+  // Snapshot everything the commit can touch, for the toast's Undo.
+  // Items are pushed, never mutated, so a shallow inventory copy is
+  // enough; userLoadouts gets a deep copy because INSTALL_LOADOUTS
+  // merges into it.
+  const undoSnap={
+    inv:USER_INVENTORY.slice(),
+    draft:_qaDraft,
+    packs:new Set(_qaPacksOn),
+    checks:new Map(_qaChecks),
+    sample:useSampleGear,
+    state:{
+      loadoutKey:S.loadoutKey,
+      backpackId:S.backpackId, bladderIds:S.bladderIds,
+      bottleLeft:S.bottleLeft, bottleRight:S.bottleRight,
+      mainItems:[...S.mainItems], wornItems:[...S.wornItems],
+      userLoadouts:JSON.parse(JSON.stringify(S.userLoadouts)),
+    },
+  };
+
   let added=0;
-  const leftover=[];
+  const leftover=[], packIds=[];
   for(const r of _qaRows){
     if(!qaChecked(r))continue;
     let did=0;
@@ -1804,6 +1920,7 @@ function qaCommit(){
         it.backpackBladder=r.backpackBladder!==false;
         it.backpackLeftBottle=r.backpackLeftBottle!==false;
         it.backpackRightBottle=r.backpackRightBottle!==false;
+        packIds.push(it.id);
       }
       USER_INVENTORY.push(it);
       added++; did++;
@@ -1814,16 +1931,39 @@ function qaCommit(){
   }
   if(!added)return;
   qaCloseActPop(false);
+  const loSports=document.getElementById('qaLoadoutsToo')?.checked?[..._qaPacksOn]:[];
   _qaDraft=leftover.join('\n'); _qaPacksOn.clear(); _qaChecks.clear();
   const ta=qaTa(); if(ta)ta.value=_qaDraft;
   closeModal('quickAddModal');
   // Gated epilogue: only reset the loadout when leaving sample mode.
   // importXML clears unconditionally; Quick Add must not wipe an
-  // in-progress user loadout. renderAll persists - nothing after it.
+  // in-progress user loadout. Loadout install runs after the sample
+  // flip so the dropdown refresh sees user mode. renderAll persists -
+  // nothing state-changing after it.
   if(useSampleGear){setSampleGear(false);clearState();populateLoadoutSel();}
+  const loInstalled=loSports.length?qaInstallStarterLoadouts(loSports):[];
+  const loCount=loInstalled.length;
+  if(loInstalled.includes(S.sport)){
+    // The active sport just got a starter loadout. On a fresh board,
+    // load it so the user sees their loadout packed instead of a
+    // dropdown entry pointing at an empty board. Mid-build, only
+    // refresh the dropdown - and not from '__default__', where
+    // populateLoadoutSel would hijack the selection.
+    const empty=!S.backpackId&&!S.mainItems.length&&!S.wornItems.length;
+    if(empty){populateLoadoutSel();loadLoadout(STARTER_LOADOUTS[S.sport].key);}
+    else if(S.loadoutKey!=='__default__')populateLoadoutSel();
+  }
   renderAll();
-  showToast(`✓ ${added} item${added!==1?'s':''} added to Your Gear`
-    +(leftover.length?` - ${leftover.length} line${leftover.length!==1?'s':''} kept in Quick Add`:''));
+
+  _qaNudgePacks=packIds.slice();
+  let msg=`✓ ${added} item${added!==1?'s':''} added`;
+  if(packIds.length)msg+=` · ${packIds.length} pack${packIds.length!==1?'s':''}`;
+  if(loCount)msg+=` · ${loCount} starter loadout${loCount!==1?'s':''}`;
+  if(leftover.length)msg+=` · ${leftover.length} line${leftover.length!==1?'s':''} kept`;
+  const actions=[];
+  if(packIds.length)actions.push({label:packIds.length>1?`Set Pack Sizes (${packIds.length})`:'Set Pack Size',fn:qaNudgeNext});
+  actions.push({label:'Undo',fn:()=>qaUndoCommit(undoSnap)});
+  showToast(msg,{actions});
 }
 
 // ── Wiring ──
@@ -1847,6 +1987,58 @@ document.getElementById('popQuickAddBtn').addEventListener('click',()=>{
 
 document.getElementById('qaPhotoBtn').addEventListener('click',qaPhotoClick);
 document.getElementById('qaPhotoOkBtn').addEventListener('click',()=>closeModal('qaPhotoModal'));
+
+// ── CSV template + upload ──
+// Same pipeline as typing: uploaded rows become grammar lines in the
+// draft, so the preview, dedup, and commit path treat them like any
+// other text. Junk rows fall into the parser's ignored bucket.
+document.getElementById('qaCsvTemplateBtn').addEventListener('click',()=>{
+  downloadBlob([
+    'name,count,type,activity,weight',
+    'Wool Socks,3,Worn,hike,80g',
+    '22L Daypack,1,Backpack,hike,0.9kg',
+    'Headlamp,1,Safety,all,90g',
+    'First Aid Kit,1,Medical,,',
+    'Multi-Tool,1,,,',
+  ].join('\n'),'TrailKit-gear-template.csv','text/csv');
+});
+document.getElementById('qaCsvUploadBtn').addEventListener('click',()=>{
+  document.getElementById('qaCsvFile').click();
+});
+document.getElementById('qaCsvFile').addEventListener('change',function(){
+  const f=this.files&&this.files[0];
+  this.value=''; // same file re-selectable after an edit
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const {lines,skipped}=csvToGearLines(String(rd.result||''));
+    if(!lines.length){showToast('No gear rows found in that CSV');return;}
+    const cur=_qaDraft.replace(/\s+$/,'');
+    const next=(cur?cur+'\n\n':'')+lines.join('\n');
+    const clipped=next.length>QA_DRAFT_MAX;
+    _qaDraft=next.slice(0,QA_DRAFT_MAX);
+    const ta=qaTa(); if(ta)ta.value=_qaDraft;
+    qaRefresh(); qaPersistSoon();
+    showToast(`${lines.length} line${lines.length!==1?'s':''} loaded from CSV`
+      +(skipped?` · ${skipped} row${skipped!==1?'s':''} skipped`:'')
+      +(clipped?' · draft is full, tail trimmed':''));
+  };
+  rd.readAsText(f);
+});
+
+// ── Backpack-nudge chain ──
+// After the Edit Item save handler settles, open the next added pack.
+// The check is deferred: if the modal is still open the save was
+// rejected (add-mode validation), so don't stack another one.
+document.getElementById('editSaveBtn').addEventListener('click',()=>{
+  if(!_qaNudgePacks.length)return;
+  setTimeout(()=>{
+    if(!document.getElementById('itemDetailModal').classList.contains('open'))qaNudgeNext();
+  },150);
+});
+// Closing the modal any way other than Save abandons the chain
+document.getElementById('itemDetailCloseBtn').addEventListener('click',()=>{_qaNudgePacks.length=0;});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')_qaNudgePacks.length=0;});
 document.getElementById('qaTagAs').addEventListener('change',()=>{qaRenderPreview();qaUpdateTally();});
 document.getElementById('qaSegWrite').addEventListener('click',()=>qaSetPane('write'));
 document.getElementById('qaSegPreview').addEventListener('click',()=>qaSetPane('preview'));

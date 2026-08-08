@@ -262,6 +262,73 @@ function parseLine(body, raw, lineIndex){
   return row;
 }
 
+// ── CSV → grammar lines ─────────────────────────────────────────
+// The CSV template flow reuses the line grammar: uploaded rows are
+// converted to "count x name | type | activity | weight" lines and
+// appended to the draft, so parseGearLines stays the single parser.
+
+// Minimal quote-aware CSV reader. Handles "" escapes, quoted
+// delimiters/newlines, \r\n, and ;-delimited exports (detected from
+// the first line when it has no commas). Blank rows are dropped.
+export function parseCSV(text){
+  const s=String(text||'');
+  const first=s.split(/\r?\n/,1)[0]||'';
+  const delim=(!first.includes(',')&&first.includes(';'))?';':',';
+  const rows=[]; let row=[], field='', inQ=false;
+  const endRow=()=>{
+    row.push(field); field='';
+    if(row.some(f=>f.trim()!=='')) rows.push(row);
+    row=[];
+  };
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(inQ){
+      if(c==='"'){ if(s[i+1]==='"'){field+='"';i++;} else inQ=false; }
+      else field+=c;
+    }
+    else if(c==='"') inQ=true;
+    else if(c===delim){ row.push(field); field=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&s[i+1]==='\n')i++; endRow(); }
+    else field+=c;
+  }
+  endRow();
+  return rows;
+}
+
+// CSV text in, { lines, skipped } out. A header row naming 'name'
+// maps columns by label in any order; headerless files read as
+// positional name,count,type,activity,weight. Rows without a name
+// are skipped (counted); everything else is passed through permissively
+// and left for parseGearLines to judge.
+const CSV_COLS=['name','count','type','activity','weight'];
+export function csvToGearLines(text){
+  const rows=parseCSV(text);
+  if(!rows.length) return { lines:[], skipped:0 };
+  let map={name:0,count:1,type:2,activity:3,weight:4}, start=0;
+  const hdr=rows[0].map(c=>c.trim().toLowerCase());
+  if(hdr.includes('name')){
+    map={};
+    CSV_COLS.forEach(c=>{const i=hdr.indexOf(c); if(i>=0)map[c]=i;});
+    start=1;
+  }
+  const lines=[]; let skipped=0;
+  for(let r=start;r<rows.length;r++){
+    const cells=rows[r];
+    const get=c=>map[c]!=null?String(cells[map[c]]??'').trim():'';
+    // Pipes are the grammar's field separator - neutralize them
+    const name=get('name').replace(/\|/g,'/').replace(/\s+/g,' ').trim();
+    if(!name){skipped++;continue;}
+    const count=parseInt(get('count'),10);
+    const parts=[(count>1?Math.min(count,999)+' x ':'')+name];
+    const type=get('type').replace(/\|/g,'/'); if(type)parts.push(type);
+    const act=get('activity').replace(/\|/g,'/'); if(act)parts.push(act);
+    let w=get('weight');
+    if(w){ if(/^\d+(\.\d+)?$/.test(w))w+='kg'; parts.push(w.replace(/\|/g,'/')); }
+    lines.push(parts.join(' | '));
+  }
+  return { lines, skipped };
+}
+
 // Main entry: text in, { rows, ignored } out. Row line indexes map
 // 1:1 to the source lines of `text` split on '\n'.
 export function parseGearLines(text){

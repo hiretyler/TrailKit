@@ -12,26 +12,27 @@ Format conventions:
 ## Current state
 
 - **Released:** v1.05 — `releases/TrailKit-1.05.html`. First release cut from the `src/` build pipeline.
-- **Working on:** Onboarding follow-ups (v1.1).
+- **Working on:** v1.1 onboarding follow-ups implemented in `src/` (2026-08-07); next step is cutting the v1.1 release (copy `dist/TrailKit.html` → `releases/TrailKit-1.1.html`, bump the Pages redirect, redeploy tgeddes.dev).
 
 ---
 
-## v1.1 — Onboarding follow-ups (next session)
+## v1.1 — Onboarding follow-ups (implemented 2026-08-07, release not yet cut)
 
-- [ ] **Post-commit backpack nudge** — when a Quick Add commit includes Backpack items, make the toast actionable ("N packs added - set their sizes?") deep-linking into the existing Edit Item modal, since backpacks are the one type a text line under-specifies (slots, max load, pocket flags)
-- [ ] **Starter loadouts** — pack chips optionally install a ready-made loadout per sport, not just inventory items (install items first; loadouts reference item ids)
-- [ ] **Bulk-add undo** — snapshot USER_INVENTORY before a Quick Add commit and offer one-shot undo from the toast
-- [ ] **CSV template fill-and-upload** — downloadable template, parsed on upload. May be superseded by the Quick Add line grammar; decide at session start whether it still earns its keep
+- [x] **Post-commit backpack nudge** — the commit toast now carries a "Set Pack Size(s)" action that deep-links into the Edit Item modal and chains through each added pack on save (close/Escape abandons the chain)
+- [x] **Starter loadouts** — STARTER_LOADOUTS in quickadd-data.js (one per sport, referencing starter item ids); committing with a pack chip on installs them via the new INSTALL_LOADOUTS action, resolving references to the user's minted item ids by name. Opt-in checkbox appears while a chip is active. If the active sport got a loadout and the board is empty, it auto-loads so the user lands on a packed board
+- [x] **Bulk-add undo** — commit snapshots inventory, draft, checks, pack chips, sample flag, and store state; the toast's one-shot Undo (new QA_RESTORE action) restores all of it
+- [x] **CSV template fill-and-upload** — CSV Template / Upload CSV buttons in the Quick Add modal; parseCSV + csvToGearLines in parse.js convert rows to grammar lines feeding the existing preview/commit pipeline (decided 2026-08-07: keep - spreadsheets are how people already inventory gear)
 
 ## v1.15 — UI polish (moved from the old v1.05)
 
-- [ ] Bigger logo
+- [x] Bigger logo (shipped 2026-08-05, commit 464a2a0)
 - [ ] File menu (consolidate Import / Export / About into one menu instead of separate topbar buttons)
 - [ ] Condensed indicator button for sample gear (currently the indicator + toggle button take two slots)
 - [ ] Smaller dark/light switch
 - [ ] No footer
 - [ ] Print mode in packing list opens in a new tab (instead of in-place toggle)
 - [ ] Sample gear overhaul (refresh the curated SAMPLE_INVENTORY — items, icons, descriptions, balance across activities; bike/moto still have no sample items)
+- [ ] Quick Add polish — per-row icon editing via the emoji picker, slots/capacity editing in the preview, migrate importXML's alert() to the toast (moved from backlog 2026-08-07)
 
 ---
 
@@ -39,10 +40,7 @@ Format conventions:
 
 Ideas not yet slotted into a release. Add freely; we'll triage during planning.
 
-- **Hosted photo-scan (v2 of the AI flow)** — Cloudflare Worker proxy + Claude Haiku/Sonnet with Turnstile and per-IP rate limits, so the photo flow works without leaving the app. Only worth building if the out-of-app flow sees real use. Research notes: Google Vision rejected (generic labels, 10-object cap, unsecurable browser keys); multimodal LLM is the only viable recognizer.
-- **Onboarding: drag-and-drop gear categories** — drag category bubbles into your inventory (from the old v1.1 list; superseded for now by starter packs)
-- **Onboarding: pick from sample gear** — checkbox UI over SAMPLE_INVENTORY, pulls selected items into Your Gear (the ALREADY IN dedup in Quick Add covers most of this need)
-- **Quick Add polish** — per-row icon editing via the emoji picker, slots/capacity editing in the preview, migrate importXML's alert() to the toast
+Dropped 2026-08-07: **Hosted photo-scan (v2 of the AI flow)** — the out-of-app copy-prompt flow hasn't seen enough use to justify a Worker proxy + rate-limit stack. The research notes live in git history if it ever comes back. Also removed the two superseded onboarding ideas (**drag-and-drop gear categories**, **pick from sample gear**) — starter packs plus Quick Add's ALREADY IN dedup cover both.
 
 ---
 

@@ -650,8 +650,19 @@
       <div class="qa-chips-block">
         <div class="qa-chips-label">Starter Packs</div>
         <div class="qa-chips" id="qaChips"></div>
+        <label class="qa-lo-opt" id="qaLoadoutOpt" style="display:none;">
+          <input type="checkbox" id="qaLoadoutsToo" checked>
+          Also set up a ready-made loadout per pack
+        </label>
       </div>
-      <button class="qa-photo-btn" id="qaPhotoBtn">📸 Take Photo To Add Your Gear</button>
+      <div class="qa-side-btns">
+        <button class="qa-photo-btn" id="qaPhotoBtn">📸 Take Photo To Add Your Gear</button>
+        <div class="qa-csv-row">
+          <button class="qa-csv-btn" id="qaCsvTemplateBtn" title="Download a fill-in CSV template">⬇ CSV Template</button>
+          <button class="qa-csv-btn" id="qaCsvUploadBtn" title="Upload a filled-in CSV">⬆ Upload CSV</button>
+          <input type="file" id="qaCsvFile" accept=".csv,text/csv" style="display:none;">
+        </div>
+      </div>
     </div>
 
     <!-- Mobile-only WRITE | PREVIEW segmented toggle -->

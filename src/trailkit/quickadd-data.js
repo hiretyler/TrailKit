@@ -103,6 +103,40 @@ export const STARTER_PACKS = {
   camp:  ['sp_camp_duffel','sp_water_jug','sp_water_bottle','sp_tent2p','sp_sleeping_bag','sp_sleeping_pad','sp_camp_stove','sp_stove_fuel','sp_cook_set','sp_camp_chair','sp_cooler','sp_lantern','sp_headlamp','sp_first_aid','sp_multitool','sp_towel','sp_bug_spray','sp_puffy'],
 };
 
+// ── STARTER LOADOUTS ── one ready-made loadout per sport, installed
+// (optionally) when that sport's pack chip is part of a Quick Add
+// commit. References STARTER_ITEMS ids; the commit path resolves them
+// to the user's real item ids by name, so every referenced id must
+// appear in that sport's STARTER_PACKS list. mainItems slot totals
+// are sized to the pack's main-compartment capacity - keep them
+// within it when editing.
+export const STARTER_LOADOUTS = {
+  hike:  {key:'starter-hike', label:'Starter Day Hike',
+    backpackId:'sp_daypack', bladderIds:'sp_hydration_bladder', bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_headlamp','sp_first_aid','sp_multitool','sp_map','sp_compass','sp_sunscreen','sp_snacks','sp_trekking_poles'],
+    wornItems:['sp_hiking_boots','sp_wool_socks','sp_hiking_pants','sp_rain_shell','sp_sun_hat','sp_sunglasses']},
+  bike:  {key:'starter-bike', label:'Starter Trail Ride',
+    backpackId:'sp_hydration_pack', bladderIds:'sp_hydration_bladder', bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_mini_pump','sp_tire_levers','sp_spare_tube','sp_patch_kit','sp_multitool','sp_first_aid','sp_snacks'],
+    wornItems:['sp_bike_gloves','sp_bike_shorts','sp_jersey','sp_sunglasses']},
+  run:   {key:'starter-run', label:'Starter Trail Run',
+    backpackId:'sp_running_vest', bladderIds:'sp_hydration_bladder', bottleLeft:'sp_soft_flask', bottleRight:null,
+    mainItems:['sp_energy_gels','sp_first_aid','sp_whistle','sp_emergency_blanket','sp_phone'],
+    wornItems:['sp_trail_runners','sp_wool_socks','sp_running_shorts','sp_gaiters','sp_sun_hat','sp_sunglasses']},
+  climb: {key:'starter-climb', label:'Starter Crag Day',
+    backpackId:'sp_crag_pack', bladderIds:null, bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_climbing_rope','sp_harness','sp_chalk_bag','sp_belay_device','sp_first_aid'],
+    wornItems:['sp_approach_shoes','sp_puffy']},
+  moto:  {key:'starter-moto', label:'Starter Moto Ride',
+    backpackId:'sp_moto_tail_bag', bladderIds:'sp_hydration_bladder', bottleLeft:'sp_water_bottle', bottleRight:null,
+    mainItems:['sp_tool_roll','sp_tire_repair_kit','sp_first_aid','sp_bungee_cords','sp_headlamp','sp_snacks','sp_earplugs'],
+    wornItems:['sp_moto_jacket','sp_moto_pants','sp_moto_boots','sp_moto_gloves','sp_goggles']},
+  camp:  {key:'starter-camp', label:'Starter Camp Trip',
+    backpackId:'sp_camp_duffel', bladderIds:null, bottleLeft:'sp_water_bottle', bottleRight:'sp_water_jug',
+    mainItems:['sp_tent2p','sp_sleeping_bag','sp_sleeping_pad','sp_camp_stove','sp_stove_fuel','sp_cook_set'],
+    wornItems:['sp_puffy']},
+};
+
 // ── KEYWORD TABLE ── longest-match-first guessing for quick entry
 // Contract: lowercase the line, pick the LONGEST key that appears as
 // a substring. Longer keys deliberately shadow shorter fallbacks
